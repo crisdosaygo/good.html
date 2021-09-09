@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<script type=module>
+  import {use} from './bang-dev.js';
+
+  use('test-component');
+  use('test-void');
+</script>
+<test-component>
+  <h1 onclick=Confirm>Hello there</h1>
+</test-component>
+<!test-void onclick=Alert>
+

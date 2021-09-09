@@ -1,0 +1,31 @@
+{
+  "name": "bangjs",
+  "version": "1.0.0",
+  "description": "Bang!",
+  "main": "src/bang.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "watch cp src/bang.js test/bang-dev.js & serve -p 8080 test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com//i5ik/bang.git"
+  },
+  "keywords": [
+    "bang",
+    "front-end",
+    "framework",
+    "javascript",
+    "view",
+    "dosy",
+    "dosyago",
+    "dosycorp"
+  ],
+  "author": "@dosy",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^12.0.1"
+  }
+}
