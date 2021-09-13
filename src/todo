@@ -1,3 +1,1 @@
-- discover race condition, somehow we are calling on comment twice after making an async use
-- prepend component/style.css to markup
-
+- how to we pass state?
