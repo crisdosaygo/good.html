@@ -443,7 +443,7 @@ async function process(x, state) {
 
     stateKey += '';
 
-    console.log({stateKey});
+    DEBUG && console.log({stateKey});
 
     return stateKey;
   }
