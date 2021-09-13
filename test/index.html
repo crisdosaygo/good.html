@@ -17,6 +17,11 @@
   An object in the scope that contains all state?
   A key on a global state object?
   A property of a containing component?
-
+  --
+  I think a global key value store for state is a good idea.
+  And we can also pass a property from a containing component as the state
+  for a descendent component, and this object value will be placed into the global
+  key value store automatically and have a key issued for it, and that object 
+  will be replaced by its key, so that the descendent component can look up the object.
 </p>
 
