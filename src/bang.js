@@ -1,4 +1,8 @@
 const DOUBLE_BARREL = /\w+-\w*/;
+const DEBUG = false;
+const CONFIG = {
+  componentsPath: './components'
+};
 
 install();
 
@@ -10,15 +14,27 @@ function install() {
     characterData: true /* we are interested in bang nodes (which start as comments) */
   });
   findBangs(transformBang); 
+  self.use = use;
 }
 
-function transformBangs(...args) {
-  console.log('transform all', args);
+function transformBangs(records) {
+  records.forEach(record => {
+    const {addedNodes} = record;
+    DEBUG && console.log(record);
+
+    if ( !addedNodes ) return;
+
+    for( const node of addedNodes ) {
+      // search and transform each added subtree
+      findBangs(transformBang, node);  
+    }
+  });
 }
 
 function transformBang(current) {
+  DEBUG && console.log({transformBang},{current});
   const [name, data] = getBangDetails(current);
-  // console.log(name, data, current);
+  DEBUG && console.log({name, data});
 
   // replace the bang node (comment) with its actual custom element node
   const actualElement = createElement(name, data);
@@ -26,23 +42,41 @@ function transformBang(current) {
 }
 
 function findBangs(callback, root = document.documentElement) {
-  const iterator = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT, {
+  const Acceptor = {
     acceptNode(node) {
+      if ( node.nodeType !== Node.COMMENT_NODE ) {
+        return NodeFilter.FILTER_SKIP;
+      }
       const [name] = getBangDetails(node);
       if ( name.match(DOUBLE_BARREL) ) {
         return NodeFilter.FILTER_ACCEPT;
+      } else {
+        return NodeFilter.FILTER_REJECT;
       }
     }
-  });
+  };
+  const iterator = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT, Acceptor);
 
   const replacements = [];
 
-  while (true) {
-    const current = iterator.nextNode();
-    if ( ! current ) break;
+  // handle root node
+    // it's a special case because it will be present in the iteration even if
+    // the NodeFilter would filter it out if it were not the root
+  let current = iterator.currentNode;
 
-    replacements.push(() => transformBang(current));
+  if ( Acceptor.acceptNode(current) === NodeFilter.FILTER_ACCEPT ) {
+    const target = current;
+    replacements.push(() => transformBang(target));
   }
+
+  // handle any descendents
+    while (true) {
+      current = iterator.nextNode();
+      if ( ! current ) break;
+
+      const target = current;
+      replacements.push(() => transformBang(target));
+    }
 
   while(replacements.length) {
     replacements.pop()();
@@ -66,17 +100,55 @@ function createElement(name, data) {
   return element;
 }
 
-export function use(name) {
-  self.customElements.whenDefined(name).then(obj => console.log(name, 'defined', obj));
+function toDOM(str) {
+	const f = (new DOMParser).parseFromString(
+			`<template>${str}</template>`,"text/html"
+		).head.firstElementChild.content;
+	f.normalize();
+	return f;
+}
+
+async function fetchMarkup(name) {
+  const url = `${CONFIG.componentsPath}/${name}/markup.html`;
+  const markupText = await fetch(url).then(r => { 
+    if ( r.ok ) {
+      return r.text();
+    } 
+    throw new TypeError(`Fetch error: ${url}, ${r.statusText}`);
+  });
+  return markupText;
+}
+
+function use(name) {
+  self.customElements.whenDefined(name).then(obj => DEBUG && console.log(name, 'defined', obj));
   self.customElements.define(name, class extends HTMLElement {
-    constructor() {
+    constructor(state) {
       super();
-      console.log(name, 'constructed');
+      DEBUG && console.log(name, 'constructed');
+      fetchMarkup(name)
+        .then(markup => {
+          const cooked = cook.call(this, markup, state);
+          const nodes = toDOM(cooked);
+          const shadow = this.attachShadow({mode:'open'});
+          shadow.append(nodes);
+        }).catch(err => console.warn(err));
     }
 
     connectedCallback() {
-      console.log(name, 'connected');
+      DEBUG && console.log(name, 'connected');
     }
   });
 }
 
+function cook(markup, state = {var1: 'hiiii'}) {
+  let cooked = '';
+  try {
+    with(state) {
+      cooked = eval("(function () { return `"+markup+"`; }())");  
+    }
+    return cooked;
+  } catch(error) {
+    console.error('Template error', {markup, state, error});
+    throw error;
+  }
+}
