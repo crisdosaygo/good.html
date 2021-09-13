@@ -1,7 +1,70 @@
 const DOUBLE_BARREL = /\w+-\w*/;
-const DEBUG = false;
+const FUNC_CALL = /\);?$/;
+const DEBUG = true;
 const CONFIG = {
   componentsPath: './components'
+};
+const EVENTS = [
+  'click',
+  'pointerdown',
+  'pointerup',
+  'pointermove',
+  'mousedown',
+  'mouseup',
+  'mousemove',
+  'touchstart',
+  'touchend',
+  'touchmove',
+  'touchcancel',
+  'dblclick',
+  'dragstart',
+  'dragend',
+  'dragmove',
+  'drag',
+  'mouseover',
+  'mouseout',
+  'focus',
+  'blur',
+  'focusin',
+  'focusout',
+  'scroll',
+];
+const BangBase = (name) => class Base extends HTMLElement {
+  constructor(state) {
+    super();
+    DEBUG && console.log(name, 'constructed');
+    fetchMarkup(name)
+      .then(markup => {
+        const cooked = cook.call(this, markup, state);
+        const nodes = toDOM(cooked);
+        const selector = EVENTS.map(e => `[on${e}]`).join(', ');
+        const listening = nodes.querySelectorAll(selector);
+        for( const node of listening ) {
+          const {attributes:attrs} = node;
+          for( let {name,value} of attrs ) {
+            if ( ! name.startsWith('on') ) continue;
+            value = value.trim();
+            if ( ! value ) continue;
+            const ender = value.match(FUNC_CALL) ? '' : '(event)';
+            node.setAttribute(name, `this.getRootNode().host.${value}${ender}`);
+          }
+        }
+        // not necessary
+          /**
+            // reparse
+            const container = document.createElement('div');
+            container.appendChild(nodes);
+            const clearNodes = toDOM(container.innerHTML);
+          **/
+        const shadow = this.attachShadow({mode:'open'});
+        shadow.append(nodes);
+      }).catch(err => console.warn(err));
+
+  }
+
+  connectedCallback() {
+    DEBUG && console.log(name, 'connected');
+  }
 };
 
 install();
@@ -15,6 +78,7 @@ function install() {
   });
   findBangs(transformBang); 
   self.use = use;
+  self.BangBase = BangBase;
 }
 
 function transformBangs(records) {
@@ -119,29 +183,40 @@ async function fetchMarkup(name) {
   return markupText;
 }
 
-function use(name) {
-  self.customElements.whenDefined(name).then(obj => DEBUG && console.log(name, 'defined', obj));
-  self.customElements.define(name, class extends HTMLElement {
-    constructor(state) {
-      super();
-      DEBUG && console.log(name, 'constructed');
-      fetchMarkup(name)
-        .then(markup => {
-          const cooked = cook.call(this, markup, state);
-          const nodes = toDOM(cooked);
-          const shadow = this.attachShadow({mode:'open'});
-          shadow.append(nodes);
-        }).catch(err => console.warn(err));
-    }
-
-    connectedCallback() {
-      DEBUG && console.log(name, 'connected');
-    }
+async function fetchScript(name) {
+  const url = `${CONFIG.componentsPath}/${name}/script.js`;
+  const scriptText = await fetch(url).then(r => { 
+    if ( r.ok ) {
+      return r.text();
+    } 
+    throw new TypeError(`Fetch error: ${url}, ${r.statusText}`);
   });
+  return scriptText;
+}
+
+function use(name) {
+  fetchScript(name)
+    .then(script => {
+      const Base = BangBase(name);
+      const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;
+      console.log(Compose);
+      const Component = eval(Compose);
+      self.customElements.define(name, Component);
+    }).catch(err => console.warn(err));
+  self.customElements.whenDefined(name).then(obj => DEBUG && console.log(name, 'defined', obj));
+  //self.customElements.define(name, BangBase(name));
 }
 
 function cook(markup, state = {var1: 'hiiii'}) {
   let cooked = '';
+  try {
+    state._self = state;
+  } catch(e) {
+    DEBUG && console.warn(
+      `Cannot add '_self' self-reference property to state. 
+        This enables a component to inspect the top-level state object it is passed.`
+    );
+  }
   try {
     with(state) {
       cooked = eval("(function () { return `"+markup+"`; }())");  
