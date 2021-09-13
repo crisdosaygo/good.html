@@ -23,5 +23,10 @@
   for a descendent component, and this object value will be placed into the global
   key value store automatically and have a key issued for it, and that object 
   will be replaced by its key, so that the descendent component can look up the object.
+  --
+  so we add a template tag function at this point to handle rewriting this state.
+  two cases:
+  SAVE STAGE state=${object} template TAG stage: save object to global state store, and put key in the slot
+  LOAD STAGE state=:key component construction stage. get state attribute value, and retrieve state object from the global key value store.
 </p>
 
