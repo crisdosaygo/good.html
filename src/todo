@@ -1,10 +1,3 @@
-- constructor: 
-- get component/markup.html using fetch
+- discover race condition, somehow we are calling on comment twice after making an async use
 - prepend component/style.css to markup
-- add component/script.js to some evaluation context
-- add template tag
-- pass in state
-- convert to dom
-- find all on<event> attributes
-- convert them to refer to methods off the class of the custom element
 
