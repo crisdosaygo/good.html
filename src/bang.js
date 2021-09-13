@@ -1,10 +1,14 @@
 const DOUBLE_BARREL = /\w+-\w*/;
 const FUNC_CALL = /\);?$/;
-const DEBUG = true;
+const DEBUG = false;
 const CONFIG = {
   componentsPath: './components'
 };
+const TRANSFORMING = new WeakSet();
+
 const EVENTS = [
+  'error',
+  'load',
   'click',
   'pointerdown',
   'pointerup',
@@ -33,6 +37,13 @@ const BangBase = (name) => class Base extends HTMLElement {
   constructor(state) {
     super();
     DEBUG && console.log(name, 'constructed');
+    this.classList.add('bang-el');
+    // this is like an onerror event for stylesheet's 
+      // we do this because we want to display elements if they have no stylesheet defined
+      // becuase it's reasonabgle to want to not include a stylesheet with your custom element
+    fetchStyle(name).catch(err => this.setVisible());
+
+    // get any markup and insert into the shadow DOM
     fetchMarkup(name)
       .then(markup => {
         const cooked = cook.call(this, markup, state);
@@ -58,12 +69,27 @@ const BangBase = (name) => class Base extends HTMLElement {
           **/
         const shadow = this.attachShadow({mode:'open'});
         shadow.append(nodes);
-      }).catch(err => console.warn(err));
-
+      }).catch(err => DEBUG && console.warn(err));
+    const {attributes:attrs} = this;
+    for( let {name,value} of attrs ) {
+      if ( ! name.startsWith('on') ) continue;
+      value = value.trim();
+      if ( ! value ) continue;
+      const ender = value.match(FUNC_CALL) ? '' : '(event)';
+      this.setAttribute(name, `this.${value}${ender}`);
+    }
   }
 
   connectedCallback() {
     DEBUG && console.log(name, 'connected');
+  }
+
+  attributeChangedCallback(...args) {
+    console.log(`attrs`, this, ...args);
+  }
+
+  setVisible() {
+    this.classList.add('bang-styled');
   }
 };
 
@@ -103,6 +129,7 @@ function transformBang(current) {
   // replace the bang node (comment) with its actual custom element node
   const actualElement = createElement(name, data);
   current.parentElement.replaceChild(actualElement, current);
+  //TRANSFORMING.delete(current);
 }
 
 function findBangs(callback, root = document.documentElement) {
@@ -129,8 +156,11 @@ function findBangs(callback, root = document.documentElement) {
   let current = iterator.currentNode;
 
   if ( Acceptor.acceptNode(current) === NodeFilter.FILTER_ACCEPT ) {
-    const target = current;
-    replacements.push(() => transformBang(target));
+    if ( !TRANSFORMING.has(current) ) {
+      TRANSFORMING.add(current);
+      const target = current;
+      replacements.push(() => transformBang(target));
+    }
   }
 
   // handle any descendents
@@ -138,8 +168,11 @@ function findBangs(callback, root = document.documentElement) {
       current = iterator.nextNode();
       if ( ! current ) break;
 
-      const target = current;
-      replacements.push(() => transformBang(target));
+      if ( !TRANSFORMING.has(current) ) {
+        TRANSFORMING.add(current);
+        const target = current;
+        replacements.push(() => transformBang(target));
+      }
     }
 
   while(replacements.length) {
@@ -173,12 +206,22 @@ function toDOM(str) {
 }
 
 async function fetchMarkup(name) {
-  const url = `${CONFIG.componentsPath}/${name}/markup.html`;
-  const markupText = await fetch(url).then(r => { 
+  const baseUrl = `${CONFIG.componentsPath}/${name}`;
+  const markupUrl = `${baseUrl}/markup.html`;
+  const markupText = await fetch(markupUrl).then(async r => { 
+    let text = '';
     if ( r.ok ) {
-      return r.text();
-    } 
-    throw new TypeError(`Fetch error: ${url}, ${r.statusText}`);
+      text = await r.text();
+    } else {
+      // if no markup is given we just insert all content within the custom element
+      text = `<slot></slot>`;
+    }
+    return `<link 
+      rel=stylesheet 
+      href=${baseUrl}/style.css 
+      onload=setVisible>${
+      text
+    }`;
   });
   return markupText;
 }
@@ -194,17 +237,38 @@ async function fetchScript(name) {
   return scriptText;
 }
 
-function use(name) {
-  fetchScript(name)
+async function fetchStyle(name) {
+  const url = `${CONFIG.componentsPath}/${name}/style.css`;
+  const styleText = await fetch(url).then(r => { 
+    if ( r.ok ) {
+      return r.text();
+    } 
+    throw new TypeError(`Fetch error: ${url}, ${r.statusText}`);
+  });
+  console.log({name,styleText});
+  return styleText;
+}
+
+async function use(name) {
+  let component;
+  self.customElements.whenDefined(name).then(obj => DEBUG && console.log(name, 'defined', obj));
+
+  await fetchScript(name)
     .then(script => {
       const Base = BangBase(name);
       const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;
-      console.log(Compose);
       const Component = eval(Compose);
-      self.customElements.define(name, Component);
-    }).catch(err => console.warn(err));
-  self.customElements.whenDefined(name).then(obj => DEBUG && console.log(name, 'defined', obj));
-  //self.customElements.define(name, BangBase(name));
+      component = Component;
+    }).catch(() => {
+      const Base = BangBase(name);
+      component = Base;
+    });
+
+  // pre-fetch to prevent FOUC
+  //await fetchStyle(name);
+
+  // define it
+  self.customElements.define(name, component);
 }
 
 function cook(markup, state = {var1: 'hiiii'}) {

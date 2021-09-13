@@ -1,0 +1,4 @@
+:host(*) {
+  display: block;
+  border: 3px solid red;
+}
