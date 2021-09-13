@@ -4,29 +4,19 @@
 <script>
   use('test-component');
   use('test-void');
+  setState('SomeObjectKey', {
+    var1: 'hiii',
+    sub: {
+      moreState: 'hello'
+    }
+  });
 </script>
 <test-component>
   <h1 onclick=Confirm>Hello there</h1>
 </test-component>
-<!test-void onclick=Confirm>
-<test-profile state=SomeObject></test-profile>
+<!test-void onclick=Confirm state=SomeObjectKey>
+<test-profile state=SomeObjectKey></test-profile>
 <p>
-  What does SomeObject refer to?
-  A property on the test-profile class?
-  A global object?
-  An object in the scope that contains all state?
-  A key on a global state object?
-  A property of a containing component?
-  --
-  I think a global key value store for state is a good idea.
-  And we can also pass a property from a containing component as the state
-  for a descendent component, and this object value will be placed into the global
-  key value store automatically and have a key issued for it, and that object 
-  will be replaced by its key, so that the descendent component can look up the object.
-  --
-  so we add a template tag function at this point to handle rewriting this state.
-  two cases:
-  SAVE STAGE state=${object} template TAG stage: save object to global state store, and put key in the slot
-  LOAD STAGE state=:key component construction stage. get state attribute value, and retrieve state object from the global key value store.
+  LOAD STAGE state=:key component construction stage. get state attribute value, and retrieve state object from the global key value store. and pass it into the markup cooking process.
 </p>
 

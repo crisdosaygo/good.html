@@ -1,10 +1,25 @@
 const DOUBLE_BARREL = /\w+-\w*/;
 const FUNC_CALL = /\);?$/;
+const BK = '_bang_key';
 const DEBUG = false;
 const CONFIG = {
-  componentsPath: './components'
+  componentsPath: './components',
+  allowUnset: false
 };
 const TRANSFORMING = new WeakSet();
+const STATE = new Map();
+let systemKeys = 1;
+
+class StateKey extends String {
+  constructor (keyNumber) {
+    if ( keyNumber == undefined ) {
+      super(`system-key:${systemKeys++}`); 
+    } else {
+      super(`client-key:${keyNumber}`);
+    }
+    return this;
+  }
+}
 
 const EVENTS = [
   'error',
@@ -45,8 +60,8 @@ const BangBase = (name) => class Base extends HTMLElement {
 
     // get any markup and insert into the shadow DOM
     fetchMarkup(name)
-      .then(markup => {
-        const cooked = cook.call(this, markup, state);
+      .then(async markup => {
+        const cooked = await cook.call(this, markup, state);
         const nodes = toDOM(cooked);
         const selector = EVENTS.map(e => `[on${e}]`).join(', ');
         const listening = nodes.querySelectorAll(selector);
@@ -105,6 +120,11 @@ function install() {
   findBangs(transformBang); 
   self.use = use;
   self.BangBase = BangBase;
+  self.setState = setState;
+}
+
+function setState(key, state) {
+  console.info(`Implement set state`);
 }
 
 function transformBangs(records) {
@@ -245,7 +265,7 @@ async function fetchStyle(name) {
     } 
     throw new TypeError(`Fetch error: ${url}, ${r.statusText}`);
   });
-  console.log({name,styleText});
+  DEBUG && console.log({name,styleText});
   return styleText;
 }
 
@@ -271,7 +291,7 @@ async function use(name) {
   self.customElements.define(name, component);
 }
 
-function cook(markup, state = {var1: 'hiiii'}) {
+async function cook(markup, state = {var1: 'hiiii', sub: {moreState:'hello'}}) {
   let cooked = '';
   try {
     state._self = state;
@@ -283,7 +303,7 @@ function cook(markup, state = {var1: 'hiiii'}) {
   }
   try {
     with(state) {
-      cooked = eval("(function () { return `"+markup+"`; }())");  
+      cooked = await eval("(async function () { return await FUNC`${state}"+markup+"`; }())");  
     }
     return cooked;
   } catch(error) {
@@ -291,3 +311,149 @@ function cook(markup, state = {var1: 'hiiii'}) {
     throw error;
   }
 }
+
+async function FUNC(strings, ...vals) {
+  const s = Array.from(strings);
+  let str = '';
+
+  // by convention (see how we construct the template that we tag with FUNC)
+  const state = vals.shift();
+  s.shift();
+
+  vals = await Promise.all(vals.map(v => process(v, state)));
+
+  while(s.length) {
+    str += s.shift();
+    if ( vals.length ) {
+      str += vals.shift();
+    }
+  }
+
+  return str;
+}
+
+async function process(x, state) {
+  if ( typeof x === 'string' ) {
+    return x;
+  }
+
+  else 
+
+  if ( typeof x === 'number' ) {
+    return x+'';
+  }
+
+  else
+
+  if ( typeof x === 'boolean' ) {
+    return x+'';
+  }
+
+  else
+
+  if ( x === undefined || x === null ) {
+    if ( CONFIG.allowUnset ) {
+      return CONFIG.unsetPlaceholder || '';
+    } else {
+      throw new TypeError(`Value cannot be unset, was: ${x}`);
+    }
+  }
+
+  else
+
+  if ( x instanceof Promise ) {
+    return await x.catch(err => err+'');
+  } 
+
+  else
+
+  if ( x instanceof Element ) {
+    return x.outerHTML;
+  }
+
+  else
+
+  if ( x instanceof Node ) {
+    return x.textContent;
+  }
+
+  else
+
+  if ( isIterable(x) ) {
+    // these promises must return primitive types that can be stringified
+    return (await Promise.all(Array.from(x)).catch(e => err+'')).join('\n');
+  }
+
+  else
+
+
+  if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
+    return await x(state);
+  }
+
+  else
+
+  if ( x instanceof Function ) {
+    return x(state);
+  }
+
+  else  /* it's an object, of some type */
+
+  {
+    // State store
+      // note about garbage collection and memory:
+        // in anything but a simple replacement of an object with the same identity
+        // the application must handle its own garbage collection of STATE items
+        // this is not a weak map
+
+      /* so we assume it's state and save it */
+      /* to the global state store */
+      /* which is two-sides so we can find a key */
+      /* given an object. This avoid duplicates */
+      /* so: */
+
+    let stateKey;
+
+    // own keys
+      // an object can specify it's own state key
+      // to provide a single logical identity for a piece of state that may
+      // be represented by many objects
+
+    if ( Object.prototype.hasOwnProperty.call(x, BK) ) {
+      stateKey = new StateKey(x[BK]);
+      // in that case, replace the previously saved object with the same logical identity
+      const oldX = STATE.get(stateKey);
+      STATE.delete(oldX);
+
+      STATE.set(stateKey, x);
+      STATE.set(x, stateKey);
+    } 
+
+    else  /* or the system can come up with a state key */
+
+    {
+      if ( STATE.has(x) ) {
+        stateKey = STATE.get(x);
+      } else {
+        stateKey = new StateKey();
+        STATE.set(stateKey, x);
+        STATE.set(x, stateKey);
+      }
+    }
+
+    stateKey += '';
+
+    console.log({stateKey});
+
+    return stateKey;
+  }
+}
+
+function isIterable(y) {
+  if ( y === null ) {
+    return false;
+  }
+
+  return y[Symbol.iterator] instanceof Function;
+}
+
