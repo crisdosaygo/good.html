@@ -5,9 +5,7 @@
   >
 </p>
 
-# *BANG!*
-
-A custom element library for the new age.
+# *BANG!* *A custom element library for the new age.*
 
 ### regular tags
 
