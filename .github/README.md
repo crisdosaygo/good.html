@@ -1,5 +1,8 @@
 <p align=center>
-  <img width=80% src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png>
+  <img width=80% 
+       src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20tomato-whitesmoke%20(1).png
+       src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+  >
 </p>
 
 # *BANG!*
@@ -30,3 +33,9 @@ All the above are VALID HTML and converted by our mutation-aware parser into val
 ------
 
 ***The problem of self-closing tags in HTML has been solved. Hoo-ray!***
+
+<p align=center>
+  <img width=80% 
+       src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+  >
+</p>
