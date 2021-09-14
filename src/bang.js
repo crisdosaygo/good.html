@@ -289,6 +289,13 @@ function toDOM(str) {
 }
 
 async function fetchMarkup(name, comp) {
+  // improvement
+    // we should make any subsequent calls for name wait for the first call to complete
+    // otherwise we create many in sync
+    // maybe
+    // if started.has(key) && not cache.has(key) wait cache.has(key)
+    // if not started.has(key) started.add(key) and start
+
   const baseUrl = `${CONFIG.componentsPath}/${name}`;
   const key = `markup${name}`;
   const styleKey = `style${name}`;
