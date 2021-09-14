@@ -10,6 +10,7 @@ const CONFIG = {
 const TRANSFORMING = new WeakSet();
 const STATE = new Map();
 const CACHE = new Map();
+const Started = new Set();
 let systemKeys = 1;
 const Counts = {
   started: 0,
@@ -162,11 +163,14 @@ async function loaded() {
     const finishedWhatWeStarted = Counts.finished === Counts.started;
     return nonZeroCount && finishedWhatWeStarted;
   };
+  return becomesTrue(loadCheck);
+}
 
+async function becomesTrue(check = () => true) {
   const waiter = new Promise(async res => {
     while(true) {
       await sleep(47);
-      if ( loadCheck() ) {
+      if ( check() ) {
         break;
       }
     }
@@ -289,16 +293,24 @@ function toDOM(str) {
 }
 
 async function fetchMarkup(name, comp) {
-  // improvement
-    // we should make any subsequent calls for name wait for the first call to complete
+  // cache first
+    // we make any subsequent calls for name wait for the first call to complete
     // otherwise we create many in sync
-    // maybe
-    // if started.has(key) && not cache.has(key) wait cache.has(key)
-    // if not started.has(key) started.add(key) and start
+    // note that this disables hot realoding on server side from client 
+    // requires page reload or cache flush
 
-  const baseUrl = `${CONFIG.componentsPath}/${name}`;
   const key = `markup${name}`;
+
+  if ( Started.has(key) ) {
+    if ( ! CACHE.has(key) ) {
+      await becomesTrue(() => CACHE.has(key));
+    }
+  } else {
+    Started.add(key);
+  }
+
   const styleKey = `style${name}`;
+  const baseUrl = `${CONFIG.componentsPath}/${name}`;
   if ( CACHE.has(key) ) {
     const markup = CACHE.get(key);
     if ( CACHE.get(styleKey) instanceof Error ) {
@@ -350,9 +362,19 @@ async function fetchMarkup(name, comp) {
 
 async function fetchScript(name) {
   const key = `script${name}`;
+
+  if ( Started.has(key) ) {
+    if ( ! CACHE.has(key) ) {
+      await becomesTrue(() => CACHE.has(key));
+    }
+  } else {
+    Started.add(key);
+  }
+
   if ( CACHE.has(key) ) {
     return CACHE.get(key);
   }
+
   const url = `${CONFIG.componentsPath}/${name}/script.js`;
   let resp;
   const scriptText = await fetch(url).then(r => { 
@@ -368,6 +390,15 @@ async function fetchScript(name) {
 
 async function fetchStyle(name) {
   const key = `style${name}`;
+
+  if ( Started.has(key) ) {
+    if ( ! CACHE.has(key) ) {
+      await becomesTrue(() => CACHE.has(key));
+    }
+  } else {
+    Started.add(key);
+  }
+
   if ( CACHE.has(key) ) {
     return CACHE.get(key);
   }
