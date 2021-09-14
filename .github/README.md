@@ -25,7 +25,7 @@ A custom element library for the new age.
 <! custom-el6>
 ```
 
-All the above are VALID HTML and converted by our mutation-aware parser into valid custom elements.
+All the above are VALID HTML and converted by our mutation-aware parser into valid custom elements, the only thing that doesn't work is *syntax highlighting* for this `.bang!html`.
 
 ------
 
