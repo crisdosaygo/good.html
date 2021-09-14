@@ -25,6 +25,8 @@ A custom element library for the new age.
 <! custom-el6>
 ```
 
-*All VALID html and converted by our mutation-aware parser into valid custom elements*
+All the above are VALID HTML and converted by our mutation-aware parser into valid custom elements.
 
-### THE PROBLEM OF VOID SELF-CLOSING TAGS IN HTML HAS BEEN SOLVED HOO RAY!
+------
+
+***The problem of self-closing tags in HTML has been solved. Hoo-ray!***
