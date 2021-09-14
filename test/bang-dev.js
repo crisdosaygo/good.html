@@ -305,6 +305,7 @@ async function fetchMarkup(name, comp) {
       // then we need to set the cache for markup again and remove the link to the 
       // stylesheet which failed 
     } else {
+      comp.setVisible();
       return markup;
     }
   }
@@ -324,12 +325,16 @@ async function fetchMarkup(name, comp) {
     } else {
       /* could try inlining styles for increase speed */
       // then when do we add bang-styled ? straight await ?
+      /*
       resp = `<link 
         rel=stylesheet 
         href=${baseUrl}/style.css 
         onload=setVisible>${
         text
       }`;
+      */
+      resp = `<style>${await fetchStyle(name).catch(e => '')}</style>${text}`;
+      comp.setVisible();
     }
     return resp;
   }).finally(async () => CACHE.set(key, await resp));
