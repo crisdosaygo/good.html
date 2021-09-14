@@ -1,4 +1,8 @@
-# bang
+<p align=center>
+  <img src=new.png>
+</p>
+
+# BANG!
 
 BANG
 
