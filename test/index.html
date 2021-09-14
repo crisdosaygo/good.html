@@ -4,18 +4,48 @@
 <script>
   use('test-component');
   use('test-void');
+  use('space-cadet');
   setState('SomeObjectKey', {
     var1: 'hiii',
     sub: {
       moreState: 'hello'
     }
   });
+
+  start();
+
+  async function start() {
+    console.log('loading...');
+    await loaded();
+    console.log('loaded');
+    alert('Will set new state in 3 seconds after you click OK');
+    await sleep(3000);
+    setState('SomeObjectKey', {
+      var1: 'i am fucking awesome',
+      sub: {
+        moreState: 'What are you doing today?'
+      }
+    });
+    alert('Will run framerate test 2 seconds after you click OK');
+    await sleep(2000);
+    const MAX = 6;
+    let iter = 0;
+    while(iter < MAX) {
+      setState('SomeObjectKey', {
+        var1: 'i am fucking awesome times ' + iter,
+        sub: {
+          moreState: `${iter}: What are you doing today?`
+        }
+      });
+      iter++;
+      await sleep(500);
+    }
+  }
 </script>
 <test-component>
   <h1 onclick=Confirm>Hello there</h1>
 </test-component>
 <!test-void onclick=Confirm state=SomeObjectKey>
-<test-profile state=SomeObjectKey></test-profile>
 <p>
   LOAD STAGE state=:key component construction stage. get state attribute value, and retrieve state object from the global key value store. and pass it into the markup cooking process.
 </p>

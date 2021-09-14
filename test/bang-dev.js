@@ -2,13 +2,19 @@ const DOUBLE_BARREL = /\w+-\w*/;
 const FUNC_CALL = /\);?$/;
 const BK = '_bang_key';
 const DEBUG = false;
+const sleep = ms => new Promise(res => setTimeout(res, ms));
 const CONFIG = {
   componentsPath: './components',
   allowUnset: false
 };
 const TRANSFORMING = new WeakSet();
 const STATE = new Map();
+const CACHE = new Map();
 let systemKeys = 1;
+const Counts = {
+  started: 0,
+  finished: 0
+};
 
 class StateKey extends String {
   constructor (keyNumber) {
@@ -48,8 +54,12 @@ const EVENTS = [
   'focusout',
   'scroll',
 ];
+
 const BangBase = (name) => class Base extends HTMLElement {
-  constructor(state) {
+  constructor() {
+    Counts.started++;
+    let state;
+
     super();
     DEBUG && console.log(name, 'constructed');
     this.classList.add('bang-el');
@@ -58,8 +68,31 @@ const BangBase = (name) => class Base extends HTMLElement {
       // becuase it's reasonabgle to want to not include a stylesheet with your custom element
     fetchStyle(name).catch(err => this.setVisible());
 
+    const {attributes:attrs} = this;
+    for( let {name,value} of attrs ) {
+      if ( name === 'state' ) {
+        const stateKey = value; 
+        const stateObject = STATE.get(stateKey);
+        if ( isUnset(stateObject) ) {
+          throw new TypeError(`
+            <${name}> constructor passed state key ${stateKey} which is unset.
+            It must be set.
+          `);
+        }
+        state = stateObject;
+      } else {
+        // set event handlers to custom element class instance methods
+        if ( ! name.startsWith('on') ) continue;
+        value = value.trim();
+        if ( ! value ) continue;
+        if ( value.startsWith('this') ) continue;
+        const ender = value.match(FUNC_CALL) ? '' : '(event)';
+        this.setAttribute(name, `this.${value}${ender}`);
+      }
+    }
+
     // get any markup and insert into the shadow DOM
-    fetchMarkup(name)
+    fetchMarkup(name, this)
       .then(async markup => {
         const cooked = await cook.call(this, markup, state);
         const nodes = toDOM(cooked);
@@ -71,6 +104,7 @@ const BangBase = (name) => class Base extends HTMLElement {
             if ( ! name.startsWith('on') ) continue;
             value = value.trim();
             if ( ! value ) continue;
+            if ( value.startsWith('this.getRootNode().host') ) continue;
             const ender = value.match(FUNC_CALL) ? '' : '(event)';
             node.setAttribute(name, `this.getRootNode().host.${value}${ender}`);
           }
@@ -84,15 +118,9 @@ const BangBase = (name) => class Base extends HTMLElement {
           **/
         const shadow = this.attachShadow({mode:'open'});
         shadow.append(nodes);
-      }).catch(err => DEBUG && console.warn(err));
-    const {attributes:attrs} = this;
-    for( let {name,value} of attrs ) {
-      if ( ! name.startsWith('on') ) continue;
-      value = value.trim();
-      if ( ! value ) continue;
-      const ender = value.match(FUNC_CALL) ? '' : '(event)';
-      this.setAttribute(name, `this.${value}${ender}`);
-    }
+      }).catch(
+        err => DEBUG && console.warn(err)
+      ).finally(() => Counts.finished++);
   }
 
   connectedCallback() {
@@ -121,10 +149,45 @@ function install() {
   self.use = use;
   self.BangBase = BangBase;
   self.setState = setState;
+  self.STATE = STATE;
+  self.loaded = loaded;
+  self.sleep = sleep;
+  self.Counts = Counts;
+  self.CACHE = CACHE;
+}
+
+async function loaded() {
+  const loadCheck = () => {
+    const nonZeroCount = Counts.started > 0; 
+    const finishedWhatWeStarted = Counts.finished === Counts.started;
+    return nonZeroCount && finishedWhatWeStarted;
+  };
+
+  const waiter = new Promise(async res => {
+    while(true) {
+      await sleep(47);
+      if ( loadCheck() ) {
+        break;
+      }
+    }
+    res();
+  });
+
+  return waiter;
 }
 
 function setState(key, state) {
-  console.info(`Implement set state`);
+  STATE.set(key, state);
+  STATE.set(state, key);
+  if ( document.body ) {
+    // we need to remove styled because it will reload after we blit the HTML
+    Array.from(document.querySelectorAll('.bang-styled')).forEach(node => {
+      node.classList.remove('bang-styled');
+    });
+    const HTML = document.body.innerHTML;
+    document.body.innerHTML = '';
+    document.body.innerHTML = HTML;
+  }
 }
 
 function transformBangs(records) {
@@ -225,9 +288,28 @@ function toDOM(str) {
 	return f;
 }
 
-async function fetchMarkup(name) {
+async function fetchMarkup(name, comp) {
   const baseUrl = `${CONFIG.componentsPath}/${name}`;
+  const key = `markup${name}`;
+  const styleKey = `style${name}`;
+  if ( CACHE.has(key) ) {
+    const markup = CACHE.get(key);
+    if ( CACHE.get(styleKey) instanceof Error ) {
+      comp.setVisible();
+    }
+    
+    // if there is an error style and we are still includig that link
+    // we generate and cache the markup again to omit such a link element
+    if ( CACHE.get(styleKey) instanceof Error &&
+         markup.includes(`href=${baseUrl}/style.css`) ) {
+      // then we need to set the cache for markup again and remove the link to the 
+      // stylesheet which failed 
+    } else {
+      return markup;
+    }
+  }
   const markupUrl = `${baseUrl}/markup.html`;
+  let resp;
   const markupText = await fetch(markupUrl).then(async r => { 
     let text = '';
     if ( r.ok ) {
@@ -236,35 +318,57 @@ async function fetchMarkup(name) {
       // if no markup is given we just insert all content within the custom element
       text = `<slot></slot>`;
     }
-    return `<link 
-      rel=stylesheet 
-      href=${baseUrl}/style.css 
-      onload=setVisible>${
-      text
-    }`;
-  });
+    if ( CACHE.get(styleKey) instanceof Error ) { 
+      resp = text; 
+      comp.setVisible();
+    } else {
+      /* could try inlining styles for increase speed */
+      // then when do we add bang-styled ? straight await ?
+      resp = `<link 
+        rel=stylesheet 
+        href=${baseUrl}/style.css 
+        onload=setVisible>${
+        text
+      }`;
+    }
+    return resp;
+  }).finally(async () => CACHE.set(key, await resp));
   return markupText;
 }
 
 async function fetchScript(name) {
+  const key = `script${name}`;
+  if ( CACHE.has(key) ) {
+    return CACHE.get(key);
+  }
   const url = `${CONFIG.componentsPath}/${name}/script.js`;
+  let resp;
   const scriptText = await fetch(url).then(r => { 
     if ( r.ok ) {
-      return r.text();
+      resp = r.text();
+      return resp;
     } 
-    throw new TypeError(`Fetch error: ${url}, ${r.statusText}`);
-  });
+    resp = new TypeError(`Fetch error: ${url}, ${r.statusText}`);
+    throw resp;
+  }).finally(async () => CACHE.set(key, await resp));
   return scriptText;
 }
 
 async function fetchStyle(name) {
+  const key = `style${name}`;
+  if ( CACHE.has(key) ) {
+    return CACHE.get(key);
+  }
   const url = `${CONFIG.componentsPath}/${name}/style.css`;
+  let resp;
   const styleText = await fetch(url).then(r => { 
     if ( r.ok ) {
-      return r.text();
+      resp = r.text();
+      return resp;
     } 
-    throw new TypeError(`Fetch error: ${url}, ${r.statusText}`);
-  });
+    resp = new TypeError(`Fetch error: ${url}, ${r.statusText}`);
+    throw resp;
+  }).finally(async () => CACHE.set(key, await resp));
   DEBUG && console.log({name,styleText});
   return styleText;
 }
@@ -351,7 +455,7 @@ async function process(x, state) {
 
   else
 
-  if ( x === undefined || x === null ) {
+  if ( isUnset(x) ) {
     if ( CONFIG.allowUnset ) {
       return CONFIG.unsetPlaceholder || '';
     } else {
@@ -420,7 +524,7 @@ async function process(x, state) {
       // be represented by many objects
 
     if ( Object.prototype.hasOwnProperty.call(x, BK) ) {
-      stateKey = new StateKey(x[BK]);
+      stateKey = new StateKey(x[BK])+'';
       // in that case, replace the previously saved object with the same logical identity
       const oldX = STATE.get(stateKey);
       STATE.delete(oldX);
@@ -435,7 +539,7 @@ async function process(x, state) {
       if ( STATE.has(x) ) {
         stateKey = STATE.get(x);
       } else {
-        stateKey = new StateKey();
+        stateKey = new StateKey()+'';
         STATE.set(stateKey, x);
         STATE.set(x, stateKey);
       }
@@ -457,3 +561,6 @@ function isIterable(y) {
   return y[Symbol.iterator] instanceof Function;
 }
 
+function isUnset(x) {
+  return x === undefined || x === null;
+}
