@@ -154,7 +154,7 @@ First we're going to add some **templated markup** to the `markup.html` files of
 
 Go ahead and paste the following HTML into `public/components/warm-greeter/markup.html`:
 
-```js
+```html
 <h1>Hello ${name}</h1>
 <p>We are very pleased to meet you <greet-count state=${greetCounts}>happy</greet-count> times</p>
 <button onclick=Regreet>Regreet!</button>
@@ -162,7 +162,7 @@ Go ahead and paste the following HTML into `public/components/warm-greeter/marku
 
 And also add the following markup to `public/components/greet-count/markup.html`:
 
-```js
+```html
 <span class=count>${value}</span>
 <slot></slot>
 ```
@@ -177,8 +177,9 @@ You'll learn more about component variables and state in the next step of this t
 
 Go back to your `public/index.html` file and change the code in the script tag and the greeter to this:
 
+`<script>` tag content:
+
 ```js
-<script>
   use('warm-greeter');
   setState('MyState', {
     name: 'Uncle Bob',
@@ -186,7 +187,16 @@ Go back to your `public/index.html` file and change the code in the script tag a
       value: 1
     }
   });
-</script>
+```
+
+And change, this:
+
+```js
+<!warm-greeter />
+```
+
+To this:
+```js
 <!warm-greeter state=MyState />
 ```
 
