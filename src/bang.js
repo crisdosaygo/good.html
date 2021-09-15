@@ -6,33 +6,10 @@
     bangKey: '_bang_key',
     componentsPath: './components',
     allowUnset: false,
-    EVENTS: [
-      'error',
-      'load',
-      'click',
-      'pointerdown',
-      'pointerup',
-      'pointermove',
-      'mousedown',
-      'mouseup',
-      'mousemove',
-      'touchstart',
-      'touchend',
-      'touchmove',
-      'touchcancel',
-      'dblclick',
-      'dragstart',
-      'dragend',
-      'dragmove',
-      'drag',
-      'mouseover',
-      'mouseout',
-      'focus',
-      'blur',
-      'focusin',
-      'focusout',
-      'scroll',
-    ]
+    EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
+      mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
+      dragmove drag mouseover mouseout focus blur focusin focusout scroll
+    `.split(/\s+/g).filter(s => s.length);
   };
   const STATE = new Map();
   const CACHE = new Map();
