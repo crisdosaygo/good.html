@@ -6,6 +6,7 @@
     bangKey: '_bang_key',
     componentsPath: './components',
     allowUnset: false,
+    unsetPlaceholder: '',
     EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
       mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
       dragmove drag mouseover mouseout focus blur focusin focusout scroll
@@ -380,9 +381,8 @@ install();
     else
 
     if ( isUnset(x) ) {
-      if ( CONFIG.allowUnset ) {
-        return CONFIG.unsetPlaceholder || '';
-      } else {
+      if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || '';
+      else {
         throw new TypeError(`Value cannot be unset, was: ${x}`);
       }
     }
