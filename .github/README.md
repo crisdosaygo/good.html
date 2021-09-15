@@ -7,7 +7,28 @@
 
 # *BANG!* *A custom element library for the new age.*
 
+### Introducing: self-closing custom elements 
+
+Void tags have come to the custom-element ecosystem. *With a **BANG!*
+
+***BANG!*** makes it easy to define and use self-closing web components in your app.
+
+```js
+<div>
+  <!custom-el2 />
+</div>
+```
+These special self-closing custom elements are known as **bang-tags** (*web components with a **bang!***)
+
+They are ***valid*** HTML comment tags that **BANG!** converts into valid [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components) when inserted.
+
+Like HTML void tags, when you use **bang! tags** you can omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
+
+Just don't omit the bang (!) because that's how we signal it's a self-closing void tag.
+
 ### regular tags
+
+**BANG!** also makes it easy to define and use regular custom elements:
 
 ```js
 <custom-el>
@@ -15,19 +36,7 @@
 </custom-el>
 ```
 
-### self-closing void custom element tags (*with a **bang!***)
-
-```js
-<div>
-  <!custom-el2 />
-</div>
-```
-
-All the above are ***valid*** HTML converted into valid [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components) when inserted.
-
-Just like regular HTML void tags, you can omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
-
-Just don't omit the bang (!) because that's how we signal it's a self-closing void tag.
+We've added a few special features to make it super productive to write markup using ***BANG!***. Read on to discover how ***BANG!*** makes using Custom Elements more productive. 
 
 ------
 
