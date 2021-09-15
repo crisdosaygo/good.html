@@ -231,7 +231,9 @@ That's the end of this mini-tutorial, so **congratulations!!* You've done really
 
 If you read on you'll discover more about some details you saw in the tutorial. 
 
-### Slots and variables
+-----------------
+
+## Slots and variables
 
 You'll notice in the examples above that we used both `<slot></slot>` elements and variables. In BANG! **slot** elements function just like they do in regular Web Components, so if you know how to use them there, you know how to use them in BANG. If you don't, you can read up on [information about slot elements here](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot).
 
@@ -245,7 +247,7 @@ In order to have your component display variables form an object, you need to do
 
 Let's run through an example to tease out the details of these 3 steps:
 
-#### 1. Save the state to the store
+### 1. Save the state to the store
 
 In a script you would write: 
 
@@ -260,7 +262,7 @@ setState('MyState', {
 
 You can now access the state object using the key `MyStae`.
 
-#### 2. Pass state to components
+### 2. Pass state to components
 
 In a markup file for a component (or in the top-level HTML file for your app you would write):
 
@@ -268,17 +270,19 @@ In a markup file for a component (or in the top-level HTML file for your app you
 <!test-el state=MyState />
 ```
 
-#### 3. Template the properties
+### 3. Template the properties
 
 In a markup file for your component, you could then write:
 
-```js
+```html
 <div class="big-banner ${deviceFormat}">
   <img src=wide-cat.png width=${screen.width*0.75}px
 </div>
 ```
 
-### The `state=` attribute, nested objects and template replacement slots
+-----------------------
+
+## The `state=` attribute, nested objects and template replacement slots
 
 You probably noticed above that you didn't need to refer to the parent object when using the **template replacement slot** syntax. This is because you can simply use the property name inside the markup of the component you pass the state to. If you need to access the outer state object, you can do that via the special `_self` property. 
 
@@ -286,7 +290,7 @@ Also what if you want pass **nested objects** in your state object to be the `st
 
 For example, in the tutorial we created a **warm-greeter** component that incorporated a sub-component, **greet-count** like so:
 
-```
+```html
 <h1>Hello ${name}</h1>
 <p>
   We are very pleased to meet you 
@@ -305,13 +309,17 @@ So in the above example from the tutorial **greet-count** behaves the same as if
 
 Instead of having to write that extra step, ***BANG!*** detects the nested object and saves it to the store for you, and passes to new components as they are created, without you having to worry about the details.
 
-### Async templating
+----------------------
+
+## Async templating
 
 ***BANG!*** can also accept state properties that are functions, async functions and Promises. In these cases, here's what happens:
 
 - Promise: ***BANG!*** awaits the Promise to resolve, then templates in the value returned by the resolved Promise.
 - Async Function: ***BANG!*** executes the async function and awaits the result, then templates in the value.
 - Function: ***BANG!*** executes the function and templates in the result.
+
+---------------
 
 ## More information
 
@@ -325,6 +333,7 @@ Plans may change, but right now, some aims for the future are:
 - add minimal DOM diffing using [vanillaview](https://github.com/i5ik/vanillaview) granular DOM updator function technology
 - add **state-queries** with automatic data binding, to fully decouple state objects from components, and decouple components from each other, and enables dependent components to be automatically re-rendered when data they use in the store changes.
 
+-----------------
 
 # Q&A 
 
