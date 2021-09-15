@@ -23,7 +23,9 @@
 </div>
 ```
 
-All the above are VALID HTML and converted by our mutation-aware parser into valid custom elements, you can even omit the closing slash `/>`, so `<!custom-el2>` is also a valid void tag.
+All the above are ***valid*** HTML and converted by our mutation-aware parser into valid custom elements.
+
+You can even omit the closing slash `/>`, so `<!custom-el2>` is also a valid void self-closing tag; just don't omit the bang (!) because that's how we signal it's a self-closing void tag.
 
 ------
 
