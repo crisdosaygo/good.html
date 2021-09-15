@@ -317,11 +317,15 @@ Plans may change, but right now, some aims for the future are:
 - add **state-queries** with automatic data binding, to fully decouple state objects from components, and decouple components from each other, and enables dependent components to be automatically re-rendered when data they use in the store changes.
 
 
-```
+# Q&A 
+
 ## Why use *BANG!* and not just a a &lt;custom-self-closing-tag /&gt; or a single &lt;custom-tag&gt;? 
 
 When the HTML parser [encounters a self-closing slash in a non-void element, it acts as if the slash isn't there](https://html.spec.whatwg.org/multipage/parsing.html#parse-error-non-void-html-element-start-tag-with-trailing-solidus), in effect opening the tag, and wrapping any subsequent content up to the next valid closing tag for that element, inside that open tag. This is not what you intend when you try to use a self-closing tag.
 
 Similarly, when the HTML parser encounters a single `<custom-tag>` it opens it, and so subsequent tags will be placed inside that open tag.
+
+--------
+
 
 # HTML MARKUP ***With a BANG!***
