@@ -9,7 +9,7 @@
     EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
       mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
       dragmove drag mouseover mouseout focus blur focusin focusout scroll
-    `.split(/\s+/g).filter(s => s.length);
+    `.split(/\s+/g).filter(s => s.length)
   };
   const STATE = new Map();
   const CACHE = new Map();
@@ -370,22 +370,13 @@ install();
   }
 
   async function process(x, state) {
-    if ( typeof x === 'string' ) {
-      return x;
-    }
-
+    if ( typeof x === 'string' ) return x;
     else 
 
-    if ( typeof x === 'number' ) {
-      return x+'';
-    }
-
+    if ( typeof x === 'number' ) return x+'';
     else
 
-    if ( typeof x === 'boolean' ) {
-      return x+'';
-    }
-
+    if ( typeof x === 'boolean' ) return x+'';
     else
 
     if ( isUnset(x) ) {
@@ -395,46 +386,29 @@ install();
         throw new TypeError(`Value cannot be unset, was: ${x}`);
       }
     }
-
     else
 
-    if ( x instanceof Promise ) {
-      return await x.catch(err => err+'');
-    } 
-
+    if ( x instanceof Promise ) return await x.catch(err => err+'');
     else
 
-    if ( x instanceof Element ) {
-      return x.outerHTML;
-    }
-
+    if ( x instanceof Element ) return x.outerHTML;
     else
 
-    if ( x instanceof Node ) {
-      return x.textContent;
-    }
-
+    if ( x instanceof Node ) return x.textContent;
     else
 
     if ( isIterable(x) ) {
-      // these promises must return primitive types that can be stringified
+      // if an Array or iterable is given then Promises therein
+      // must return primitive types that can be stringified
       return (await Promise.all(Array.from(x)).catch(e => err+'')).join('\n');
     }
-
     else
 
-
-    if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
-      return await x(state);
-    }
-
+    if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) return await x(state);
     else
 
-    if ( x instanceof Function ) {
-      return x(state);
-    }
-
-    else  /* it's an object, of some type */
+    if ( x instanceof Function ) return x(state);
+    else // it's an object, of some type 
 
     {
       // State store
