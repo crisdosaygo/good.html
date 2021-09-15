@@ -18,11 +18,12 @@
 ### self-closing void custom element tags (***with a bang!**)
 
 ```js
-<!custom-el2 />
-<!custom-el3>
+<div>
+  <!custom-el2 />
+</div>
 ```
 
-All the above are VALID HTML and converted by our mutation-aware parser into valid custom elements, the only thing that doesn't work is *syntax highlighting* for this `.bang!html`.
+All the above are VALID HTML and converted by our mutation-aware parser into valid custom elements, you can even omit the closing slash `/>`, so `<!custom-el2>` is also a valid void tag.
 
 ------
 
