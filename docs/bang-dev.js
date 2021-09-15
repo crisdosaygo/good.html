@@ -451,7 +451,7 @@
             get: () => state
           });
         }
-        console.log('self', state._self);
+        DEBUG && console.log('self', state._self);
       } catch(e) {
         DEBUG && console.warn(
           `Cannot add '_self' self-reference property to state. 
