@@ -1,0 +1,17 @@
+:host {
+  display: block;
+  background: linear-gradient(to bottom right, yellow, orange, red, purple);
+  font-family: system-ui, sans-serif;
+  color: mintcream;
+  padding: 0.5rem;
+}
+
+button {
+  font-size: larger;
+  font-weight: bold;
+  color: mintcream;
+  background: tomato;
+  padding: 0.25em 0.5em;
+  border-radius: 0.25em;
+  cursor: pointer;
+}

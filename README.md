@@ -330,6 +330,7 @@ These documents, and ***BANG!*** itself are a work in progress.
 
 Plans may change, but right now, some aims for the future are:
 
+- re-render function in the base class
 - improve documentation
 - add minimal DOM diffing using [vanillaview](https://github.com/i5ik/vanillaview) granular DOM updator function technology
 - add **state-queries** with automatic data binding, to fully decouple state objects from components, and decouple components from each other, and enables dependent components to be automatically re-rendered when data they use in the store changes.
