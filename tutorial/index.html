@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<link rel=stylesheet href=./style.css>
+<script type=application/javascript src=./bang-dev.js></script>
+<script>
+  use('warm-greeter');
+  use('greet-counts');
+
+ 	setState('MyState', {
+    name: 'Uncle Bob',
+    greetCounts: {
+      value: 1
+    }
+  });
+</script>
+<!warm-greeter state=MyState />

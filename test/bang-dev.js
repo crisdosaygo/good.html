@@ -146,7 +146,7 @@
 
     function cloneState(key) {
       if ( STATE.has(key) ) {
-        return JSON.parse(JSON.stringify(STATE.get(key));
+        return JSON.parse(JSON.stringify(STATE.get(key)));
       } else {
         throw new TypeError(`State store does not have the key ${key}`);
       }

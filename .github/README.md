@@ -352,6 +352,14 @@ So:
 - don't omit the bang (**!**) because that's how we signal it's not a normal tag; and
 - don't start any comment with a double-barrelled word, because that's how we signal it's a self-closing tag, not a comment. 
 
+Also, regarding extending classes it doesn't matter what you call your component class (you can call it `Component` or anything you like) but you do need to extend it from the `Base` class and use the exact name `Base` like so:
+
+```js
+class MyComponent extends Base {
+ /* ... */
+}
+```
+
 --------
 
 
