@@ -27,8 +27,6 @@ They're actually just ***valid*** HTML comments that **BANG!** converts into val
  
 Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element), when you use **bang! tags** you can omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
 
-Just don't omit the bang (**!**) because that's how we signal it's not a normal tag. And don't start any comment with a double-barrelled word, because that's how we signal it's a self-closing tag, not a comment. 
-
 ## Regular tags
 
 **BANG!** also makes it easy to define and use regular custom elements:
@@ -335,6 +333,15 @@ Plans may change, but right now, some aims for the future are:
 When the HTML parser [encounters a self-closing slash in a non-void element, it acts as if the slash isn't there](https://html.spec.whatwg.org/multipage/parsing.html#parse-error-non-void-html-element-start-tag-with-trailing-solidus), in effect opening the tag, and wrapping any subsequent content up to the next valid closing tag for that element, inside that open tag. This is not what you intend when you try to use a self-closing tag.
 
 Similarly, when the HTML parser encounters a single `<custom-tag>` it opens it, and so subsequent tags will be placed inside that open tag.
+
+## What are some gotchas or syntax I need to beware of?
+
+***BANG!*** is design to be pretty intuitive and smooth with the syntax, so most things work as you expect. But there are still some things that may catch you out if you forget. 
+
+So:
+
+- don't omit the bang (**!**) because that's how we signal it's not a normal tag; and
+- don't start any comment with a double-barrelled word, because that's how we signal it's a self-closing tag, not a comment. 
 
 --------
 
