@@ -97,13 +97,6 @@
               node.setAttribute(name, `this.getRootNode().host.${value}${ender}`);
             }
           }
-          // not necessary
-            /**
-              // reparse
-              const container = document.createElement('div');
-              container.appendChild(nodes);
-              const clearNodes = toDOM(container.innerHTML);
-            **/
           const shadow = this.attachShadow({mode:'open'});
           shadow.append(nodes);
         }).catch(
@@ -251,16 +244,10 @@ install();
         resp = text; 
         comp.setVisible();
       } else {
-        /* could try inlining styles for increase speed */
-        // then when do we add bang-styled ? straight await ?
-        /*
-        resp = `<link 
-          rel=stylesheet 
-          href=${baseUrl}/style.css 
-          onload=setVisible>${
-          text
-        }`;
-        */
+        // inlining styles for increase speed */
+          // we setVisible (add bang-styled) straight away because the inline styles block the markup
+          // so no FOUC while stylesheet link is loading, like previously:
+          // resp = `<link rel=stylesheet href=${baseUrl}/style.css onload=setVisible>${text}`;
         resp = `<style>${await fetchStyle(name).catch(e => '')}</style>${text}`;
         comp.setVisible();
       }
