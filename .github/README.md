@@ -65,21 +65,21 @@ For this mini-tutorial we'll be building a simple greeter component:
 
 Follow along with the below steps to learn how to create your very own greeter component.
 
-### 1. Get it on NPM:
-
-Install the **BANG!** NPM package: 
+First, to get you setup for the tutorial, install the **BANG!** package from NPM: 
 
 ```sh
 $ npm i --save bang.html
 ```
 
-We'll also be using [serve](https://npmjs.com/package/serve) for development, so get that too:
+And since we'll also be using [serve](https://npmjs.com/package/serve) to run a static development server, install that, too, using:
 
 ```sh
 $ npm i --save-dev serve
 ```
 
-### 2. Make your directory structure:
+Now, onto the tutorial!
+
+### Step 1: Make your directory structure:
 
 ```
 project
@@ -112,7 +112,7 @@ Each component is defined by 3 files, all optional:
 - style.css: the scoped styles applied. Note that [standard Web Components CSS pseudo-classes](https://developer.mozilla.org/en-US/docs/Web/Web_Components#:~:text=built-in%20element.-,CSS%20pseudo-classes,-Pseudo-classes%20relating) work here. 
 - script.js: the class extension extending the default base class. You'll learn about the default base class of the component in a second.
 
-### 3. Use a custom element.
+### Step 2: Use a custom element.
 
 Copy the below into your `public/index.html` file:
 
@@ -148,7 +148,7 @@ A valid Web Component, that you defined using a void self-closing tag.
 
 Now let's flesh out your component and show some markup and styles by adding some content to the component directory.
 
-### 4. Add markup
+### Step 3: Add markup
 
 First we're going to add some **templated markup** to the `markup.html` files of the two components we'll use.
 
@@ -173,11 +173,11 @@ These are different to [Web Components slot elements](https://developer.mozilla.
 
 You'll learn more about component variables and state in the next step of this tutorial.
 
-### 5. Make some variable and state
+### Step 4: Make some variable and state
 
-Go back to your `public/index.html` file and change the code in the script tag and the greeter to this:
+Go back to your `public/index.html` file and change the code in the `<script>` tag and the greeter as follows.
 
-`<script>` tag content:
+Update the `<script>` tag content to this:
 
 ```js
   use('warm-greeter');
@@ -189,22 +189,23 @@ Go back to your `public/index.html` file and change the code in the script tag a
   });
 ```
 
-And change, this:
+And change this:
 
 ```js
 <!warm-greeter />
 ```
 
 To this:
+
 ```js
 <!warm-greeter state=MyState />
 ```
 
-Now visit your development server in your browser and you should be able to see your greeter taking shape, display a greeting to Uncle Bob, a count and a button. 
+Now reload the development page in your browser and you should be able to see your greeter taking shape, display a greeting to Uncle Bob, a count and a button. 
 
 If you open up the DevTools Elements tag and inspect the warm-greeter tag you probably noticed that it has a Shadow Root that is now hosting some content.
 
-### 5. Make it interactive
+### Step 5: Make it interactive
 
 In this step, you'll add an event handler to the **warm-greeter** component so it will do something when the button is clicked.
 
