@@ -7,11 +7,13 @@
 
 # *BANG!* *A custom element library for the new age.*
 
+***BANG!** makes creating UI's easier, by bringing smoother templating and self-closing tags to **Web Components**.
+
 ### Introducing: self-closing custom elements 
 
-**[Void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** have *finally* come to the custom-element ecosystem! *With a **BANG!***
+**Void tags** have *finally* come to the custom-element ecosystem--*with a **BANG!***
 
-***BANG!*** makes it easy to define and use self-closing web components in your app.
+***BANG!*** is a library that *makes it easy* to define and use self-closing web component tags in your app:
 
 ```js
 <!custom-element>
@@ -37,7 +39,9 @@ Just don't omit the bang (!) because that's how we signal it's a self-closing vo
 </custom-el>
 ```
 
-We've added a few special features to make it super productive to write markup using ***BANG!***. Read on to discover how ***BANG!*** makes using Custom Elements more productive. 
+### there's more
+
+Apart from self-closing tags, ***BANG!*** has numerous other special features that make it super productive for building interfaces***BANG!***. Read on to discover how ***BANG!*** makes UI work more productive. 
 
 ------
 
