@@ -23,7 +23,7 @@
 </div>
 ```
 
-All the above are ***valid*** HTML and are converted by our mutation-observing parser into valid [https://developer.mozilla.org/en-US/docs/Web/Web_Components#:~:text=built-in%20element.-,CSS%20pseudo-classes,-Pseudo-classes%20relating](Web Component) custom elements when inserted.
+All the above are ***valid*** HTML and are converted by our mutation-observing parser into valid [Web Component](https://developer.mozilla.org/en-US/docs/Web/Web_Components) custom elements when inserted.
 
 Just like regular HTML void tags, can even omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
 
