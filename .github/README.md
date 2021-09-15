@@ -39,7 +39,7 @@ Just don't omit the bang (**!**) because that's how we signal it's not a normal 
 </custom-el>
 ```
 
-### there's more
+## More Goodies
 
 Apart from self-closing tags, ***BANG!*** has numerous other special features that make it super productive for building interfaces***BANG!***. Read on to discover how ***BANG!*** makes UI work more productive. 
 
