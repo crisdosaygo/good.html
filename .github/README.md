@@ -23,9 +23,9 @@
 </div>
 ```
 
-All the above are ***valid*** HTML and are converted by our mutation-observing parser into valid [Web Component](https://developer.mozilla.org/en-US/docs/Web/Web_Components) custom elements when inserted.
+All the above are ***valid*** HTML converted into valid [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components) when inserted.
 
-Just like regular HTML void tags, can even omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
+Just like regular HTML void tags, you can omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
 
 Just don't omit the bang (!) because that's how we signal it's a self-closing void tag.
 
@@ -41,7 +41,7 @@ Just don't omit the bang (!) because that's how we signal it's a self-closing vo
 
 ------
 
-## Get started
+## Get started in 5 simple steps
 
 For this mini-tutorial we'll be building a simple greeter component:
 
