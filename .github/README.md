@@ -7,13 +7,13 @@
 
 # *BANG!* *A custom element library for the new age.*
 
-***BANG!*** makes creating UI's easier, by bringing smoother templating and self-closing tags to **Web Components**.
+***BANG!*** makes your UI work easy, by bringing smoother templating, async slots and self-closing tags to **Web Components**.
 
-### Introducing: self-closing custom elements 
+## Introducing: self-closing tags for Web Components
 
-**Void tags** have *finally* come to the custom-elements&mdash;*with a **BANG!***
+**Void tags** have *finally* come to custom-elements&mdash;*with a **BANG!***
 
-***BANG!*** is your library of choice to use self-closing web components in your app:
+***BANG!*** is your library of choice for self-closing tags with Web Components:
 
 ```js
 <!app-header />
@@ -21,15 +21,15 @@
   <!app-content />
 </div>
 ```
-These special self-closing custom elements are known as **bang-tags** (*web components with a **bang!***)
+These self-closing tags are known as **bang-tags** (*web components with a **bang!***)
 
-They are ***valid*** HTML comment tags that **BANG!** converts into valid [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components) when inserted.
+They're actually just ***valid*** HTML comments that **BANG!** converts into valid [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components).
 
-Like HTML void tags, when you use **bang! tags** you can omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
+Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element), when you use **bang! tags** you can omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
 
-Just don't omit the bang (!) because that's how we signal it's a self-closing void tag.
+Just don't omit the bang (**!**) because that's how we signal it's not a normal tag. And don't start any comment with a double-barrelled word, because that's how we signal it's a self-closing tag, not a comment. 
 
-### regular tags
+## Regular tags
 
 **BANG!** also makes it easy to define and use regular custom elements:
 
@@ -175,7 +175,7 @@ You'll learn more about component variables and state in the next step of this t
 
 ### 5. Make some variable and state
 
-Go back to your `public/index.html` file and change the code in the script tag to this:
+Go back to your `public/index.html` file and change the code in the script tag and the greeter to this:
 
 ```js
 <script>
@@ -187,6 +187,7 @@ Go back to your `public/index.html` file and change the code in the script tag t
     }
   });
 </script>
+<!warm-greeter state=MyState />
 ```
 
 Now visit your development server in your browser and you should be able to see your greeter taking shape, display a greeting to Uncle Bob, a count and a button. 
@@ -227,6 +228,100 @@ You'll notice in the examples above that we used both `<slot></slot>` elements a
 
 You also saw that we used a *new syntax* for templating called **template replacement slots**. This is not part of web standard, and is in fact a convenient syntax for display variables and state in your components. It's quite different to `<slot></slot>` elements, so read on to find out more.
 
-In order to use
+In order to have your component display variables form an object, you need to do 3 things:
+
+1. Assign that state object a string key, it's **state key**, and save it in the object store using `setState(<key: string>, <value: object>)`;
+2. Pass that **state key** to the component by setting its `state` attribute; and
+3. Reference **properties** from that state object using **template replacement slot** syntax
+
+Let's run through an example to tease out the details of these 3 steps:
+
+#### 1. Save the state to the store
+
+In a script you would write: 
+
+```js
+setState('MyState', {
+  deviceFormat: 'mobile',
+  screen: {
+    width: 420
+  }
+});
+```
+
+You can now access the state object using the key `MyStae`.
+
+#### 2. Pass state to components
+
+In a markup file for a component (or in the top-level HTML file for your app you would write):
+
+```js
+<!test-el state=MyState />
+```
+
+#### 3. Template the properties
+
+In a markup file for your component, you could then write:
+
+```js
+<div class="big-banner ${deviceFormat}">
+  <img src=wide-cat.png width=${screen.width*0.75}px
+</div>
+```
+
+### The `state=` attribute, nested objects and template replacement slots
+
+You probably noticed above that you didn't need to refer to the parent object when using the **template replacement slot** syntax. This is because you can simply use the property name inside the markup of the component you pass the state to. If you need to access the outer state object, you can do that via the special `_self` property. 
+
+Also what if you want pass **nested objects** in your state object to be the `state=` properties of a sub-component? 
+
+For example, in the tutorial we created a **warm-greeter** component that incorporated a sub-component, **greet-count** like so:
+
+```
+<h1>Hello ${name}</h1>
+<p>
+  We are very pleased to meet you 
+  <greet-count state=${greetCounts}>happy</greet-count> times
+</p>
+<button onclick=Regreet>Regreet!</button>
+```
+
+You might have noticed that the `state=` property of the **greet-count** component is not passed by string key, but instead passed a *nested object* using our standard **template replacement slot** syntax. Despite this, **greet-count** behaves as if it had been passed a **state-key**.
+
+So what's going on?
+
+This is the expected behavior. You *can pass state directly to your sub-components using **template replacement slots*** in any component markup filebut not in a top-level HTML file (because **template replacement slots are not processed there, only in component markup). 
+
+So in the above example from the tutorial **greet-count** behaves the same as if you explicitly saved that nested object to the state store using a string **state-key** then passed it by key to your component using the `state=` property. 
+
+Instead of having to write that extra step, ***BANG!*** detects the nested object and saves it to the store for you, and passes to new components as they are created, without you having to worry about the details.
+
+### Async templating
+
+***BANG!*** can also accept state properties that are functions, async functions and Promises. In these cases, here's what happens:
+
+- Promise: ***BANG!*** awaits the Promise to resolve, then templates in the value returned by the resolved Promise.
+- Async Function: ***BANG!*** executes the async function and awaits the result, then templates in the value.
+- Function: ***BANG!*** executes the function and templates in the result.
+
+## More information
+
+***BANG!*** is new, and it might take you some time to learn.
+
+These documents, and ***BANG!*** itself are a work in progress.
+
+Plans may change, but right now, some aims for the future are:
+
+- improve documentation
+- add minimal DOM diffing using [vanillaview](https://github.com/i5ik/vanillaview) granular DOM updator function technology
+- add **state-queries** with automatic data binding, to fully decouple state objects from components, and decouple components from each other, and enables dependent components to be automatically re-rendered when data they use in the store changes.
+
+
+```
+## Why use *BANG!* and not just a a &lt;custom-self-closing-tag /&gt; or a single &lt;custom-tag&gt;? 
+
+When the HTML parser [encounters a self-closing slash in a non-void element, it acts as if the slash isn't there](https://html.spec.whatwg.org/multipage/parsing.html#parse-error-non-void-html-element-start-tag-with-trailing-solidus), in effect opening the tag, and wrapping any subsequent content up to the next valid closing tag for that element, inside that open tag. This is not what you intend when you try to use a self-closing tag.
+
+Similarly, when the HTML parser encounters a single `<custom-tag>` it opens it, and so subsequent tags will be placed inside that open tag.
 
 # HTML MARKUP ***With a BANG!***
