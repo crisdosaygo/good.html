@@ -446,7 +446,12 @@
     async function cook(markup, state = {var1: 'hiiii', sub: {moreState:'hello'}}) {
       let cooked = '';
       try {
-        state._self = state;
+        if ( !Object.prototype.hasOwnProperty.call(state, '_self') ) {
+          Object.defineProperty(state, '_self', {
+            get: () => state
+          });
+        }
+        console.log('self', state._self);
       } catch(e) {
         DEBUG && console.warn(
           `Cannot add '_self' self-reference property to state. 
