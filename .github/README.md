@@ -9,7 +9,7 @@
 
 ### Introducing: self-closing custom elements 
 
-**[Void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element) have *finally* come to the custom-element ecosystem! *With a **BANG!***
+**[Void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** have *finally* come to the custom-element ecosystem! *With a **BANG!***
 
 ***BANG!*** makes it easy to define and use self-closing web components in your app.
 
