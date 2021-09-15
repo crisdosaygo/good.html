@@ -24,7 +24,7 @@
 These self-closing tags are known as **bang-tags** (*web components with a **bang!***)
 
 They're actually just ***valid*** HTML comments that **BANG!** converts into valid [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components).
-
+ 
 Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element), when you use **bang! tags** you can omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
 
 Just don't omit the bang (**!**) because that's how we signal it's not a normal tag. And don't start any comment with a double-barrelled word, because that's how we signal it's a self-closing tag, not a comment. 
@@ -319,7 +319,7 @@ Plans may change, but right now, some aims for the future are:
 
 # Q&A 
 
-## Why use *BANG!* and not just a a &lt;custom-self-closing-tag /&gt; or a single &lt;custom-tag&gt;? 
+## Why use *BANG!* and not just a a `<custom-self-closing-tag />` or a single `<custom-tag>`? 
 
 When the HTML parser [encounters a self-closing slash in a non-void element, it acts as if the slash isn't there](https://html.spec.whatwg.org/multipage/parsing.html#parse-error-non-void-html-element-start-tag-with-trailing-solidus), in effect opening the tag, and wrapping any subsequent content up to the next valid closing tag for that element, inside that open tag. This is not what you intend when you try to use a self-closing tag.
 
