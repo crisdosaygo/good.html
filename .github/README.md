@@ -337,13 +337,13 @@ Plans may change, but right now, some aims for the future are:
 
 # Q&A 
 
-## Why use *BANG!* and not just a a `<custom-self-closing-tag />` or a single `<custom-tag>`? 
+### Why use *BANG!* and not just a `<custom-self-closing-tag />` or a single `<custom-tag>`? 
 
 When the HTML parser [encounters a self-closing slash in a non-void element, it acts as if the slash isn't there](https://html.spec.whatwg.org/multipage/parsing.html#parse-error-non-void-html-element-start-tag-with-trailing-solidus), in effect opening the tag, and wrapping any subsequent content up to the next valid closing tag for that element, inside that open tag. This is not what you intend when you try to use a self-closing tag.
 
 Similarly, when the HTML parser encounters a single `<custom-tag>` it opens it, and so subsequent tags will be placed inside that open tag.
 
-## What are some gotchas or syntax I need to beware of?
+### What are some gotchas or syntax I need to beware of?
 
 ***BANG!*** is design to be pretty intuitive and smooth with the syntax, so most things work as you expect. But there are still some things that may catch you out if you forget. 
 
@@ -355,4 +355,4 @@ So:
 --------
 
 
-# HTML MARKUP ***With a BANG!***
+# HTML ***With a BANG!***
