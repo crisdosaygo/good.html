@@ -15,7 +15,7 @@
 </custom-el>
 ```
 
-### self-closing void custom element tags (***with a bang!**)
+### self-closing void custom element tags (*with a **bang!***)
 
 ```js
 <div>
