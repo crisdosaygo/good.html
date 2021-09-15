@@ -378,5 +378,19 @@ You need to include a `<body>` tag in your top-level HTML document, or another d
 
 --------
 
+## Contributions
 
-# HTML ***With a BANG!***
+Contributions are very welcome. No CLA needed. No license restrictions. Just get-in, muck-in and get involved! :P ;) xx 
+
+If you want to, of course. :P ;) xx
+
+---
+
+# HTML ***but with a BANG!***
+
+<p align=center>
+  <img width=80% 
+    src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20tomato-whitesmoke%20(1).png
+    src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+  >
+</p>

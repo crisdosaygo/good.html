@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "watch cp src/bang.js test/bang-dev.js & serve -p 8080 test/",
-    "tutorial": "cp src/bang.js tutorial/bang-dev.js & serve -p 8080 tutorial/"
+    "tutorial": "cp src/bang.js tutorial/bang-dev.js & serve -p 8080 docs/"
   },
   "repository": {
     "type": "git",
