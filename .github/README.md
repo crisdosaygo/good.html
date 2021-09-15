@@ -7,18 +7,18 @@
 
 # *BANG!* *A custom element library for the new age.*
 
-***BANG!** makes creating UI's easier, by bringing smoother templating and self-closing tags to **Web Components**.
+***BANG!*** makes creating UI's easier, by bringing smoother templating and self-closing tags to **Web Components**.
 
 ### Introducing: self-closing custom elements 
 
-**Void tags** have *finally* come to the custom-element ecosystem--*with a **BANG!***
+**Void tags** have *finally* come to the custom-elements&mdash;*with a **BANG!***
 
-***BANG!*** is a library that *makes it easy* to define and use self-closing web component tags in your app:
+***BANG!*** is your library of choice to use self-closing web components in your app:
 
 ```js
-<!custom-element>
+<!app-header />
 <div>
-  <!custom-el2 />
+  <!app-content />
 </div>
 ```
 These special self-closing custom elements are known as **bang-tags** (*web components with a **bang!***)
