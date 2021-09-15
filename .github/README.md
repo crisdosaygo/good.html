@@ -179,6 +179,7 @@ Update the `<script>` tag content to this:
 
 ```js
   use('warm-greeter');
+  use('greet-count');
   setState('MyState', {
     name: 'Uncle Bob',
     greetCounts: {
@@ -344,6 +345,12 @@ When the HTML parser [encounters a self-closing slash in a non-void element, it 
 Similarly, when the HTML parser encounters a single `<custom-tag>` it opens it, and so subsequent tags will be placed inside that open tag.
 
 ### What are some gotchas or syntax I need to beware of?
+
+#### `use(<name: string>)`
+
+If you don't call `use` with the name of the component (*the name of its directory*) then your component will not be a custom element, and will just be a regular HTML tag. 
+
+Don't forget to always `use` all components, even nested components in your script.
 
 #### Self-closing syntax
 
