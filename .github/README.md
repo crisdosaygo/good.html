@@ -14,6 +14,7 @@ Void tags have come to the custom-element ecosystem. *With a **BANG!***
 ***BANG!*** makes it easy to define and use self-closing web components in your app.
 
 ```js
+<!custom-element>
 <div>
   <!custom-el2 />
 </div>
