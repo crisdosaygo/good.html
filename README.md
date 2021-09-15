@@ -117,7 +117,7 @@ Copy the below into your `public/index.html` file:
 ```js
 <!DOCTYPE html>
 <script type=application/javascript src=https://unpkg.com/bang.html></script>
-<link rel=stylesheet href=https://unpkg.com/bang.html/style.css>
+<link rel=stylesheet href=https://unpkg.com/bang.html/src/style.css>
 <script>
   use('warm-greeter');
 </script>
