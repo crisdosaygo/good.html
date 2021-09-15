@@ -1,7 +1,7 @@
 {
   // constants, classes, config and state
     const DEBUG = false;
-    const DOUBLE_BARREL = /\w+-\w*/;
+    const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
     const FUNC_CALL = /\);?$/;
     const CONFIG = {
       htmlFile: 'markup.html',
@@ -144,6 +144,14 @@
       }
     }
 
+    function cloneState(key) {
+      if ( STATE.has(key) ) {
+        return JSON.parse(JSON.stringify(STATE.get(key));
+      } else {
+        throw new TypeError(`State store does not have the key ${key}`);
+      }
+    }
+
     async function loaded() {
       const loadCheck = () => {
         const nonZeroCount = Counts.started > 0; 
@@ -163,7 +171,7 @@
       });
       findBangs(transformBang); 
       Object.assign(globalThis, {
-        use, setState, loaded, sleep,
+        use, setState, cloneState, loaded, sleep,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
     }
