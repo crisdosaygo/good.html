@@ -128,6 +128,10 @@
       self.customElements.define(name, component);
     }
 
+    function bangfig(newConfig = {}) {
+      Object.assign(CONFIG, newConfig);
+    }
+
     function setState(key, state, rerenderAll = true) {
       STATE.set(key, state);
       STATE.set(state, key);
@@ -171,7 +175,7 @@
       });
       findBangs(transformBang); 
       Object.assign(globalThis, {
-        use, setState, cloneState, loaded, sleep,
+        use, setState, cloneState, loaded, sleep, bangfig,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
     }
