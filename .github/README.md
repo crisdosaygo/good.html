@@ -345,12 +345,16 @@ Similarly, when the HTML parser encounters a single `<custom-tag>` it opens it, 
 
 ### What are some gotchas or syntax I need to beware of?
 
+#### Self-closing syntax
+
 ***BANG!*** is design to be pretty intuitive and smooth with the syntax, so most things work as you expect. But there are still some things that may catch you out if you forget. 
 
 So:
 
 - don't omit the bang (**!**) because that's how we signal it's not a normal tag; and
 - don't start any comment with a double-barrelled word, because that's how we signal it's a self-closing tag, not a comment. 
+
+#### Component classes
 
 Also, regarding extending classes it doesn't matter what you call your component class (you can call it `Component` or anything you like) but you do need to extend it from the `Base` class and use the exact name `Base` like so:
 
@@ -359,6 +363,11 @@ class MyComponent extends Base {
  /* ... */
 }
 ```
+
+#### Top-level element
+
+You need to include a `<body>` tag in your top-level HTML document, or another displayable tag, and put your self-closing tags *after* that displayable tag, otherwise they will end up `<head>` tag of the document, and not be displayed.
+
 
 --------
 
