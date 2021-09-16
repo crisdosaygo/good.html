@@ -1,16 +1,15 @@
 :host {
   display: block;
-  background: linear-gradient(to bottom right, yellow, orange, red, purple);
+  background: linear-gradient(to bottom right, mediumspringgreen, turquoise, dodgerblue, midnightblue);
   font-family: system-ui, sans-serif;
-  color: black;
   padding: 0.5rem;
 }
 
 button {
   font-size: larger;
   font-weight: bold;
-  color: mintcream;
-  background: tomato;
+  background: mintcream;
+  color: tomato;
   padding: 0.25em 0.5em;
   border-radius: 0.25em;
   cursor: pointer;

@@ -139,14 +139,14 @@
       STATE.set(state, key);
 
       // simple re-render everything
-      if ( document.documentElement && rerenderAll) {
+      if ( document.body && rerenderAll) {
         // we need to remove styled because it will reload after we blit the HTML
-        Array.from(document.querySelectorAll(':not(:root).bang-styled')).forEach(node => {
+        Array.from(document.querySelectorAll(':not(body).bang-styled')).forEach(node => {
           node.classList.remove('bang-styled');
         });
-        const HTML = document.documentElement.innerHTML;
-        document.documentElement.innerHTML = '';
-        document.documentElement.innerHTML = HTML;
+        const HTML = document.body.innerHTML;
+        document.body.innerHTML = '';
+        document.body.innerHTML = HTML;
       }
     }
 
@@ -170,7 +170,7 @@
   // helpers
     function install() {
       if ( CONFIG.delayFirstPaintUntilLoaded ) {
-        document.documentElement.classList.add('bang-el');
+        becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
       }
 
       const observer = new MutationObserver(transformBangs);
@@ -185,7 +185,7 @@
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
       
-      loaded().then(() => document.documentElement.classList.add('bang-styled'));
+      loaded().then(() => document.body.classList.add('bang-styled'));
     }
 
     async function fetchMarkup(name, comp) {
