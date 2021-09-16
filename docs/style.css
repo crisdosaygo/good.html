@@ -5,6 +5,11 @@
   height: 100%;
 }
 
+body {
+  touch-action: manipulation;
+  /* wtf, just read that CSS rule...hahaha...wtf */
+}
+
 :not(:defined), .bang-el:not(.bang-styled) {
   display: none;
 }
