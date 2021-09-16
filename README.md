@@ -5,7 +5,7 @@
   >
 </p>
 
-# *BANG!* *A custom element library for the new age.*
+# *BANG!* *A custom element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) 
 
 ***BANG!*** makes your UI work easy, and your syntax beautiful, by bringing smoother templating, async slots and [empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element) (*a.k.a void elements / "self-closing tags"*) to **Web Components**.
 
@@ -40,6 +40,8 @@ Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_el
 ## More Goodies
 
 Apart from self-closing tags, ***BANG!*** has numerous other special features that make it super productive for building interfaces***BANG!***. Read on to discover how ***BANG!*** makes UI work more productive. 
+
+You can jump in right away and get it on NPM: https://www.npmjs.com/package/bang.html
 
 ------
 
