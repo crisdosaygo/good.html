@@ -7,7 +7,7 @@
 
 # *BANG!* *A custom element library for the new age.*
 
-***BANG!*** makes your UI work easy, by bringing smoother templating, async slots and self-closing tags to **Web Components**.
+***BANG!*** makes your UI work easy, and your syntax beautiful, by bringing smoother templating, async slots and [empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element) (*a.k.a void elements / "self-closing tags"*) to **Web Components**.
 
 ## Introducing: self-closing tags for Web Components
 
