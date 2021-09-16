@@ -1,3 +1,13 @@
 <h1>Hello ${name}</h1>
 <p>We are very pleased to meet you <greet-count state=${greetCounts}>happy</greet-count> times</p>
 <button onclick=Regreet>Regreet!</button>
+<h2>Re-greet records</h2>
+<ul>${
+  timings.map(({time, count}) => F`
+    <li>
+      <span class=count>${count}</span> greets 
+      as of
+      <time datetime=${time}>${(new Date(time)).toLocaleTimeString()}</time>
+    </li>
+  `)
+}</ul>

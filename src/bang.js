@@ -1,7 +1,8 @@
 {
   // constants, classes, config and state
-    const DEBUG = false;
+    const DEBUG = true;
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
+    const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
     const CONFIG = {
       htmlFile: 'markup.html',
@@ -367,6 +368,9 @@
       if ( typeof x === 'boolean' ) return x+'';
       else
 
+      if ( x instanceof Date ) return x+'';
+      else
+
       if ( isUnset(x) ) {
         if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || '';
         else {
@@ -385,9 +389,13 @@
       else
 
       if ( isIterable(x) ) {
-        // if an Array or iterable is given then Promises therein
-        // must return primitive types that can be stringified
-        return (await Promise.all(Array.from(x)).catch(e => err+'')).join('\n');
+        // if an Array or iterable is given then
+        // its values are recursively processed via this same function
+        return (await Promise.all(
+          (
+            await Promise.all(Array.from(x)).catch(e => err+'')
+          ).map(v => process(v, state))
+        )).join('\n');
       }
       else
 
@@ -447,7 +455,7 @@
       }
     }
 
-    async function cook(markup, state = {var1: 'hiiii', sub: {moreState:'hello'}}) {
+    async function cook(markup, state) {
       let cooked = '';
       try {
         if ( !Object.prototype.hasOwnProperty.call(state, '_self') ) {
@@ -464,7 +472,7 @@
       }
       try {
         with(state) {
-          cooked = await eval("(async function () { return await FUNC`${state}"+markup+"`; }())");  
+          cooked = await eval("(async function () { return await _FUNC`${{state}}"+markup+"`; }())");  
         }
         return cooked;
       } catch(error) {
@@ -473,24 +481,65 @@
       }
     }
 
-    async function FUNC(strings, ...vals) {
+    async function _FUNC(strings, ...vals) {
       const s = Array.from(strings);
+      let SystemCall = false;
       let str = '';
 
-      // by convention (see how we construct the template that we tag with FUNC)
-      const state = vals.shift();
-      s.shift();
+      DEBUG && console.log(s.join('//'));
 
-      vals = await Promise.all(vals.map(v => process(v, state)));
-
-      while(s.length) {
-        str += s.shift();
-        if ( vals.length ) {
-          str += vals.shift();
-        }
+      if ( s[0].length === 0 && vals[0].state ) {
+        // by convention (see how we construct the template that we tag with FUNC)
+        // the first value is the state object when our system calls it
+        SystemCall = true;
       }
 
-      return str;
+      let state;
+
+      // resolve all the values now if it's a SystemCall of _FUNC
+
+      if ( SystemCall ) {
+        const state = vals.shift();
+        s.shift();
+        vals = await Promise.all(vals.map(v => process(v, state)));
+
+        DEBUG && console.log('System _FUNC call: ' + vals.join('::'));
+
+        while(s.length) {
+          str += s.shift();
+          if ( vals.length ) {
+            str += vals.shift();
+          }
+        }
+
+        return str;
+      } 
+
+      else 
+
+      // otherwise resolve them when we have access to the top-level state
+        // otherwise return a function which will eventually be called within the 
+        // vals.map(v => process(v, state))
+        // line of the top-level System _FUNC call
+        // where we *do* have access to state
+      
+        // this is effectively just a little bit of magic that lets us "overload"
+        // the method signature of F
+
+      return async state => {
+        vals = await Promise.all(vals.map(v => process(v, state)));
+
+        DEBUG && console.log('in-template _FUNC call:' + vals.join('::'));
+
+        while(s.length) {
+          str += s.shift();
+          if ( vals.length ) {
+            str += vals.shift();
+          }
+        }
+
+        return str;
+      };
     }
 
     function createElement(name, data) {

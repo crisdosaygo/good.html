@@ -4,6 +4,7 @@
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and self-closing tags!",
   "main": "src/bang.js",
   "scripts": {
+    "test": "watch cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/",
     "tutorial": "cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/"
   },
   "repository": {
