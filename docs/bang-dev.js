@@ -1,6 +1,6 @@
 {
   // constants, classes, config and state
-    const DEBUG = true;
+    const DEBUG = false;
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
@@ -15,7 +15,8 @@
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
-      `.split(/\s+/g).filter(s => s.length)
+      `.split(/\s+/g).filter(s => s.length),
+      delayFirstPaintUntilLoaded: true
     };
     const STATE = new Map();
     const CACHE = new Map();
@@ -138,14 +139,14 @@
       STATE.set(state, key);
 
       // simple re-render everything
-      if ( document.body && rerenderAll) {
+      if ( document.documentElement && rerenderAll) {
         // we need to remove styled because it will reload after we blit the HTML
-        Array.from(document.querySelectorAll('.bang-styled')).forEach(node => {
+        Array.from(document.querySelectorAll(':not(:root).bang-styled')).forEach(node => {
           node.classList.remove('bang-styled');
         });
-        const HTML = document.body.innerHTML;
-        document.body.innerHTML = '';
-        document.body.innerHTML = HTML;
+        const HTML = document.documentElement.innerHTML;
+        document.documentElement.innerHTML = '';
+        document.documentElement.innerHTML = HTML;
       }
     }
 
@@ -168,6 +169,10 @@
 
   // helpers
     function install() {
+      if ( CONFIG.delayFirstPaintUntilLoaded ) {
+        document.documentElement.classList.add('bang-el');
+      }
+
       const observer = new MutationObserver(transformBangs);
       observer.observe(document.documentElement, {
         subtree: true,
@@ -179,6 +184,8 @@
         use, setState, cloneState, loaded, sleep, bangfig,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
+      
+      loaded().then(() => document.documentElement.classList.add('bang-styled'));
     }
 
     async function fetchMarkup(name, comp) {
