@@ -61,7 +61,7 @@ For this mini-tutorial we'll be building a simple greeter component:
 <!warm-greeter />
 ```
 
-Follow along with the below steps to learn how to create your very own greeter component.
+Follow along with the below steps to learn how to create your very own greeter component. Or just [jump straight to a work demo](https://i5ik.github.io/BANG/) if you prefer to have something to play with.
 
 First, to get you setup for the tutorial, install the **BANG!** package from NPM: 
 
