@@ -15,8 +15,9 @@
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
-      `.split(/\s+/g).filter(s => s.length),
-      delayFirstPaintUntilLoaded: true
+      `.split(/\s+/g).filter(s => s.length).map(e => `on${e}`),
+      delayFirstPaintUntilLoaded: true,
+      noHandlerPassthrough: false
     };
     const STATE = new Map();
     const CACHE = new Map();
@@ -28,20 +29,100 @@
     };
     let systemKeys = 1;
     const BangBase = (name) => class Base extends HTMLElement {
-      constructor() {
-        Counts.started++;
-        let state;
+      static #activeAttrs = ['state', ...CONFIG.EVENTS];
 
+      static get observedAttributes() {
+        return Array.from(Base.#activeAttrs);
+      }
+
+      #originalHandlers = new Set();
+      #name = name;
+
+      constructor() {
         super();
         DEBUG && console.log(name, 'constructed');
+
+        this.print();
+      }
+
+      // BANG! API methods
+      print() {
+        Counts.started++;
+
+        this.prepareVisibility();
+
+        const state = this.#handleAttrs(this.attributes, {originals: true});
+
+        // get any markup and insert into the shadow DOM
+        this.#printShadow(state);
+      }
+
+      prepareVisibility() {
         this.classList.add('bang-el');
+        this.classList.remove('bang-styled');
         // this is like an onerror event for stylesheet's 
           // we do this because we want to display elements if they have no stylesheet defined
           // becuase it's reasonabgle to want to not include a stylesheet with your custom element
         fetchStyle(name).catch(err => this.setVisible());
+      }
 
-        const {attributes:attrs} = this;
+      setVisible() {
+        this.classList.add('bang-styled');
+      }
+
+      // Web Components methods
+      connectedCallback() {
+        DEBUG && console.log(name, 'connected');
+      }
+
+      attributeChangedCallback(name, oldValue, value) {
+        // allocation of event handler attribute changes
+          // as a convenience, changing an event handler attribute
+          // on the shadow host (custom element)
+          // where that shadow host does not have such a handler registered
+          // will pass the change down to the first
+          // shadow node that has the same handler
+          // this may or may not be unintentional
+          // you can switch of this behaviour everywhere with CONFIG.noHandlerPassthrough
+          // or per-custom element using the 'bang-nohpt' attribute
+
+          // if the host does have a handler registered before it is changed, then
+          // this is saved as a flag, and this change and all subsequent changes 
+          // will only update the handler on the host
+
+        let node;
+
+        if ( CONFIG.noHandlerPassthrough || this.#originalHandlers.has(name) ) {
+          // do nothing if handler change delegation is disabled for this app
+          // or if this host defined a handler with this name when constructed
+        } else {
+          // if the name IS and event handler attribute and unless that name is listed in the
+          // 'bang-nohpt' list, then find any such node, and have the attribute change
+          // apply to that node
+          const nohptList = this.getAttribute('bang-nohpt') || '';
+          if ( name.startsWith('on') && ! nohptList.includes(name) ) {
+            node = this.shadowRoot.querySelector(`[${name}]`);
+          }
+        }
+
+        console.log({name, node}, this.#originalHandlers);
+
+        return this.#handleAttrs([{name, value, oldValue}], {node});
+      }
+
+      // private methods
+
+      #handleAttrs(attrs, {node, originals} = {}) {
+        console.log(attrs);
+        let state;
+
+        if ( ! node ) {
+          node = this;
+        }
+
         for( let {name,value} of attrs ) {
+          if ( isUnset(value) ) continue;
+
           if ( name === 'state' ) {
             const stateKey = value; 
             const stateObject = STATE.get(stateKey);
@@ -57,18 +138,30 @@
             if ( ! name.startsWith('on') ) continue;
             value = value.trim();
             if ( ! value ) continue;
-            if ( value.startsWith('this') ) continue;
+
+            if ( originals ) {
+              this.#originalHandlers.add(name);
+            }
+
+            const path = node === this ? 'this.' : 'this.getRootNode().host.';
+            if ( value.startsWith(path) ) continue;
             const ender = value.match(FUNC_CALL) ? '' : '(event)';
-            this.setAttribute(name, `this.${value}${ender}`);
+            node.setAttribute(name, `${path}${value}${ender}`);
+            if ( node !== this ) {
+              this.removeAttribute(name);
+            }
           }
         }
 
-        // get any markup and insert into the shadow DOM
-        fetchMarkup(name, this)
+        return state;
+      }
+
+      #printShadow(state) {
+        fetchMarkup(this.#name, this)
           .then(async markup => {
             const cooked = await cook.call(this, markup, state);
             const nodes = toDOM(cooked);
-            const selector = CONFIG.EVENTS.map(e => `[on${e}]`).join(', ');
+            const selector = CONFIG.EVENTS.map(e => `[${e}]`).join(', ');
             const listening = nodes.querySelectorAll(selector);
             for( const node of listening ) {
               const {attributes:attrs} = node;
@@ -86,18 +179,6 @@
           }).catch(
             err => DEBUG && console.warn(err)
           ).finally(() => Counts.finished++);
-      }
-
-      connectedCallback() {
-        DEBUG && console.log(name, 'connected');
-      }
-
-      attributeChangedCallback(...args) {
-        console.log(`attrs`, this, ...args);
-      }
-
-      setVisible() {
-        this.classList.add('bang-styled');
       }
     };
     class StateKey extends String {
@@ -120,8 +201,13 @@
         .then(script => {
           const Base = BangBase(name);
           const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;
-          const Component = eval(Compose);
-          component = Component;
+          try {
+            const Component = eval(Compose);
+            component = Component;
+          } catch(e) {
+            DEBUG && console.warn(e);
+            DEBUG && console.info(Compose, component);
+          }
         }).catch(() => {
           const Base = BangBase(name);
           component = Base;
