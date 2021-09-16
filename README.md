@@ -114,7 +114,7 @@ Each component is defined by 3 files, all optional:
 
 Copy the below into your `public/index.html` file:
 
-```js
+```html
 <!DOCTYPE html>
 <script type=application/javascript src=https://unpkg.com/bang.html></script>
 <link rel=stylesheet href=https://unpkg.com/bang.html/src/style.css>
