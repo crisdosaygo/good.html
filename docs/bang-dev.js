@@ -23,19 +23,20 @@
     const CACHE = new Map();
     const Started = new Set();
     const TRANSFORMING = new WeakSet();
+    const Dependents = new Map();
     const Counts = {
       started: 0,
       finished: 0
     };
     let systemKeys = 1;
+
     const BangBase = (name) => class Base extends HTMLElement {
-      static #activeAttrs = ['state', ...CONFIG.EVENTS];
+      static #activeAttrs = ['state']; // we listen for changes to these attributes only
 
       static get observedAttributes() {
         return Array.from(Base.#activeAttrs);
       }
 
-      #originalHandlers = new Set();
       #name = name;
 
       constructor() {
@@ -49,11 +50,13 @@
       print() {
         Counts.started++;
 
+        // hide now and get ready to show when loaded
         this.prepareVisibility();
 
+        // attributes on the custom element host
         const state = this.#handleAttrs(this.attributes, {originals: true});
 
-        // get any markup and insert into the shadow DOM
+        // get any markup template and insert into the shadow DOM
         this.#printShadow(state);
       }
 
@@ -71,49 +74,22 @@
       }
 
       // Web Components methods
+      attributeChangedCallback(name, oldValue, value) {
+        // setting the state attribute casues the custom element to re-render
+        if ( name === 'state' && !isUnset(oldValue) ) {
+          DEBUG && console.log(`Changing state, so calling print.`, oldValue, value, this);
+          this.print();
+        }
+      }
+
       connectedCallback() {
         DEBUG && console.log(name, 'connected');
       }
 
-      attributeChangedCallback(name, oldValue, value) {
-        // allocation of event handler attribute changes
-          // as a convenience, changing an event handler attribute
-          // on the shadow host (custom element)
-          // where that shadow host does not have such a handler registered
-          // will pass the change down to the first
-          // shadow node that has the same handler
-          // this may or may not be unintentional
-          // you can switch of this behaviour everywhere with CONFIG.noHandlerPassthrough
-          // or per-custom element using the 'bang-nohpt' attribute
-
-          // if the host does have a handler registered before it is changed, then
-          // this is saved as a flag, and this change and all subsequent changes 
-          // will only update the handler on the host
-
-        let node;
-
-        if ( CONFIG.noHandlerPassthrough || this.#originalHandlers.has(name) ) {
-          // do nothing if handler change delegation is disabled for this app
-          // or if this host defined a handler with this name when constructed
-        } else {
-          // if the name IS and event handler attribute and unless that name is listed in the
-          // 'bang-nohpt' list, then find any such node, and have the attribute change
-          // apply to that node
-          const nohptList = this.getAttribute('bang-nohpt') || '';
-          if ( name.startsWith('on') && ! nohptList.includes(name) ) {
-            node = this.shadowRoot.querySelector(`[${name}]`);
-          }
-        }
-
-        console.log({name, node}, this.#originalHandlers);
-
-        return this.#handleAttrs([{name, value, oldValue}], {node});
-      }
 
       // private methods
 
       #handleAttrs(attrs, {node, originals} = {}) {
-        console.log(attrs);
         let state;
 
         if ( ! node ) {
@@ -133,15 +109,19 @@
               `);
             }
             state = stateObject;
-          } else {
+            if ( originals ) {
+              let acquirers = Dependents.get(stateKey);
+              if ( ! acquirers ) {
+                acquirers = new Set();
+                Dependents.set(stateKey, acquirers);
+              }
+              acquirers.add(node);
+            }
+          } else if ( originals ) {
             // set event handlers to custom element class instance methods
             if ( ! name.startsWith('on') ) continue;
             value = value.trim();
             if ( ! value ) continue;
-
-            if ( originals ) {
-              this.#originalHandlers.add(name);
-            }
 
             const path = node === this ? 'this.' : 'this.getRootNode().host.';
             if ( value.startsWith(path) ) continue;
@@ -164,23 +144,18 @@
             const selector = CONFIG.EVENTS.map(e => `[${e}]`).join(', ');
             const listening = nodes.querySelectorAll(selector);
             for( const node of listening ) {
-              const {attributes:attrs} = node;
-              for( let {name,value} of attrs ) {
-                if ( ! name.startsWith('on') ) continue;
-                value = value.trim();
-                if ( ! value ) continue;
-                if ( value.startsWith('this.getRootNode().host') ) continue;
-                const ender = value.match(FUNC_CALL) ? '' : '(event)';
-                node.setAttribute(name, `this.getRootNode().host.${value}${ender}`);
-              }
+              // attributes on each node in the shadom DOM that has an even handler or state
+              this.#handleAttrs(node.attributes, {node, originals: true});
             }
-            const shadow = this.attachShadow({mode:'open'});
-            shadow.append(nodes);
+            DEBUG && console.log(nodes, cooked, state);
+            const shadow = this.shadowRoot || this.attachShadow({mode:'open'});
+            shadow.replaceChildren(nodes);
           }).catch(
             err => DEBUG && console.warn(err)
           ).finally(() => Counts.finished++);
       }
     };
+
     class StateKey extends String {
       constructor (keyNumber) {
         if ( keyNumber == undefined ) super(`system-key:${systemKeys++}`); 
@@ -220,12 +195,12 @@
       Object.assign(CONFIG, newConfig);
     }
 
-    function setState(key, state, rerenderAll = true) {
+    function setState(key, state, rerenderAll = false) {
       STATE.set(key, state);
       STATE.set(state, key);
 
       // simple re-render everything
-      if ( document.body && rerenderAll) {
+      if ( document.body && rerenderAll ) {
         // we need to remove styled because it will reload after we blit the HTML
         Array.from(document.querySelectorAll(':not(body).bang-styled')).forEach(node => {
           node.classList.remove('bang-styled');
@@ -233,6 +208,11 @@
         const HTML = document.body.innerHTML;
         document.body.innerHTML = '';
         document.body.innerHTML = HTML;
+      } else {
+        const acquirers = Dependents.get(key);
+        if ( acquirers ) {
+          acquirers.forEach(host => host.print());
+        }
       }
     }
 
