@@ -230,7 +230,7 @@ This time, when you click the button, you'll see something happen.
 
 A new message will appear, telling you that: "We are very pleased to meet you 2 happy times."
 
-That's the end of this mini-tutorial, so **congratulations!!* You've done really well, and you're ready to start writing components on your own and learning more. 
+That's the end of this mini-tutorial, so, ***Congratulations!*** You've done really well, and you're ready to start writing components on your own and learning more. 
 
 If you read on you'll discover more about some details you saw in the tutorial. 
 
