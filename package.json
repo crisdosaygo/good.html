@@ -6,7 +6,7 @@
   "scripts": {
     "test": "watch cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/",
     "prepublishOnly": "echo 'npm run pack' is not ready for mobile && cp src/bang.js dist/bang.js",
-    "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller -t text -a eval src/bang.js -o dist/bang.js",
+    "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller -t text -a eval src/bang.js -o dist/bang.js && cp dist/bang.js docs/bang-dev.js",
     "tutorial": "cp dist/bang.js docs/bang-dev.js & serve -p 8080 docs/"
   },
   "repository": {
