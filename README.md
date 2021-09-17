@@ -5,7 +5,7 @@
   >
 </p>
 
-# :bang: *BANG!* *A custom element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) 
+# 🌱 *BANG!* *A custom element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) 
 
 ***BANG!*** makes your UI work easy, and your syntax beautiful, by bringing smoother templating, async slots and [empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element) (*a.k.a void elements / "self-closing tags"*) to **Web Components**.
 
@@ -446,7 +446,6 @@ If you want to, of course. :P ;) xx
 
 <p align=center>
   <img width=80% 
-    src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20tomato-whitesmoke%20(1).png
     src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
 </p>
