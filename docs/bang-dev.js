@@ -32,31 +32,22 @@
 
     const BangBase = (name) => class Base extends HTMLElement {
       static #activeAttrs = ['state']; // we listen for changes to these attributes only
-
       static get observedAttributes() {
         return Array.from(Base.#activeAttrs);
       }
-
       #name = name;
 
       constructor() {
         super();
         DEBUG && console.log(name, 'constructed');
-
         this.print();
       }
 
       // BANG! API methods
       print() {
         Counts.started++;
-
-        // hide now and get ready to show when loaded
         this.prepareVisibility();
-
-        // attributes on the custom element host
         const state = this.#handleAttrs(this.attributes, {originals: true});
-
-        // get any markup template and insert into the shadow DOM
         this.#printShadow(state);
       }
 
@@ -86,15 +77,11 @@
         DEBUG && console.log(name, 'connected');
       }
 
-
       // private methods
-
       #handleAttrs(attrs, {node, originals} = {}) {
         let state;
 
-        if ( ! node ) {
-          node = this;
-        }
+        if ( ! node ) node = this;
 
         for( let {name,value} of attrs ) {
           if ( isUnset(value) ) continue;
@@ -102,13 +89,15 @@
           if ( name === 'state' ) {
             const stateKey = value; 
             const stateObject = STATE.get(stateKey);
+            
             if ( isUnset(stateObject) ) {
               throw new TypeError(`
-                <${name}> constructor passed state key ${stateKey} which is unset.
-                It must be set.
+                <${name}> constructor passed state key ${stateKey} which is unset. It must be set.
               `);
             }
+            
             state = stateObject;
+            
             if ( originals ) {
               let acquirers = Dependents.get(stateKey);
               if ( ! acquirers ) {
@@ -117,8 +106,7 @@
               }
               acquirers.add(node);
             }
-          } else if ( originals ) {
-            // set event handlers to custom element class instance methods
+          } else if ( originals ) { // set event handlers to custom element class instance methods
             if ( ! name.startsWith('on') ) continue;
             value = value.trim();
             if ( ! value ) continue;
@@ -127,9 +115,6 @@
             if ( value.startsWith(path) ) continue;
             const ender = value.match(FUNC_CALL) ? '' : '(event)';
             node.setAttribute(name, `${path}${value}${ender}`);
-            if ( node !== this ) {
-              this.removeAttribute(name);
-            }
           }
         }
 
@@ -137,22 +122,18 @@
       }
 
       #printShadow(state) {
-        fetchMarkup(this.#name, this)
-          .then(async markup => {
-            const cooked = await cook.call(this, markup, state);
-            const nodes = toDOM(cooked);
-            const selector = CONFIG.EVENTS.map(e => `[${e}]`).join(', ');
-            const listening = nodes.querySelectorAll(selector);
-            for( const node of listening ) {
-              // attributes on each node in the shadom DOM that has an even handler or state
-              this.#handleAttrs(node.attributes, {node, originals: true});
-            }
-            DEBUG && console.log(nodes, cooked, state);
-            const shadow = this.shadowRoot || this.attachShadow({mode:'open'});
-            shadow.replaceChildren(nodes);
-          }).catch(
-            err => DEBUG && console.warn(err)
-          ).finally(() => Counts.finished++);
+        fetchMarkup(this.#name, this).then(async markup => {
+          const cooked = await cook.call(this, markup, state);
+          const nodes = toDOM(cooked);
+          // attributes on each node in the shadom DOM that has an even handler or state
+          const listening = nodes.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
+          listening.forEach(node => this.#handleAttrs(node.attributes, {node, originals: true}));
+          DEBUG && console.log(nodes, cooked, state);
+          const shadow = this.shadowRoot || this.attachShadow({mode:'open'});
+          shadow.replaceChildren(nodes);
+        })
+        .catch(err => DEBUG && console.warn(err))
+        .finally(() => Counts.finished++);
       }
     };
 
@@ -160,8 +141,6 @@
       constructor (keyNumber) {
         if ( keyNumber == undefined ) super(`system-key:${systemKeys++}`); 
         else super(`client-key:${keyNumber}`);
-
-        return this;
       }
     }
 
@@ -170,25 +149,21 @@
   // API
     async function use(name) {
       let component;
-      DEBUG && self.customElements.whenDefined(name).then(obj => console.log(name, 'defined', obj));
-
       await fetchScript(name)
-        .then(script => {
+        .then(script => { // if there's a script that extends base, evaluate it to be component
           const Base = BangBase(name);
           const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;
           try {
-            const Component = eval(Compose);
-            component = Component;
+            component = eval(Compose);
           } catch(e) {
-            DEBUG && console.warn(e);
-            DEBUG && console.info(Compose, component);
+            DEBUG && console.warn(e, Compose, component)
           }
-        }).catch(() => {
-          const Base = BangBase(name);
-          component = Base;
+        }).catch(() => {  // otherwise if there is no such extension script, just use the Base class
+          component = BangBase(name);
         });
-
+      
       self.customElements.define(name, component);
+      DEBUG && self.customElements.whenDefined(name).then(obj => console.log(name, 'defined', obj));
     }
 
     function bangfig(newConfig = {}) {
@@ -199,27 +174,23 @@
       STATE.set(key, state);
       STATE.set(state, key);
 
-      // simple re-render everything
-      if ( document.body && rerenderAll ) {
-        // we need to remove styled because it will reload after we blit the HTML
-        Array.from(document.querySelectorAll(':not(body).bang-styled')).forEach(node => {
-          node.classList.remove('bang-styled');
-        });
+      if ( document.body && rerenderAll ) { // re-render all very simply
+        // we need to remove styled because it will need to load after we set the innerHTML
+        Array.from(document.querySelectorAll(':not(body).bang-styled'))
+          .forEach(node => node.classList.remove('bang-styled'));
+        
         const HTML = document.body.innerHTML;
         document.body.innerHTML = '';
         document.body.innerHTML = HTML;
-      } else {
+      } else { // re-render only those components depending on that key
         const acquirers = Dependents.get(key);
-        if ( acquirers ) {
-          acquirers.forEach(host => host.print());
-        }
+        if ( acquirers ) acquirers.forEach(host => host.print());
       }
     }
 
     function cloneState(key) {
-      if ( STATE.has(key) ) {
-        return JSON.parse(JSON.stringify(STATE.get(key)));
-      } else {
+      if ( STATE.has(key) ) return JSON.parse(JSON.stringify(STATE.get(key)));
+      else {
         throw new TypeError(`State store does not have the key ${key}`);
       }
     }
@@ -240,11 +211,8 @@
       }
 
       const observer = new MutationObserver(transformBangs);
-      observer.observe(document.documentElement, {
-        subtree: true,
-        childList: true,
-        characterData: true /* we are interested in bang nodes (which start as comments) */
-      });
+      /* we are interested in bang nodes (which start as comments) */
+      observer.observe(document.documentElement, {subtree: true, childList: true, characterData: true}); 
       findBangs(transformBang); 
       Object.assign(globalThis, {
         use, setState, cloneState, loaded, sleep, bangfig,
@@ -257,49 +225,37 @@
     async function fetchMarkup(name, comp) {
       // cache first
         // we make any subsequent calls for name wait for the first call to complete
-        // otherwise we create many in sync
-        // note that this disables hot realoding on server side from client 
-        // requires page reload or cache flush
+        // otherwise we create many in parallel without benefitting from caching
 
       const key = `markup:${name}`;
 
       if ( Started.has(key) ) {
-        if ( ! CACHE.has(key) ) {
-          await becomesTrue(() => CACHE.has(key));
-        }
-      } else {
-        Started.add(key);
-      }
+        if ( ! CACHE.has(key) ) await becomesTrue(() => CACHE.has(key));
+      } else Started.add(key);
 
       const styleKey = `style${name}`;
       const baseUrl = `${CONFIG.componentsPath}/${name}`;
       if ( CACHE.has(key) ) {
         const markup = CACHE.get(key);
-        if ( CACHE.get(styleKey) instanceof Error ) {
-          comp.setVisible();
-        }
+        if ( CACHE.get(styleKey) instanceof Error ) comp.setVisible();
         
         // if there is an error style and we are still includig that link
         // we generate and cache the markup again to omit such a link element
-        if ( CACHE.get(styleKey) instanceof Error &&
-             markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {
-          // then we need to set the cache for markup again and remove the link to the 
-          // stylesheet which failed 
+        if ( CACHE.get(styleKey) instanceof Error && markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {
+          // then we need to set the cache for markup again and remove the link to the stylesheet which failed 
         } else {
           comp.setVisible();
           return markup;
         }
       }
+      
       const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;
       let resp;
       const markupText = await fetch(markupUrl).then(async r => { 
         let text = '';
-        if ( r.ok ) {
-          text = await r.text();
-        } else {
-          // if no markup is given we just insert all content within the custom element
-          text = `<slot></slot>`;
-        }
+        if ( r.ok ) text = await r.text();
+        else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
+      
         if ( CACHE.get(styleKey) instanceof Error ) { 
           resp = text; 
           comp.setVisible();
@@ -311,6 +267,7 @@
           resp = `<style>${await fetchStyle(name).catch(e => '')}</style>${text}`;
           comp.setVisible();
         }
+        
         return resp;
       }).finally(async () => CACHE.set(key, await resp));
       return markupText;
@@ -320,16 +277,10 @@
       const key = `${file}:${name}`;
 
       if ( Started.has(key) ) {
-        if ( ! CACHE.has(key) ) {
-          await becomesTrue(() => CACHE.has(key));
-        }
-      } else {
-        Started.add(key);
-      }
+        if ( ! CACHE.has(key) ) await becomesTrue(() => CACHE.has(key));
+      } else Started.add(key);
 
-      if ( CACHE.has(key) ) {
-        return CACHE.get(key);
-      }
+      if ( CACHE.has(key) ) return CACHE.get(key);
 
       const url = `${CONFIG.componentsPath}/${name}/${file}`;
       let resp;
@@ -341,6 +292,7 @@
         resp = new TypeError(`Fetch error: ${url}, ${r.statusText}`);
         throw resp;
       }).finally(async () => CACHE.set(key, await resp));
+      
       return fileText;
     }
 
@@ -355,14 +307,10 @@
     // search and transform each added subtree
     function transformBangs(records) {
       records.forEach(record => {
-        const {addedNodes} = record;
         DEBUG && console.log(record);
-
+        const {addedNodes} = record;
         if ( !addedNodes ) return;
-
-        for( const node of addedNodes ) {
-          findBangs(transformBang, node);  
-        }
+        addedNodes.forEach(node => findBangs(transformBang, node));
       });
     }
 
@@ -374,25 +322,18 @@
       // replace the bang node (comment) with its actual custom element node
       const actualElement = createElement(name, data);
       current.parentElement.replaceChild(actualElement, current);
-      //TRANSFORMING.delete(current);
     }
 
     function findBangs(callback, root = document.documentElement) {
       const Acceptor = {
         acceptNode(node) {
-          if ( node.nodeType !== Node.COMMENT_NODE ) {
-            return NodeFilter.FILTER_SKIP;
-          }
-          const [name] = getBangDetails(node);
-          if ( name.match(DOUBLE_BARREL) ) {
-            return NodeFilter.FILTER_ACCEPT;
-          } else {
-            return NodeFilter.FILTER_REJECT;
-          }
+          if ( node.nodeType !== Node.COMMENT_NODE ) return NodeFilter.FILTER_SKIP;
+          const [name] = getBangDetails(node); 
+          if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
+          else return NodeFilter.FILTER_REJECT;
         }
       };
       const iterator = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT, Acceptor);
-
       const replacements = [];
 
       // handle root node
@@ -420,9 +361,7 @@
           }
         }
 
-      while(replacements.length) {
-        replacements.pop()();
-      }
+      while(replacements.length) replacements.pop()();
     }
 
     function getBangDetails(node) {
@@ -468,7 +407,7 @@
           (
             await Promise.all(Array.from(x)).catch(e => err+'')
           ).map(v => process(v, state))
-        )).join('\n');
+        )).join(' ');
       }
       else
 
@@ -479,18 +418,11 @@
       else // it's an object, of some type 
 
       {
-        // State store
-          // note about garbage collection and memory:
-            // in anything but a simple replacement of an object with the same identity
-            // the application must handle its own garbage collection of STATE items
-            // this is not a weak map
-
-          /* so we assume it's state and save it */
+        // State store     
+          /* so we assume an object is state and save it */
           /* to the global state store */
           /* which is two-sides so we can find a key */
           /* given an object. This avoid duplicates */
-          /* so: */
-
         let stateKey;
 
         // own keys
@@ -511,9 +443,8 @@
         else  /* or the system can come up with a state key */
 
         {
-          if ( STATE.has(x) ) {
-            stateKey = STATE.get(x);
-          } else {
+          if ( STATE.has(x) ) stateKey = STATE.get(x);
+          else {
             stateKey = new StateKey()+'';
             STATE.set(stateKey, x);
             STATE.set(x, stateKey);
@@ -521,9 +452,7 @@
         }
 
         stateKey += '';
-
         DEBUG && console.log({stateKey});
-
         return stateKey;
       }
     }
@@ -557,9 +486,10 @@
     async function _FUNC(strings, ...vals) {
       const s = Array.from(strings);
       let SystemCall = false;
+      let state;
       let str = '';
 
-      DEBUG && console.log(s.join('//'));
+      DEBUG && console.log(s.join('${}'));
 
       if ( s[0].length === 0 && vals[0].state ) {
         // by convention (see how we construct the template that we tag with FUNC)
@@ -567,16 +497,12 @@
         SystemCall = true;
       }
 
-      let state;
-
       // resolve all the values now if it's a SystemCall of _FUNC
-
       if ( SystemCall ) {
-        const state = vals.shift();
+        const {state} = vals.shift();
         s.shift();
         vals = await Promise.all(vals.map(v => process(v, state)));
-
-        DEBUG && console.log('System _FUNC call: ' + vals.join('::'));
+        DEBUG && console.log('System _FUNC call: ' + vals.join(', '));
 
         while(s.length) {
           str += s.shift();
@@ -584,31 +510,22 @@
             str += vals.shift();
           }
         }
-
         return str;
       } 
 
       else 
 
       // otherwise resolve them when we have access to the top-level state
-        // otherwise return a function which will eventually be called within the 
-        // vals.map(v => process(v, state))
-        // line of the top-level System _FUNC call
-        // where we *do* have access to state
-      
         // this is effectively just a little bit of magic that lets us "overload"
         // the method signature of F
 
       return async state => {
         vals = await Promise.all(vals.map(v => process(v, state)));
-
-        DEBUG && console.log('in-template _FUNC call:' + vals.join('::'));
+        DEBUG && console.log('in-template _FUNC call:' + vals.join(', '));
 
         while(s.length) {
           str += s.shift();
-          if ( vals.length ) {
-            str += vals.shift();
-          }
+          if ( vals.length ) str += vals.shift();
         }
 
         return str;
@@ -619,33 +536,27 @@
       const df = document.createDocumentFragment();
       const container = document.createElement('div');
       df.appendChild(container);
-      container.insertAdjacentHTML(`afterbegin`, `
-        <${name} ${data}></${name}>
-      `);
-      const element = container.firstElementChild;
-      return element;
+      container.insertAdjacentHTML(`afterbegin`, `<${name} ${data}></${name}>`);
+      return container.firstElementChild;
     }
 
     function toDOM(str) {
       const f = (new DOMParser).parseFromString(
-          `<template>${str}</template>`,"text/html"
+          `<template>${str}</template>`,
+          "text/html"
         ).head.firstElementChild.content;
       f.normalize();
       return f;
     }
 
     async function becomesTrue(check = () => true) {
-      const waiter = new Promise(async res => {
+      return new Promise(async res => {
         while(true) {
           await sleep(47);
-          if ( check() ) {
-            break;
-          }
+          if ( check() ) break;
         }
         res();
       });
-
-      return waiter;
     }
 
     async function sleep(ms) {
@@ -653,10 +564,7 @@
     }
 
     function isIterable(y) {
-      if ( y === null ) {
-        return false;
-      }
-
+      if ( y === null ) return false;
       return y[Symbol.iterator] instanceof Function;
     }
 

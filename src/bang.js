@@ -32,11 +32,9 @@
 
     const BangBase = (name) => class Base extends HTMLElement {
       static #activeAttrs = ['state']; // we listen for changes to these attributes only
-
       static get observedAttributes() {
         return Array.from(Base.#activeAttrs);
       }
-
       #name = name;
 
       constructor() {
@@ -409,7 +407,7 @@
           (
             await Promise.all(Array.from(x)).catch(e => err+'')
           ).map(v => process(v, state))
-        )).join('\n');
+        )).join(' ');
       }
       else
 
@@ -487,9 +485,11 @@
 
     async function _FUNC(strings, ...vals) {
       const s = Array.from(strings);
-      DEBUG && console.log(s.join('//'));
       let SystemCall = false;
+      let state;
       let str = '';
+
+      DEBUG && console.log(s.join('${}'));
 
       if ( s[0].length === 0 && vals[0].state ) {
         // by convention (see how we construct the template that we tag with FUNC)
@@ -497,15 +497,12 @@
         SystemCall = true;
       }
 
-      let state;
-
       // resolve all the values now if it's a SystemCall of _FUNC
-      
       if ( SystemCall ) {
-        const state = vals.shift();
+        const {state} = vals.shift();
         s.shift();
         vals = await Promise.all(vals.map(v => process(v, state)));
-        DEBUG && console.log('System _FUNC call: ' + vals.join('::'));
+        DEBUG && console.log('System _FUNC call: ' + vals.join(', '));
 
         while(s.length) {
           str += s.shift();
@@ -524,12 +521,13 @@
 
       return async state => {
         vals = await Promise.all(vals.map(v => process(v, state)));
-        DEBUG && console.log('in-template _FUNC call:' + vals.join('::'));
+        DEBUG && console.log('in-template _FUNC call:' + vals.join(', '));
 
         while(s.length) {
           str += s.shift();
           if ( vals.length ) str += vals.shift();
         }
+
         return str;
       };
     }
@@ -543,22 +541,22 @@
     }
 
     function toDOM(str) {
-      const f = (new DOMParser).parseFromString(`<template>${str}</template>`,"text/html")
-        .head.firstElementChild.content;
+      const f = (new DOMParser).parseFromString(
+          `<template>${str}</template>`,
+          "text/html"
+        ).head.firstElementChild.content;
       f.normalize();
       return f;
     }
 
     async function becomesTrue(check = () => true) {
-      const waiter = new Promise(async res => {
+      return new Promise(async res => {
         while(true) {
           await sleep(47);
           if ( check() ) break;
         }
         res();
       });
-
-      return waiter;
     }
 
     async function sleep(ms) {

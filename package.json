@@ -5,6 +5,8 @@
   "main": "src/bang.js",
   "scripts": {
     "test": "watch cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/",
+    "prepublishOnly": "echo 'npm run pack' not ready yet",
+    "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller src/bang.js -o dist/bang.js",
     "tutorial": "cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/"
   },
   "repository": {
@@ -31,6 +33,7 @@
   "author": "@dosy",
   "license": "MIT",
   "devDependencies": {
+    "roadroller": "^2.1.0",
     "serve": "^12.0.1"
   }
 }

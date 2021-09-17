@@ -1,0 +1,3 @@
+:not(:defined), .bang-el:not(.bang-styled) {
+  display: none;
+}
