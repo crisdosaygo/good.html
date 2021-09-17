@@ -1,1 +1,574 @@
-eval(Function("[M='`ILpAt`O?BuFzW`V[SfBtUZNaiJcAko~pCVY[QnxkHp~r_YZBXRTSTPTxOebxM@pAa~oJCoTRwdHPcmxHF`]TuySHxBKkA_pTge[}orIOI~TUw~nvNJFaEFXIkoVSlFjKJhElJdmZW_XUOlJoNF@VBrJoV}zcjXMTJQPrkYcUwyQC^Qmkx`wbeWQw|IlcVLLl[gFqord[^orGNtNOtYrdAvDZV}tFfQFlW]dVoiOmzQ~kvKaVbXLMR_IRsMB`ok?kEQSq}E{Vub}yJsgxPFjjuqzUDS}ed?cULNb?eDwgyicVCRk@wg_uj@M@LGWTK?NZfpuj]whE~vI_yMhGnhfai]Atyub^giWbY^@?}{jvEmKdZTvfePH|aI{oF[U[cYNGDSkVen|K}ghmvQoULpdzyh[Bfi^UJocYsJCaURG]ryK`uh}HO_NjgfPuKc]XZPAj`ZyrBVuoEO}KLucEuDgiaYE`Oc~twEgljWE{ETeu}LHBm?f^sNXqOgL_CAjU@gAkOVg]JxAABgqNSLSfD|jiT]sUf_Hbzhg@ia]f~[?XXwi|sBBM@BqE|]?xtC@FZ@ET?QsgJmGzQtOURcBObDquaQB?^aKOBDiMILn]}gVmsyaaDUyxat?R}PYB{rlXWNsrJ{qj}|eBMReBsaz}YXpUs`~AGnFYEb{rNMbAvzzFcj[]C?[bolHf^tIWWH}mnP_o|iEM_sIDcWVfkg?AmW{]bNsgNHbRZtW~w~ToAojRYXEJl@tV[LEK`hmVaQVhqzaRIq[BIHxEOCVBlOM^JHdsO@pHz]YaiuwdPwzCMaqDa@CEh}sghlk~~aDN~[MA?|PsdrZaNKM]KnfxazeJFkeZLdPWC_cNDpDP]Ofg~`eSvTG@rDor~WUtkqPPvjF@w}PzMl{exbu?Yz]Zv}FuIx~vWffcOWnv{^QTmAtM{ZKo?WisiHXk~h[Iz|YFZ@z]?XfXnir?TYUNdoAa_I[vY@JvnSft}{R@{Gy]_FOg}gbVfMLBxjRUwZfTBWKpIVYaAcJLU^nhPFHjNUnX]xssjv`@DYjWG`OEs{baVQtAAQzFyHirvBxchvcDoZtuAnrlAqVFAiTe[{c@bfU[fTtaXMzdZxioxs^wlmC|tcrPehq{`e^{KJYcgN[`OP{T]{KvFG][F?yOYAa~FB{ytHtHW|JVnn@Be|VfwnaUmG?HwH~nGUSlcGBEdfrOLUrawvNXEtYjcMvljT]t?qoU|sb^rbx_qWB_z{B|DBakg^SHg_hk]AJdrOUoYttM~GwjRWmUj{iFjrLhapJ{ykmQyp[u~lJdbNC~?nn~DQ[_seUuXAKht?YBmySvaaMuOtWzKzKUbLEJN^~urJt|ztCZq{cjiTVXmiyBJ[YpiW?Mrfz@K?UMKqw]KLPmkBQQO`UZXA?[T_PTYcO{`olz`_BE@YR^ybRYLnuSmFdY`?D}]jMoZD[`HKZu|G^QW}f?`IpiOiDVuJo{Pjq_`kU_J^QI[dEfa{sHY?g^wmcAXezmlj~w|M}gLUjU?GNJVAayVEZXdSmqLgeAWpvkuq@cMYfnDnuok^_j|OgCBo[@nd^BjUm]mEm[F^uqal}QLW]I[a@lQqJkEEiPprHWUPeDz[KTaq@QtxBZXnt~rq_jYNuk~rszM@uhcKSmMRSD^hiG@ECY^cTgVkMhlyvdaNhqEFH`VaRtYXeHv_L?VVUSg`WonDyvksPFYUDo{X?`DW{BugFTisqOyShFSQ[KJ^fxk}Wx~|CD}f^bnwxs[~T}NsgLiFXerZtAZp_oLvXJw@UveIEGDxP^aRYZHfkG[Vtjb@^Jz}ha^o@hZUo{lV@{WQMxOjipnzZfTJq]?q@m|WqCwiz`GZC`Cb^n_AKzDrtFFgEFA@?VDAr}VFH|]m^tbN[AZCtQGY[wNSekTF^f?nKrzLn_{ZKuk]da{ayrRmUTyWyXETbOPHK}QLA[snZ{P{RJ~EAuUFcIoGHK]|atwL[HIFUD`ya`TK^FAODPXCa@nJs{qk|L_bP{uV]kRSYTXnmkeX{CgkRk]IjXHuI|m?M|qGUBbRnZo_Cu]mnwTW`}{@KaaPnxoCck|p@bGK]{asHDLQ]ElRpeNGaQ@RE@uAueIt|BVF?Y]fYGv]BwAWN~pklioVlzya|BkqI{BqzxszRpG]c`_egxgepatx[x?phaKVoFlbZXQv[gZpJ[aNoC`^}wabE`Bsj]_|AIhKFY{nxckNfW}zDNgGeD?kqP@e{SmzZAdt`unWUkYBnLT[V}_DzMiYS`nOyXFGA~TcVEvJWKesBt`iuemJyvUIvgxXPLZzETFlrJUx[A~Kv]wP^vKWLpGvH}|R`blPIMdTvk~cQPFLVVTGFMeCvw]?aKx`KUW`VJuSmyTl~YJPJwtsBALAxANmLXQsaKOYl{||Brfmu^}HmGM_Ofv^KrusK?_FRShpjb@aOFEN@x@zhnAXCGmkZ]a}tgsnp?iXz]ZgzPguvqXYkRqAWRGa_Un?tJwIPYTrO_JMjzc[^jdphZiv~gmYyB~B`AgPVlobYHIl^hYbOl}iM_p?r@b}Z}valrJnyIisoiC@UdGNptS}[TYaHk`AJxv|oc|pXJVZkdEyD|ZmFR^z{djBPwFEUGmQlmCttyRqMw`pWAX|NUFV~ACkz]pDUcBXn[RRwEQW{YLZ]Cc|SB^hqn{B_mOkhMLYHiXaDIQjp`UH~UCR~HBNJKuwmtC?FSAMg`ps^CvIo}^B^OQR|JkGqR@VaDYx[[teqoeUNt[_sC{e??XMh{BykLnvjfYd}G@QzuNFMkXZdfUpQgjajQvou@^Cbp`eiLdjpFC?zk{lyloxjKWSNQMlK`_SwUHZv[SxQrUouI]w[vaYQKljZF?XHlcsDGDGpMokLMz_E?|WH}lH?mzsF|UpDZVBl}wYo[yGFcp]^EAoqhWRc@yOGoJwwbHnuZRK|e_gIkVSyc]}BnCJY]o_Tx|wncZWx}[|ZH|fRVgTF^}BYaB{^CIYixH?BjGuri?DFY|BG^LQhRWmiYlAV}YHbC@THKBVHf?NxLXqFRUKjWpx{Vbvm~{jNmemLHXGdJFxAq]qdF^_`hSSanT]_HkmWV|npHai_jbQJcRROf|?FN@}?pkmNTgeGAAh[LB~RrZ}ow|?QjfvENMJROAKOnez{NduxN_ApD?NNMmVQRUqZYcA{WaxXS?Akg^N^TLr}~HhGHE[RpLWiqGEaLEsPucuk[^ElNDuSjjPj`fZStINVQ{_omZfHnk?zo}M|M?`RQNOjQ]lbH{tR]cwBy~EVjGMgX_w_xfrbXw_I{|rgYD`ywqnZ{[uVNOslyjbWh`OFhkq@FOA~wDNBv_RSx|BLkEQVcKuYwl_eeJucSCLX~f?BB|@JZ~z`LcPDoV[^NBSJP`z{jVTYtdZ}VOqyvCkSOUkOeKAkbwToJr[u[XWQ{UHWFW{~wx^MKLqQNdFrb`ytD|XH_MCT?BZoMMLljdmVI?Q~vVYB]~n][x[qWmUFRMKJYllukbchRfIfTxrde~FQJCChpvqrp`wUwEIF|MQXsQyUK[^^jp^V^sNtBLIWCnoknQj}jjqm@Sy_Cu]pbhm~g?c}eCUO`@Lr^yJmNrUbzb^afE@gWX]eP]hW}msdoYE}|OlDPSHAfkmrWI|yQ@ovd]IeauFbiHapE?[PZ?qeYVEmUEIoEnnLOgs_PUk]?DXIfEh?UiwDNYVRh{SzO]CxwltZiJLzc]Z_bS{fOqYBlI|yxTPrIDk^`EsvSnq]rUMWbA@mSkFT?]~evQoIrVjGY|SBcKjlglgk^lEI[EOeaMzViXfy@fUFbwpplMZhTrfCyPfZX[}kATdI]HCPng~FSARvzaNrslwxMNtMf}SGBcO^EP~JiBlSl@]C^UTpIQTPH_FP[^RbVHRIm@ERJHSEQfLSyX}?rdtMgWeqFf@iwv`FmOQqCQUcZkB?ncu{`yo{ayu|MVzmx]s@tl~|DiOKqEc[Y|gD@C[jIcGwd{eMoOTDDgjFIB~u@zS[uOi|^HWUY_BmJ_zPHTnibRBYk_nkhfcQdLWDwTMdqNpVasA?{UdiOgEBr~LiYQlsXdHYgmINUxtGUO[LbVdSpfp]pQApYPMqLhBBk]jqT^Bi^AYxjpb@gGnEixWgsppS{hSegs`lBOkj{{m_sZbcK[gM?TuBi{MQxeDuXZnP{EytYTOJyrF`Y^]cQZhNFGvlXZQlHnIzL^ENbLf@nEx_pqdDRAkADiuFz@XWi_L|MYP~dBnBGwYEqbv[RQ{FDstPjsbDYG?LNkMoeuCmdEDzfpk@OOPji[HRentXBOJubw_E_qeb[lUOo|`NA`QEWqctEVb|Rg_WLQpdnoltBMoLvaapBv|@TNId`wJ|iT@cBxnvdnaQ}bbREe_}}MmceTxVr[]ZPYQLtHUcXG}^TlhVts}v_B|NfdtSzCCIgMVJQt]mbXTT]nByPEuZERWmy|Rqryfe{XHqyDs~FlyT[rUTtAVzEZudPpbbUdXnauXA{ge}nySnvrqY@oVchswuQllpq~GGiSO?WKqF}e_sn|AKGI?Dwn`hA~OzBfIqgYQoUZk|kRyatTgIhqnWqye?vYsRyYIfn?a|k|ESywZGazSmFfS``q[kW]WaT[DNBEw|[LzQlK?TBF{kBi{^pyKTwKy~I~WDehf]LO~DFyK@]PJ`PVBsgj`aXgea`aIYkKbjMqSeD`dQw~ejZA]QfW[HWKyHSv`HCH~hIXR[M_KzGaUqXoLO`zZmNvrakzquy|SGO_jSHEermrxC`IC~L}j`YXuKgtLMmwBPj{KeRdOG@UbammjU^RNUMi?wOFQVBlQFAw]_u}cQSe~Jloa{EmMHaCXT|AoROqpnqVcoWOWX_K[dmgkSWB{MZm{nknjCxYwCmejNi@M`pAio`Zwxs|L?@lfMPABKwfLvEIoBqejJ^DrPhLyPr]Yez@GkUaKQjLpT^gdd[H|b@Sdvfooj}SKQCh?Ol{IYL}PVMYXnv{Wc]oyw[qBMj?R}|r]a_JKmZKlAe]ZmtRGoZxs]VJZbremC_NmaKBwnBbOTm|ilOJKybseoJhXEL@bV_IS_EZ`XsrZLvN~cQkfIlljgOaiODUbUi{]?qnrh}hDFQo}o?MFfAHNezXPH]OfJHH|n[~~ufzSSutaTHtyJ|f^bmuRbF}e]iYSZVbugizfvK{WF[qVN|n[rzg_Y@WyCMUS[MZOFFPz`tLNBIpVF|eSoM_b[OMb}vu}skHIbh_GjYFHzra^]BZE|LB@RiBSviwvouvL^DAo`hHhISlQ`gYNY|Sogv?BEGAkFeWwBom[HM[FBFxsbBoMdNoIWE?HYzZIpZZHYlC{qKBagdYu}WHFJBz`eQa[DcDDxwKDcTRwLt]XyrHxcFABRVPW^[WpQz_dhMUcgTCFshyqIahPTgaWBK[t^RI_rG`Gkd{@rILVy~yenPLVNmAf?JIGzdJwF?`Z`Yjo@dpOx{JzkjSPsvRY?l?BZcSslNNudtMk?s}WSpsi`FixSov@jOcoyRwv?zShxgtBOM@e~A~Hi]F}[BTWl?n]y]EoH|pa?UgK{oRTYcxoCo}{jElt{xR@~{z}LirbdEVYyfgezPg[RYEIvWKC`u}K~ibcMuwGyc`lsmQ|?tmtzDT|MM`HiUxO_J_?iutdLEAv[|BNCiw^jr@SCqvWX~vZVL^U}MQUR[{YWH[u?TbfIRyTbnQz|{SPVlgyFoLTwMI^YazD|FW?PJb]?{i_MMltIJTE|`SySaB]eAHwaD_mRwQvl~IeL~ZQ}[dzSOF{sTBAmdnkgEJhnDC]d{h|km?YNUPyxq[lAkvIVrlBZtx|[C@xmX}hl{LOy}qOKHTO}~DyNjjucExW{WVpOyW?BPgHr`y|Z^qeNPkMMejflZae~]cnW_^jMUxoeRRWdcIrQjV^j{}bGqskx@jUqt^HV^@j]neIzA^O^jyxMXZaWsAg^XAjWPdOtVgM]bZuwx`]opeFZAH{{FCCnyttLodEY~yEsulHYGSvNQH|`[dluYeLQq[jwdfaJGmPhk^uGNBDBBHRVhKg?wgAs?B}gfvdS`LBLefFB[HnG|wnY^DMdO@Ass?yHRW{m`YVuq~Faok|xG]AVbkYorozwj~mAojVtSfn_]Rj`XGqBirgqq]llwRMPp^avuDiQARsiBWNTWeTUfE~}kprKVQPDLJDA]]D?uesm_QhlN`ymrmzKoVKETybb^KvI{AP}Dmm?oj?y~KPeAKWWPTizPibu]wDV?CMXRm[mfyCWHzZbudliX@HFJ_^EAHpbvLGlHqzHIRMq@j]_}Zvu@BXpIpyHDCzbOjIQcw?bjdmAnE^oZRsYZ^A?DhFjZwooihJLgH|VmIu`mQ`lPLGgz[e_}C@tzU`GsLZJqR{T?JFo?`kHGvpnZTmduWdpPAAbUcXElqKPlL]Zk}KP||kO}Zl~qRjPKGGxznnx^DIAAaQHLDzgkDFaIzNP}hmX_Hcl^Q[@ct_DWNA]niDP}Zz~rNlbpuLUV~FkzexkA?@OwucSa[thAk?Na|SwIHEVsBfkkj`ASQYgiFx~ktFlgyO[jSPNtWP[ybXrwAAcciM_^^}e}nK~Lx^pCJ]v~uGkubuY^Fp{~SEzVPr~RoaDNo_NuMof~N~Cq?aZGuO|tACZjq]xrrNwsK~[czaGT_wu~xEUKaw@_eSnIbbNxnXiv|joREaIlfr}XRZYXxxBwbdakZ?dz[?}u_?ODT|OE{QgVHDKIDucToh_GIjE^@[sDePYug@y]ALUf@Z[mVRuzxjj'",...']charCodeAtUinyxp',"for(;e<19024;c[e++]=x-128)for(x=1;x<128;n=p.map((i,y)=>(t=r[i]*2+1,t=Math.log(t/(h-t)),A-=a[y]*t,t/1500)),A=~-h/(1+Math.exp(A))|1,U=o%h<A,o=o%h+(U?A:h-A)*(o>>17)-!U*A,p.map((i,y)=>(t=r[i]+=(U*h/2-r[i]<<13)/((C[i]+=C[i]<6)+1/50)>>13,a[y]+=n[y]*(U-A/h))),x=x*2+U)for(p='01021032032104310531054106420653210874098765'.split(A=0).map((i,y)=>(t=0,[...i].map((i,y)=>(t=t*997+(c[e-i]|0)|0)),h*32-1&t*997+x)*12+y);o<h*32;o=o*64|M.charCodeAt(d++)&63);return String.fromCharCode(...c)")([],[],1<<17,[0,0,0,0,0,0,0,0,0,0,0,0],new Uint16Array(51e6).fill(1<<15),new Uint8Array(51e6),0,0,0))
+{
+  // constants, classes, config and state
+    const DEBUG = false;
+    const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
+    const F = _FUNC; 
+    const FUNC_CALL = /\);?$/;
+    const CONFIG = {
+      htmlFile: 'markup.html',
+      scriptFile: 'script.js',
+      styleFile: 'style.css',
+      bangKey: '_bang_key',
+      componentsPath: './components',
+      allowUnset: false,
+      unsetPlaceholder: '',
+      EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
+        mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
+        dragmove drag mouseover mouseout focus blur focusin focusout scroll
+      `.split(/\s+/g).filter(s => s.length).map(e => `on${e}`),
+      delayFirstPaintUntilLoaded: true,
+      noHandlerPassthrough: false
+    };
+    const STATE = new Map();
+    const CACHE = new Map();
+    const Started = new Set();
+    const TRANSFORMING = new WeakSet();
+    const Dependents = new Map();
+    const Counts = {
+      started: 0,
+      finished: 0
+    };
+    let systemKeys = 1;
+
+    const BangBase = (name) => class Base extends HTMLElement {
+      static #activeAttrs = ['state']; // we listen for changes to these attributes only
+      static get observedAttributes() {
+        return Array.from(Base.#activeAttrs);
+      }
+      #name = name;
+
+      constructor() {
+        super();
+        DEBUG && console.log(name, 'constructed');
+        this.print();
+      }
+
+      // BANG! API methods
+      print() {
+        Counts.started++;
+        this.prepareVisibility();
+        const state = this.#handleAttrs(this.attributes, {originals: true});
+        this.#printShadow(state);
+      }
+
+      prepareVisibility() {
+        this.classList.add('bang-el');
+        this.classList.remove('bang-styled');
+        // this is like an onerror event for stylesheet's 
+          // we do this because we want to display elements if they have no stylesheet defined
+          // becuase it's reasonabgle to want to not include a stylesheet with your custom element
+        fetchStyle(name).catch(err => this.setVisible());
+      }
+
+      setVisible() {
+        this.classList.add('bang-styled');
+      }
+
+      // Web Components methods
+      attributeChangedCallback(name, oldValue, value) {
+        // setting the state attribute casues the custom element to re-render
+        if ( name === 'state' && !isUnset(oldValue) ) {
+          DEBUG && console.log(`Changing state, so calling print.`, oldValue, value, this);
+          this.print();
+        }
+      }
+
+      connectedCallback() {
+        DEBUG && console.log(name, 'connected');
+      }
+
+      // private methods
+      #handleAttrs(attrs, {node, originals} = {}) {
+        let state;
+
+        if ( ! node ) node = this;
+
+        for( let {name,value} of attrs ) {
+          if ( isUnset(value) ) continue;
+
+          if ( name === 'state' ) {
+            const stateKey = value; 
+            const stateObject = STATE.get(stateKey);
+            
+            if ( isUnset(stateObject) ) {
+              throw new TypeError(`
+                <${name}> constructor passed state key ${stateKey} which is unset. It must be set.
+              `);
+            }
+            
+            state = stateObject;
+            
+            if ( originals ) {
+              let acquirers = Dependents.get(stateKey);
+              if ( ! acquirers ) {
+                acquirers = new Set();
+                Dependents.set(stateKey, acquirers);
+              }
+              acquirers.add(node);
+            }
+          } else if ( originals ) { // set event handlers to custom element class instance methods
+            if ( ! name.startsWith('on') ) continue;
+            value = value.trim();
+            if ( ! value ) continue;
+
+            const path = node === this ? 'this.' : 'this.getRootNode().host.';
+            if ( value.startsWith(path) ) continue;
+            const ender = value.match(FUNC_CALL) ? '' : '(event)';
+            node.setAttribute(name, `${path}${value}${ender}`);
+          }
+        }
+
+        return state;
+      }
+
+      #printShadow(state) {
+        fetchMarkup(this.#name, this).then(async markup => {
+          const cooked = await cook.call(this, markup, state);
+          const nodes = toDOM(cooked);
+          // attributes on each node in the shadom DOM that has an even handler or state
+          const listening = nodes.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
+          listening.forEach(node => this.#handleAttrs(node.attributes, {node, originals: true}));
+          DEBUG && console.log(nodes, cooked, state);
+          const shadow = this.shadowRoot || this.attachShadow({mode:'open'});
+          shadow.replaceChildren(nodes);
+        })
+        .catch(err => DEBUG && console.warn(err))
+        .finally(() => Counts.finished++);
+      }
+    };
+
+    class StateKey extends String {
+      constructor (keyNumber) {
+        if ( keyNumber == undefined ) super(`system-key:${systemKeys++}`); 
+        else super(`client-key:${keyNumber}`);
+      }
+    }
+
+  install();
+
+  // API
+    async function use(name) {
+      let component;
+      await fetchScript(name)
+        .then(script => { // if there's a script that extends base, evaluate it to be component
+          const Base = BangBase(name);
+          const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;
+          try {
+            component = eval(Compose);
+          } catch(e) {
+            DEBUG && console.warn(e, Compose, component)
+          }
+        }).catch(() => {  // otherwise if there is no such extension script, just use the Base class
+          component = BangBase(name);
+        });
+      
+      self.customElements.define(name, component);
+      DEBUG && self.customElements.whenDefined(name).then(obj => console.log(name, 'defined', obj));
+    }
+
+    function bangfig(newConfig = {}) {
+      Object.assign(CONFIG, newConfig);
+    }
+
+    function setState(key, state, rerenderAll = false) {
+      STATE.set(key, state);
+      STATE.set(state, key);
+
+      if ( document.body && rerenderAll ) { // re-render all very simply
+        // we need to remove styled because it will need to load after we set the innerHTML
+        Array.from(document.querySelectorAll(':not(body).bang-styled'))
+          .forEach(node => node.classList.remove('bang-styled'));
+        
+        const HTML = document.body.innerHTML;
+        document.body.innerHTML = '';
+        document.body.innerHTML = HTML;
+      } else { // re-render only those components depending on that key
+        const acquirers = Dependents.get(key);
+        if ( acquirers ) acquirers.forEach(host => host.print());
+      }
+    }
+
+    function cloneState(key) {
+      if ( STATE.has(key) ) return JSON.parse(JSON.stringify(STATE.get(key)));
+      else {
+        throw new TypeError(`State store does not have the key ${key}`);
+      }
+    }
+
+    async function loaded() {
+      const loadCheck = () => {
+        const nonZeroCount = Counts.started > 0; 
+        const finishedWhatWeStarted = Counts.finished === Counts.started;
+        return nonZeroCount && finishedWhatWeStarted;
+      };
+      return becomesTrue(loadCheck);
+    }
+
+  // helpers
+    function install() {
+      if ( CONFIG.delayFirstPaintUntilLoaded ) {
+        becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
+      }
+
+      const observer = new MutationObserver(transformBangs);
+      /* we are interested in bang nodes (which start as comments) */
+      observer.observe(document.documentElement, {subtree: true, childList: true, characterData: true}); 
+      findBangs(transformBang); 
+      Object.assign(globalThis, {
+        use, setState, cloneState, loaded, sleep, bangfig,
+        ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
+      });
+      
+      loaded().then(() => document.body.classList.add('bang-styled'));
+    }
+
+    async function fetchMarkup(name, comp) {
+      // cache first
+        // we make any subsequent calls for name wait for the first call to complete
+        // otherwise we create many in parallel without benefitting from caching
+
+      const key = `markup:${name}`;
+
+      if ( Started.has(key) ) {
+        if ( ! CACHE.has(key) ) await becomesTrue(() => CACHE.has(key));
+      } else Started.add(key);
+
+      const styleKey = `style${name}`;
+      const baseUrl = `${CONFIG.componentsPath}/${name}`;
+      if ( CACHE.has(key) ) {
+        const markup = CACHE.get(key);
+        if ( CACHE.get(styleKey) instanceof Error ) comp.setVisible();
+        
+        // if there is an error style and we are still includig that link
+        // we generate and cache the markup again to omit such a link element
+        if ( CACHE.get(styleKey) instanceof Error && markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {
+          // then we need to set the cache for markup again and remove the link to the stylesheet which failed 
+        } else {
+          comp.setVisible();
+          return markup;
+        }
+      }
+      
+      const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;
+      let resp;
+      const markupText = await fetch(markupUrl).then(async r => { 
+        let text = '';
+        if ( r.ok ) text = await r.text();
+        else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
+      
+        if ( CACHE.get(styleKey) instanceof Error ) { 
+          resp = text; 
+          comp.setVisible();
+        } else {
+          // inlining styles for increase speed */
+            // we setVisible (add bang-styled) straight away because the inline styles block the markup
+            // so no FOUC while stylesheet link is loading, like previously: resp = `
+            // <link rel=stylesheet href=${baseUrl}/${CONFIG.styleFile} onload=setVisible>${text}`;
+          resp = `<style>${await fetchStyle(name).catch(e => '')}</style>${text}`;
+          comp.setVisible();
+        }
+        
+        return resp;
+      }).finally(async () => CACHE.set(key, await resp));
+      return markupText;
+    }
+
+    async function fetchFile(name, file) {
+      const key = `${file}:${name}`;
+
+      if ( Started.has(key) ) {
+        if ( ! CACHE.has(key) ) await becomesTrue(() => CACHE.has(key));
+      } else Started.add(key);
+
+      if ( CACHE.has(key) ) return CACHE.get(key);
+
+      const url = `${CONFIG.componentsPath}/${name}/${file}`;
+      let resp;
+      const fileText = await fetch(url).then(r => { 
+        if ( r.ok ) {
+          resp = r.text();
+          return resp;
+        } 
+        resp = new TypeError(`Fetch error: ${url}, ${r.statusText}`);
+        throw resp;
+      }).finally(async () => CACHE.set(key, await resp));
+      
+      return fileText;
+    }
+
+    async function fetchStyle(name) {
+      return fetchFile(name, CONFIG.styleFile);
+    }
+
+    async function fetchScript(name) {
+      return fetchFile(name, CONFIG.scriptFile);
+    }
+
+    // search and transform each added subtree
+    function transformBangs(records) {
+      records.forEach(record => {
+        DEBUG && console.log(record);
+        const {addedNodes} = record;
+        if ( !addedNodes ) return;
+        addedNodes.forEach(node => findBangs(transformBang, node));
+      });
+    }
+
+    function transformBang(current) {
+      DEBUG && console.log({transformBang},{current});
+      const [name, data] = getBangDetails(current);
+      DEBUG && console.log({name, data});
+
+      // replace the bang node (comment) with its actual custom element node
+      const actualElement = createElement(name, data);
+      current.parentElement.replaceChild(actualElement, current);
+    }
+
+    function findBangs(callback, root = document.documentElement) {
+      const Acceptor = {
+        acceptNode(node) {
+          if ( node.nodeType !== Node.COMMENT_NODE ) return NodeFilter.FILTER_SKIP;
+          const [name] = getBangDetails(node); 
+          if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
+          else return NodeFilter.FILTER_REJECT;
+        }
+      };
+      const iterator = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT, Acceptor);
+      const replacements = [];
+
+      // handle root node
+        // it's a special case because it will be present in the iteration even if
+        // the NodeFilter would filter it out if it were not the root
+      let current = iterator.currentNode;
+
+      if ( Acceptor.acceptNode(current) === NodeFilter.FILTER_ACCEPT ) {
+        if ( !TRANSFORMING.has(current) ) {
+          TRANSFORMING.add(current);
+          const target = current;
+          replacements.push(() => transformBang(target));
+        }
+      }
+
+      // handle any descendents
+        while (true) {
+          current = iterator.nextNode();
+          if ( ! current ) break;
+
+          if ( !TRANSFORMING.has(current) ) {
+            TRANSFORMING.add(current);
+            const target = current;
+            replacements.push(() => transformBang(target));
+          }
+        }
+
+      while(replacements.length) replacements.pop()();
+    }
+
+    function getBangDetails(node) {
+      const text = node.textContent.trim();
+      const [name, ...data] = text.split(/[\s\t]/g);
+      return [name, data.join(' ')];
+    }
+
+    async function process(x, state) {
+      if ( typeof x === 'string' ) return x;
+      else 
+
+      if ( typeof x === 'number' ) return x+'';
+      else
+
+      if ( typeof x === 'boolean' ) return x+'';
+      else
+
+      if ( x instanceof Date ) return x+'';
+      else
+
+      if ( isUnset(x) ) {
+        if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || '';
+        else {
+          throw new TypeError(`Value cannot be unset, was: ${x}`);
+        }
+      }
+      else
+
+      if ( x instanceof Promise ) return await x.catch(err => err+'');
+      else
+
+      if ( x instanceof Element ) return x.outerHTML;
+      else
+
+      if ( x instanceof Node ) return x.textContent;
+      else
+
+      if ( isIterable(x) ) {
+        // if an Array or iterable is given then
+        // its values are recursively processed via this same function
+        return (await Promise.all(
+          (
+            await Promise.all(Array.from(x)).catch(e => err+'')
+          ).map(v => process(v, state))
+        )).join(' ');
+      }
+      else
+
+      if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) return await x(state);
+      else
+
+      if ( x instanceof Function ) return x(state);
+      else // it's an object, of some type 
+
+      {
+        // State store     
+          /* so we assume an object is state and save it */
+          /* to the global state store */
+          /* which is two-sides so we can find a key */
+          /* given an object. This avoid duplicates */
+        let stateKey;
+
+        // own keys
+          // an object can specify it's own state key
+          // to provide a single logical identity for a piece of state that may
+          // be represented by many objects
+
+        if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {
+          stateKey = new StateKey(x[CONFIG.bangKey])+'';
+          // in that case, replace the previously saved object with the same logical identity
+          const oldX = STATE.get(stateKey);
+          STATE.delete(oldX);
+
+          STATE.set(stateKey, x);
+          STATE.set(x, stateKey);
+        } 
+
+        else  /* or the system can come up with a state key */
+
+        {
+          if ( STATE.has(x) ) stateKey = STATE.get(x);
+          else {
+            stateKey = new StateKey()+'';
+            STATE.set(stateKey, x);
+            STATE.set(x, stateKey);
+          }
+        }
+
+        stateKey += '';
+        DEBUG && console.log({stateKey});
+        return stateKey;
+      }
+    }
+
+    async function cook(markup, state) {
+      let cooked = '';
+      try {
+        if ( !Object.prototype.hasOwnProperty.call(state, '_self') ) {
+          Object.defineProperty(state, '_self', {
+            get: () => state
+          });
+        }
+        DEBUG && console.log('self', state._self);
+      } catch(e) {
+        DEBUG && console.warn(
+          `Cannot add '_self' self-reference property to state. 
+            This enables a component to inspect the top-level state object it is passed.`
+        );
+      }
+      try {
+        with(state) {
+          cooked = await eval("(async function () { return await _FUNC`${{state}}"+markup+"`; }())");  
+        }
+        return cooked;
+      } catch(error) {
+        console.error('Template error', {markup, state, error});
+        throw error;
+      }
+    }
+
+    async function _FUNC(strings, ...vals) {
+      const s = Array.from(strings);
+      let SystemCall = false;
+      let state;
+      let str = '';
+
+      DEBUG && console.log(s.join('${}'));
+
+      if ( s[0].length === 0 && vals[0].state ) {
+        // by convention (see how we construct the template that we tag with FUNC)
+        // the first value is the state object when our system calls it
+        SystemCall = true;
+      }
+
+      // resolve all the values now if it's a SystemCall of _FUNC
+      if ( SystemCall ) {
+        const {state} = vals.shift();
+        s.shift();
+        vals = await Promise.all(vals.map(v => process(v, state)));
+        DEBUG && console.log('System _FUNC call: ' + vals.join(', '));
+
+        while(s.length) {
+          str += s.shift();
+          if ( vals.length ) {
+            str += vals.shift();
+          }
+        }
+        return str;
+      } 
+
+      else 
+
+      // otherwise resolve them when we have access to the top-level state
+        // this is effectively just a little bit of magic that lets us "overload"
+        // the method signature of F
+
+      return async state => {
+        vals = await Promise.all(vals.map(v => process(v, state)));
+        DEBUG && console.log('in-template _FUNC call:' + vals.join(', '));
+
+        while(s.length) {
+          str += s.shift();
+          if ( vals.length ) str += vals.shift();
+        }
+
+        return str;
+      };
+    }
+
+    function createElement(name, data) {
+      const df = document.createDocumentFragment();
+      const container = document.createElement('div');
+      df.appendChild(container);
+      container.insertAdjacentHTML(`afterbegin`, `<${name} ${data}></${name}>`);
+      return container.firstElementChild;
+    }
+
+    function toDOM(str) {
+      const f = (new DOMParser).parseFromString(
+          `<template>${str}</template>`,
+          "text/html"
+        ).head.firstElementChild.content;
+      f.normalize();
+      return f;
+    }
+
+    async function becomesTrue(check = () => true) {
+      return new Promise(async res => {
+        while(true) {
+          await sleep(47);
+          if ( check() ) break;
+        }
+        res();
+      });
+    }
+
+    async function sleep(ms) {
+      return new Promise(res => setTimeout(res, ms));
+    }
+
+    function isIterable(y) {
+      if ( y === null ) return false;
+      return y[Symbol.iterator] instanceof Function;
+    }
+
+    function isUnset(x) {
+      return x === undefined || x === null;
+    }
+}
