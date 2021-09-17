@@ -41,8 +41,8 @@ Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_el
 
 Apart from self-closing tags, ***BANG!*** has numerous other special features that make it super productive for building interfaces. Read on to discover how ***BANG!*** makes UI work more productive. 
 
-You can jump in right away and get it on the npm: [b
-npmjs.com/@bang.html](https://www.npmjs.com/package/bang.html)
+You can jump in right away and get it on the npm: 
+[npmjs.com/@bang.html](https://www.npmjs.com/package/bang.html)
 
 ------
 
@@ -93,13 +93,13 @@ project
 │   └───components
 │       │   config.js (optional)
 │       │  
-|       └───warm-greeter
-|       |   │   markup.html (optional)
-│       |   │   style.css (optional)
-|       |   |   script.js (optional)
-|       └───greet-count
+|        └───warm-greeter
+|        |   │   markup.html (optional)
+|        |   │   style.css (optional)
+|        |   |   script.js (optional)
+|        └───greet-count
 |           │   markup.html (optional)
-│           │   style.css (optional)
+│          │   style.css (optional)
 |           |   script.js (optional)
 │   
 ...
