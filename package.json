@@ -1,7 +1,7 @@
 {
   "name": "bang.html",
   "version": "1.2.2",
-  "description": "BANG! Web Component custom elements with async templating, smooth syntax and self-closing tags!",
+  "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
   "main": "dist/bang.js",
   "scripts": {
     "test": "watch cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/",
