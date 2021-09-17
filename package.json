@@ -2,12 +2,12 @@
   "name": "bang.html",
   "version": "1.2.1",
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and self-closing tags!",
-  "main": "src/bang.js",
+  "main": "dist/bang.js",
   "scripts": {
     "test": "watch cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/",
-    "prepublishOnly": "echo 'npm run pack' not ready yet",
-    "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller src/bang.js -o dist/bang.js",
-    "tutorial": "cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/"
+    "prepublishOnly": "npm run pack",
+    "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller -t text -a eval -M 1000 src/bang.js -o dist/bang.js",
+    "tutorial": "cp dist/bang.js docs/bang-dev.js & serve -p 8080 docs/"
   },
   "repository": {
     "type": "git",
