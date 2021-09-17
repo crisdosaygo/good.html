@@ -23,13 +23,13 @@
 ```
 These self-closing tags are known as **bang-tags** (*web components with a **bang!***)
 
-They're actually just ***valid*** HTML comments that **BANG!** converts into valid [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components).
+They're actually just ***valid*** HTML comments that ***BANG!*** converts into valid [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components).
  
-Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element), when you use **bang! tags** you can omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing tag. 
+Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element), when you use **bang-tags** you can omit the self-closing slash `/>`. So, `<!custom-el2>` is also a valid void self-closing **bang-tag**. 
 
 ## Regular tags
 
-**BANG!** also makes it easy to define and use regular custom elements:
+***BANG!*** also makes it easy to define and use regular custom elements:
 
 ```js
 <custom-el>
@@ -39,13 +39,14 @@ Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_el
 
 ## More Goodies
 
-Apart from self-closing tags, ***BANG!*** has numerous other special features that make it super productive for building interfaces***BANG!***. Read on to discover how ***BANG!*** makes UI work more productive. 
+Apart from self-closing tags, ***BANG!*** has numerous other special features that make it super productive for building interfaces. Read on to discover how ***BANG!*** makes UI work more productive. 
 
-You can jump in right away and get it on NPM: https://www.npmjs.com/package/bang.html
+You can jump in right away and get it on the npm: [b
+npmjs.com/@bang.html](https://www.npmjs.com/package/bang.html)
 
 ------
 
-***The problem of self-closing tags in HTML has been solved. Hoo-ray!***
+***The problem of custom void tags in HTML has been solved. Hoo-ray!***
 
 <p align=center>
   <img width=80% 
