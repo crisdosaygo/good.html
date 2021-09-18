@@ -4,10 +4,11 @@
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
   "main": "dist/bang.js",
   "scripts": {
-    "test": "watch cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/",
+    "test": "watch cp -r src/* docs/* & serve -p 8080 docs/",
     "prepublishOnly": "echo 'npm run pack' is not ready for mobile && cp src/bang.js dist/bang.js",
     "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller -t text -a eval src/bang.js -o dist/bang.js && cp dist/bang.js docs/bang-dev.js",
-    "tutorial": "cp src/bang.js docs/bang-dev.js & serve -p 8080 docs/"
+    "tutorial": "npm run test",
+    "postinstall": "mkdir p src/vv/ && cp -r node_modules/vanillaviewjs/* src/vv/"
   },
   "repository": {
     "type": "git",
@@ -34,6 +35,7 @@
   "license": "MIT",
   "devDependencies": {
     "roadroller": "^2.1.0",
-    "serve": "^12.0.1"
+    "serve": "^12.0.1",
+    "vanillaviewjs": "^1.3.0"
   }
 }
