@@ -1,8 +1,58 @@
 <!DOCTYPE html>
 <title>How to make a custom element void tag? BANG! A Web Components framework for the new age</title>
-<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0">
+<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <link rel=stylesheet href=./style.css>
-<script type=application/javascript src=./bang-dev.js></script>
+<style>
+  body {
+    touch-action: pan-y;
+    zoom: 1;
+    -webkit-text-side-adjust: none;
+  }
+  button {
+    user-select: none;
+  }
+</style>
+<script>
+  const isMobile = () => true;
+  const DEBUG = {
+    dev: true, 
+    err: true
+  };
+
+  setupErrorCatchers();
+
+  function setupErrorCatchers() {
+    (DEBUG.dev || DEBUG.err) && (self.onerror = (...v) => (func()(v, extractMeat(v).message, extractMeat(v).stack, v+''), true));
+    (DEBUG.dev || DEBUG.err) && (self.onunhandledrejection = ({reason}) => (func()(JSON.stringify(reason,null,2)), true));
+  }
+
+  function func() {
+    if ( isMobile() ) {
+      return (...x) => {
+        for( const m of x ) {
+          try {
+            alert(m);
+            alert(JSON.stringify(m));
+          } catch(e) {
+
+          }
+        }
+      };
+    } else {
+      return (...x) => console.log(...x)
+    }
+  }
+
+  function extractMeat(list) {
+    const meatIndex = list.findIndex(val => !! val && val.message || val.stack);
+    if ( meatIndex == -1 || meatIndex == undefined ) {
+      return "";
+    } else {
+      return list[meatIndex];
+    }
+  }
+</script>
+<script type=application/javascript src=./bang.js?sadfkh234kj234></script>
 <script>
   use('warm-greeter');
   use('greet-count');
