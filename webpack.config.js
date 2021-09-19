@@ -6,7 +6,7 @@ module.exports = {
   mode: process.env.BANG_PROD ? "production" : "development",
   output: {
     path: path.resolve('.', 'dist'),
-    publicPath: 'auto',
+    /*publicPath: 'auto',*/
     filename: "bang.js"
   },
   /*
