@@ -70,9 +70,15 @@
       oldVals: T`Array`
     }, {verify: v => verify(v)});
 
+    export const TBangObject = T.def('BangObject', null, {
+      verify: v => (console.log(v), v[Symbol.for('BANG-VV')])
+    });
+
+    export const TComponent = T.defOr('Component', T`VanillaViewObject`, T`BangObject`)
+
     export const TVanillaViewArray = T.defCollection('VanillaViewArray', {
       container: T`Array`,
-      member: T`VanillaViewObject`
+      member: T`Component`,
     });
 
   // SSR

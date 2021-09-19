@@ -8,7 +8,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = true;
+    const DEBUG             = false;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
@@ -67,12 +67,19 @@
         p.shift();
         DEBUG && say('log','System VV_FUNC call: ' + v.join(', '));
         v = await Promise.all(v.map(val => process(that, val, state)));
-        return vanillaview(p,v);
+        const xyz = vanillaview(p,v);
+        xyz[Symbol.for('BANG-VV')] = true;
+        return xyz;
       } else {
-        return async state => {
+        const laterFunc = async state => {
           v = await Promise.all(v.map(val => process(that, val, state)));
-          return vanillaview(p,v);
+          const xyz = vanillaview(p,v);
+          xyz[Symbol.for('BANG-VV')] = true;
+          return xyz;
         };
+        laterFunc[Symbol.for('BANG-VV')] = true;
+        console.log(laterFunc);
+        return laterFunc;
       }
     }
 
@@ -163,7 +170,7 @@
       }
       else
 
-      if ( x instanceof Promise ) return process(that, await x.catch(err => err+''), state);
+      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+''), state);
       else
 
       if ( x instanceof Element ) return x.outerHTML;
@@ -174,7 +181,7 @@
       const isVVArray   = T.check(T`VanillaViewArray`, x);
       const isMO    = T.check(T`MarkupObject`, x);
       const isMAO = T.check(T`MarkupAttrObject`, x);
-      const isVV      = T.check(T`VanillaViewObject`, x);
+      const isVV      = T.check(T`Component`, x);
       if ( isVVArray || isMO || isMAO || isVV ) return x; // let vanillaview guardAndTransformVal handle
       else 
 
@@ -196,7 +203,6 @@
       else // it's an object, of some type 
 
       {
-
         // State store     
           /* so we assume an object is state and save it */
           /* to the global state store */
@@ -209,7 +215,6 @@
           // to provide a single logical identity for a piece of state that may
           // be represented by many objects
 
-        console.log(that);
         if ( Object.prototype.hasOwnProperty.call(x, that.CONFIG.bangKey) ) {
           stateKey = new that.StateKey(x[that.CONFIG.bangKey])+'';
           // in that case, replace the previously saved object with the same logical identity

@@ -1,6 +1,6 @@
 {
   // constants, classes, config and state
-    const DEBUG = true;
+    const DEBUG = false;
     const LEGACY = false;
     const MOBILE = isMobile();
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
@@ -511,7 +511,7 @@
 
     async function _FUNC(strings, ...vals) {
       const s = Array.from(strings);
-      const ret =  _c$(s, ...vals);
+      const ret =  await _c$(s, ...vals);
       return ret;
     }
 
