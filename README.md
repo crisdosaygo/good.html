@@ -307,11 +307,11 @@ You might have noticed that the `state=` property of the **greet-count** compone
 
 So what's going on?
 
-This is the expected behavior. You *can pass state directly to your sub-components using **template replacement slots*** in any component markup filebut not in a top-level HTML file (because **template replacement slots are not processed there, only in component markup). 
+This is the expected behavior. You *can pass state directly to your sub-components using **template replacement slots*** in any component markup file but not in a top-level HTML file (because **template replacement slots** are not processed there, only in component markup). 
 
-So in the above example from the tutorial **greet-count** behaves the same as if you explicitly saved that nested object to the state store using a string **state-key** then passed it by key to your component using the `state=` property. 
+This means that in the above example, **greet-count** behaves the same as if you explicitly saved that nested object to the state store using a string **state-key** then passed that key to your component using the `state=` property. 
 
-Instead of having to write that extra step, ***BANG!*** detects the nested object and saves it to the store for you, and passes to new components as they are created, without you having to worry about the details.
+Instead of having to write that extra step, ***BANG!*** detects the nested object and saves it to the store for you, and passes to new components as they are created to load the state, without you having to worry about the details.
 
 ----------------------
 
