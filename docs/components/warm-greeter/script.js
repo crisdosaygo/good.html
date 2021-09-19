@@ -5,6 +5,7 @@ class Component extends Base {
      * https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#using_the_lifecycle_callbacks
      * about attributeChangedCallback and observedAttributes
     **/
+
   static get observedAttributes() {
     return ['xyz', ...super.observedAttributes];
   }
@@ -53,5 +54,11 @@ class Component extends Base {
 
     // apply the updated state
     setState('MyState', newState);
+  }
+
+  print() {
+    super.print().then(() => {
+      // some task after we have re-rednered
+    });
   }
 }

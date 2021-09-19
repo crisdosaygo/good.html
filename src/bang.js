@@ -1,6 +1,6 @@
 {
   // constants, classes, config and state
-    const DEBUG = true;
+    const DEBUG = false;
     const MOBILE = isMobile();
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
@@ -48,8 +48,8 @@
       print() {
         Counts.started++;
         this.prepareVisibility();
-        const state = this.#handleAttrs(this.attributes, {originals: true});
-        this.#printShadow(state);
+        const state = this.handleAttrs(this.attributes, {originals: true});
+        return this.printShadow(state);
       }
 
       prepareVisibility() {
@@ -79,7 +79,7 @@
       }
 
       // private methods
-      #handleAttrs(attrs, {node, originals} = {}) {
+      handleAttrs(attrs, {node, originals} = {}) {
         let state;
 
         if ( ! node ) node = this;
@@ -122,13 +122,13 @@
         return state;
       }
 
-      #printShadow(state) {
-        fetchMarkup(this.#name, this).then(async markup => {
+      printShadow(state) {
+        return fetchMarkup(this.#name, this).then(async markup => {
           const cooked = await cook.call(this, markup, state);
           const nodes = toDOM(cooked);
           // attributes on each node in the shadom DOM that has an even handler or state
           const listening = nodes.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
-          listening.forEach(node => this.#handleAttrs(node.attributes, {node, originals: true}));
+          listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
           DEBUG && say('log',nodes, cooked, state);
           const shadow = this.shadowRoot || this.attachShadow({mode:'open'});
           shadow.replaceChildren(nodes);

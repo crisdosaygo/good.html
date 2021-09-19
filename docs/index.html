@@ -1,7 +1,17 @@
 <!DOCTYPE html>
 <title>How to make a custom element void tag? BANG! A Web Components framework for the new age</title>
-<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0">
+<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <link rel=stylesheet href=./style.css>
+<style>
+  body {
+    touch-action: pan-y;
+    zoom: 1;
+    -webkit-text-side-adjust: none;
+  }
+  button {
+    user-select: none;
+  }
+</style>
 <script>
   const isMobile = () => true;
   const DEBUG = {

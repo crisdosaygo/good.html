@@ -9,6 +9,7 @@ module.exports = {
     publicPath: '/',
     filename: "bang.js"
   },
+  /*
   module: {
 		rules: [
 			{
@@ -30,6 +31,7 @@ module.exports = {
 			}
 		]
 	},
+  */
   optimization: {
     minimize: false
   },
