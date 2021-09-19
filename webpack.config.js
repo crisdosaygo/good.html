@@ -20,7 +20,7 @@ module.exports = {
               strictMode: false,
             },
             presets: [
-              ['babel-preset-env', {}]
+              ['@babel/preset-env', {}]
             ],
             plugins: [
               ["@babel/plugin-proposal-private-methods", {}],
