@@ -6,7 +6,7 @@
   "scripts": {
     "test": "npm run clean && watch -n 3 ./scripts/cpfiles.sh & serve -p 8080 docs/",
     "prod": "export BANG_PROD=test || set BANG_PROD=test&&npm run clean && watch -n 3 ./scripts/cpfiles.sh & serve -p 8080 docs/",
-    "clean": "rm -rf dist/ && rm -rf docs/vv && rm docs/*.js",
+    "clean": "rm -rf dist/ && rm -rf docs/vv && rm docs/*.js || :",
     "prepublishOnly": "export BANG_PROD=test || set BANG_PROD=test&&echo 'npm run pack' is not ready for mobile && rm -rf dist/ && ./scripts/cpfiles.sh",
     "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller -t text -a eval src/bang.js -o dist/bang.js && cp dist/bang.js docs/bang-dev.js",
     "tutorial": "npm run test"
