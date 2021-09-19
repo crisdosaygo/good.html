@@ -1,6 +1,7 @@
 {
   // constants, classes, config and state
-    const DEBUG = false;
+    const DEBUG = true;
+    const LEGACY = false;
     const MOBILE = isMobile();
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
@@ -126,13 +127,20 @@
       printShadow(state) {
         return fetchMarkup(this.#name, this).then(async markup => {
           const cooked = await cook.call(this, markup, state);
-          const nodes = toDOM(cooked);
-          // attributes on each node in the shadom DOM that has an even handler or state
-          const listening = nodes.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
-          listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-          DEBUG && say('log',nodes, cooked, state);
-          const shadow = this.shadowRoot || this.attachShadow({mode:'open'});
-          shadow.replaceChildren(nodes);
+          if ( LEGACY ) {
+            const nodes = toDOM(cooked);
+            // attributes on each node in the shadom DOM that has an even handler or state
+            const listening = nodes.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
+            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            DEBUG && say('log',nodes, cooked, state);
+            const shadow = this.shadowRoot || this.attachShadow({mode:'open'});
+            shadow.replaceChildren(nodes);
+          } else if ( !this.shadowRoot ) {
+            const shadow = this.attachShadow({mode:'open'});
+            cooked.to(shadow, 'insert');
+            const listening = shadow.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
+            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+          }
         })
         .catch(err => DEBUG && say('warn',err))
         .finally(() => Counts.finished++);
@@ -222,9 +230,10 @@
       });
 
       const module = await import('./vv/vanillaview.js');
-      const {c,s} = module;
-      _c$ = c;
-      console.log({c,s});
+      const {s} = module;
+      const That = {STATE,CONFIG,StateKey}; 
+      _c$ = s.bind(That);
+      That._c$ = _c$;
 
       if ( CONFIG.delayFirstPaintUntilLoaded ) {
         becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
@@ -481,7 +490,7 @@
             get: () => state
           });
         }
-        DEBUG && say('log','self', state._self);
+        DEBUG && say('log','_self', state._self);
       } catch(e) {
         DEBUG && say('warn',
           `Cannot add '_self' self-reference property to state. 
@@ -492,6 +501,7 @@
         with(state) {
           cooked = await eval("(async function () { return await _FUNC`${{state}}"+markup+"`; }())");  
         }
+        DEBUG && console.log({cooked});
         return cooked;
       } catch(error) {
         say('error', 'Template error', {markup, state, error});
@@ -500,6 +510,12 @@
     }
 
     async function _FUNC(strings, ...vals) {
+      const s = Array.from(strings);
+      const ret =  _c$(s, ...vals);
+      return ret;
+    }
+
+    async function old_FUNC(strings, ...vals) {
       const s = Array.from(strings);
       let SystemCall = false;
       let state;

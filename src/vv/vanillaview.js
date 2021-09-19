@@ -8,7 +8,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = false;
+    const DEBUG             = true;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
@@ -32,6 +32,7 @@
       replace     (frag,elem) { elem.parentNode.replaceChild(frag,elem) }
       afterbegin  (frag,elem) { elem.insertBefore(frag,elem.firstChild) }
       innerhtml   (frag,elem) { elem.innerHTML = ''; elem.appendChild(frag) }
+      insert      (frag,node) { node.replaceChildren(frag) }
     };
 
   // logging
@@ -50,12 +51,33 @@
 
     Object.assign(globalThis, {vanillaview: {c, s, T}}); 
 
-    export function s(p,...v) {
-      return vanillaview(p,v);
+    export async function s(p,...v) {
+      const that = this;
+      let SystemCall = false;
+      let state;
+
+      if ( p[0].length === 0 && v[0].state ) {
+        // by convention (see how we construct the template that we tag with FUNC)
+        // the first value is the state object when our system calls it
+        SystemCall = true;
+      }
+
+      if ( SystemCall ) {
+        ({state} = v.shift());
+        p.shift();
+        DEBUG && say('log','System VV_FUNC call: ' + v.join(', '));
+        v = await Promise.all(v.map(val => process(that, val, state)));
+        return vanillaview(p,v);
+      } else {
+        return async state => {
+          v = await Promise.all(v.map(val => process(that, val, state)));
+          return vanillaview(p,v);
+        };
+      }
     }
 
     export function c(p,...v) {
-      return vanillaview(p,v,{useCache:false});
+      return vanillaview(p,v, {useCache:false});
     }
 
   // main function (TODO: should we refactor?)
@@ -118,12 +140,119 @@
       return retVal;
     }
 
+
+  // bang integration functions (modified from bang versions)
+    async function process(that, x, state) {
+      if ( typeof x === 'string' ) return x;
+      else 
+
+      if ( typeof x === 'number' ) return x+'';
+      else
+
+      if ( typeof x === 'boolean' ) return x+'';
+      else
+
+      if ( x instanceof Date ) return x+'';
+      else
+
+      if ( isUnset(x) ) {
+        if ( that.CONFIG.allowUnset ) return that.CONFIG.unsetPlaceholder || '';
+        else {
+          throw new TypeError(`Value cannot be unset, was: ${x}`);
+        }
+      }
+      else
+
+      if ( x instanceof Promise ) return process(that, await x.catch(err => err+''), state);
+      else
+
+      if ( x instanceof Element ) return x.outerHTML;
+      else
+
+      if ( x instanceof Node ) return x.textContent;
+      
+      const isVVArray   = T.check(T`VanillaViewArray`, x);
+      const isMO    = T.check(T`MarkupObject`, x);
+      const isMAO = T.check(T`MarkupAttrObject`, x);
+      const isVV      = T.check(T`VanillaViewObject`, x);
+      if ( isVVArray || isMO || isMAO || isVV ) return x; // let vanillaview guardAndTransformVal handle
+      else 
+
+      if ( isIterable(x) ) {
+        // if an Array or iterable is given then
+        // its values are recursively processed via this same function
+        return (await Promise.all(
+          (
+            await Promise.all(Array.from(x)).catch(e => err+'')
+          ).map(v => process(that, v, state))
+        )).join(' ');
+      }
+      else
+
+      if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) return await x(state);
+      else
+
+      if ( x instanceof Function ) return x(state);
+      else // it's an object, of some type 
+
+      {
+
+        // State store     
+          /* so we assume an object is state and save it */
+          /* to the global state store */
+          /* which is two-sides so we can find a key */
+          /* given an object. This avoid duplicates */
+        let stateKey;
+
+        // own keys
+          // an object can specify it's own state key
+          // to provide a single logical identity for a piece of state that may
+          // be represented by many objects
+
+        console.log(that);
+        if ( Object.prototype.hasOwnProperty.call(x, that.CONFIG.bangKey) ) {
+          stateKey = new that.StateKey(x[that.CONFIG.bangKey])+'';
+          // in that case, replace the previously saved object with the same logical identity
+          const oldX = that.STATE.get(stateKey);
+          that.STATE.delete(oldX);
+
+          that.STATE.set(stateKey, x);
+          that.STATE.set(x, stateKey);
+        } 
+
+        else  /* or the system can come up with a state key */
+
+        {
+          if ( that.STATE.has(x) ) stateKey = that.STATE.get(x);
+          else {
+            stateKey = new that.StateKey()+'';
+            that.STATE.set(stateKey, x);
+            that.STATE.set(x, stateKey);
+          }
+        }
+
+        stateKey += '';
+        DEBUG && say('log',{stateKey});
+        return stateKey;
+      }
+    }
+
+    function isIterable(y) {
+      if ( y === null ) return false;
+      return y[Symbol.iterator] instanceof Function;
+    }
+
+    function isUnset(x) {
+      return x === undefined || x === null;
+    }
+
+
   // to function
     function to(location, options) {
       const position = (options || 'replace').toLocaleLowerCase();
       const frag = document.createDocumentFragment();
       this.nodes.forEach(n => frag.appendChild(n));
-      const isNode = T.check(T`>Node`, location);
+      const isNode = location instanceof Node;
       const elem = isNode ? location : document.querySelector(location);
       try {
         MOVE[position](frag,elem);

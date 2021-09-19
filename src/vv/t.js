@@ -334,7 +334,9 @@
           if ( specKeyPaths.has(keyPaths[i]) ) {
             keyPathSet.add(keyPaths[i]); 
           } else if ( typeof v == "object" ) {
-            if ( ! Array.isArray(v) ) {
+            if ( k === '_self' ) {
+              //recurseObject({}, keyPathSet, keyPaths[i]);
+            } else if ( ! Array.isArray(v) ) {
               recurseObject(v, keyPathSet, keyPaths[i]);
             } else {
               v.forEach((item,index) => recurseObject(item, keyPathSet, keyPaths[i] + '.' + index));
