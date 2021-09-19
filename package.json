@@ -5,7 +5,7 @@
   "main": "dist/bang.js",
   "scripts": {
     "test": "watch -n 3 ./scripts/cpfiles.sh & serve -p 8080 docs/",
-    "prepublishOnly": "echo 'npm run pack' is not ready for mobile && cp src/bang.js dist/bang.js",
+    "prepublishOnly": "echo 'npm run pack' is not ready for mobile && rm -rf dist/ && ./scripts/cpfiles.sh",
     "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller -t text -a eval src/bang.js -o dist/bang.js && cp dist/bang.js docs/bang-dev.js",
     "tutorial": "npm run test",
     "postinstall": "mkdir -p src/vv/ && cp -r node_modules/vanillaviewjs/* src/vv/"

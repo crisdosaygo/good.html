@@ -207,7 +207,7 @@
 
   // helpers
     function install() {
-      import('./vv/vanillaview.js').then(module => console.log({module}));
+      //import('./vv/vanillaview.js').then(module => console.log({module}));
 
       if ( CONFIG.delayFirstPaintUntilLoaded ) {
         becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
