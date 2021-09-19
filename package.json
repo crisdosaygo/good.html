@@ -8,8 +8,7 @@
     "clean": "rm -rf dist/ && rm -rf docs/vv && rm docs/*.js",
     "prepublishOnly": "echo 'npm run pack' is not ready for mobile && rm -rf dist/ && ./scripts/cpfiles.sh",
     "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller -t text -a eval src/bang.js -o dist/bang.js && cp dist/bang.js docs/bang-dev.js",
-    "tutorial": "npm run test",
-    "postinstall": "mkdir -p src/vv/ && cp -r node_modules/vanillaviewjs/* src/vv/"
+    "tutorial": "npm run test"
   },
   "repository": {
     "type": "git",
