@@ -3,7 +3,7 @@ const webpack = require('webpack');
 
 module.exports = {
   entry: "./src/bang.js",
-  mode: "development",
+  mode: process.env.BANG_PROD ? "production" : "development",
   output: {
     path: path.resolve('.', 'dist'),
     publicPath: '/',
@@ -33,7 +33,7 @@ module.exports = {
 	},
   */
   optimization: {
-    minimize: false
+    minimize: process.env.BANG_PROD ? true : false
   },
   target: "browserslist:last 1 years",
 };

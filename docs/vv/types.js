@@ -71,7 +71,7 @@
     }, {verify: v => verify(v)});
 
     export const TBangObject = T.def('BangObject', null, {
-      verify: v => (console.log(v), v[Symbol.for('BANG-VV')])
+      verify: v => v[Symbol.for('BANG-VV')]
     });
 
     export const TComponent = T.defOr('Component', T`VanillaViewObject`, T`BangObject`)

@@ -3,7 +3,7 @@
 <button onclick=Regreet>Regreet!</button>
 <h2>Re-greet records</h2>
 <ul>${
-  timings.map(({time, count}) => F`
+  timings.map(({time, count}) => F`${{key:'k'+time}}
     <li>
       <span class=count>${count}</span> greets 
       as of

@@ -68,17 +68,17 @@
         DEBUG && say('log','System VV_FUNC call: ' + v.join(', '));
         v = await Promise.all(v.map(val => process(that, val, state)));
         const xyz = vanillaview(p,v);
-        xyz[Symbol.for('BANG-VV')] = true;
+        //xyz[Symbol.for('BANG-VV')] = true;
         return xyz;
       } else {
         const laterFunc = async state => {
           v = await Promise.all(v.map(val => process(that, val, state)));
           const xyz = vanillaview(p,v);
-          xyz[Symbol.for('BANG-VV')] = true;
+          //xyz[Symbol.for('BANG-VV')] = true;
           return xyz;
         };
-        laterFunc[Symbol.for('BANG-VV')] = true;
-        console.log(laterFunc);
+        //laterFunc[Symbol.for('BANG-VV')] = true;
+        DEBUG && console.log('async laterFunc', laterFunc);
         return laterFunc;
       }
     }
@@ -177,26 +177,34 @@
       else
 
       if ( x instanceof Node ) return x.textContent;
-      
+
       const isVVArray   = T.check(T`VanillaViewArray`, x);
+      const isVVK = isKey(x);
       const isMO    = T.check(T`MarkupObject`, x);
       const isMAO = T.check(T`MarkupAttrObject`, x);
       const isVV      = T.check(T`Component`, x);
-      if ( isVVArray || isMO || isMAO || isVV ) return x; // let vanillaview guardAndTransformVal handle
-      else 
-
+      if ( isVVArray || isVVK || isMO || isMAO || isVV ) {
+        DEBUG && console.log('vv', x, {isVVArray, isVVK, isMO, isMAO, isVV});
+        return isVVArray ? join(x) : x; // let vanillaview guardAndTransformVal handle
+      }
+      else
+      
       if ( isIterable(x) ) {
         // if an Array or iterable is given then
         // its values are recursively processed via this same function
-        return (await Promise.all(
+        return process(that, (await Promise.all(
           (
             await Promise.all(Array.from(x)).catch(e => err+'')
           ).map(v => process(that, v, state))
-        )).join(' ');
+        )), state);
       }
-      else
 
-      if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) return await x(state);
+      else 
+
+      if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
+        DEBUG && console.log('asyncfunc', x);
+        return await process(that, await x(state), state);
+      }
       else
 
       if ( x instanceof Function ) return x(state);
@@ -329,6 +337,12 @@
           if ( sameOrder(oldNodes,newVal.nodes) ) {
             // do nothing
           } else {
+            // perf
+              // list updates could be possible more efficient
+              // this is if we are inserting new nodes
+              // but I can't imagine a way to do it that's not:
+              // 1) quadratic (edit distance)
+              // 2) lots of heuristics (did we insert a new node or nodes at the front? OK...etc...)
             Array.from(newVal.nodes).reverse().forEach(n => {
               lastAnchor.parentNode.insertBefore(n,lastAnchor.nextSibling);
               state.lastAnchor = lastAnchor.nextSibling;
@@ -341,6 +355,7 @@
           state.lastAnchor = placeholderNode;
         }
         // MARK: Unbond event might be relevant here.
+        // if nodes are not included we can just remove them
         const dn = diffNodes(oldNodes,newVal.nodes);
         if ( dn.size ) {
           const f = document.createDocumentFragment();
