@@ -54,15 +54,17 @@
 </script>
 <script type=application/javascript src=./bang.js?sadfkh234kj234></script>
 <script>
-  use('warm-greeter');
-  use('greet-count');
+  bangLoaded().then(() => {
+    use('warm-greeter');
+    use('greet-count');
 
- 	setState('MyState', {
-    name: 'Uncle Bob',
-    greetCounts: {
-      value: 1
-    },
-    timings: []
+    setState('MyState', {
+      name: 'Uncle Bob',
+      greetCounts: {
+        value: 1
+      },
+      timings: []
+    });
   });
 </script>
 <body>

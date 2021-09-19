@@ -30,6 +30,7 @@
       finished: 0
     };
     let systemKeys = 1;
+    let _c$;
 
     const BangBase = (name) => class Base extends HTMLElement {
       static #activeAttrs = ['state']; // we listen for changes to these attributes only
@@ -205,9 +206,25 @@
       return becomesTrue(loadCheck);
     }
 
+    async function bangLoaded() {
+      const loadCheck = () => {
+        const c_defined = typeof _c$ === "function";
+        return c_defined;
+      };
+      return becomesTrue(loadCheck);
+    }
+
   // helpers
-    function install() {
-      import('./vv/vanillaview.js').then(module => console.log({module}));
+    async function install() {
+      Object.assign(globalThis, {
+        use, setState, cloneState, loaded, sleep, bangfig, bangLoaded,
+        ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
+      });
+
+      const module = await import('./vv/vanillaview.js');
+      const {c,s} = module;
+      _c$ = c;
+      console.log({c,s});
 
       if ( CONFIG.delayFirstPaintUntilLoaded ) {
         becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
@@ -217,10 +234,6 @@
       /* we are interested in bang nodes (which start as comments) */
       observer.observe(document.documentElement, {subtree: true, childList: true, characterData: true}); 
       findBangs(transformBang); 
-      Object.assign(globalThis, {
-        use, setState, cloneState, loaded, sleep, bangfig,
-        ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
-      });
       
       loaded().then(() => document.body.classList.add('bang-styled'));
     }
