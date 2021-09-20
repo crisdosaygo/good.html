@@ -8,7 +8,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = true;
+    const DEBUG             = false;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
@@ -344,18 +344,6 @@
               // 1) quadratic (edit distance)
               // 2) lots of heuristics (did we insert a new node or nodes at the front? OK...etc...)
             const LEGACY = false;
-            // log
-              console.group('old');
-              oldNodes.forEach(node => {
-                console.log(node.nodeName, document.contains(node.ownerDocument));
-              });
-              console.groupEnd();
-              console.group('new');
-              newVal.nodes.forEach(node => {
-                console.log(node.nodeName, document.contains(node.ownerDocument));
-              });
-              console.groupEnd();
-
             if ( LEGACY ) {
               Array.from(newVal.nodes).reverse().forEach(n => {
                 lastAnchor.parentNode.insertBefore(n,lastAnchor.nextSibling);
@@ -364,10 +352,13 @@
               state.lastAnchor = newVal.nodes[0];
             } else {
               const insertable = [];
-              newVal.nodes.forEach(node => {
+              Array.from(newVal.nodes).forEach(node => {
                 const inserted = document.contains(node.ownerDocument);
-                if ( ! inserted ) insertable.push(node);
-                else {
+                if ( ! inserted ) {
+                  insertable.push(node);
+                  DEBUG && console.dirxml('not inserted', node);
+                } else {
+                  DEBUG && console.dirxml('inserted', node);
                   while( insertable.length ) {
                     const insertee = insertable.shift();
                     node.parentNode.insertBefore(insertee, node);
@@ -376,7 +367,8 @@
               });
               while ( insertable.length ) {
                 const insertee = insertable.shift();
-                lastAnchor.parentNode.insertBefore(insertee,lastAnchor.nextSibling);
+                DEBUG && console.log({insertee});
+                lastAnchor.parentNode.insertBefore(insertee,lastAnchor);
               }
               state.lastAnchor = newVal.nodes[0];
             }

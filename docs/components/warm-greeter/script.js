@@ -1,5 +1,4 @@
 class Component extends Base {
-
   // note
     /* you can customize the attributes to track however you like, see:
      * https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#using_the_lifecycle_callbacks
@@ -11,6 +10,29 @@ class Component extends Base {
   }
 
   static MAX_RECORDS = 15;
+
+  RandomRegreet(clickEvent) {
+    // clone the state
+    const newState = cloneState('MyState');
+
+    // update the greet count
+    newState.greetCounts.value += 1;
+
+    const randomIndex = Math.round(Math.random()*newState.timings.length);
+    // add a record of the greet
+    newState.timings.splice(randomIndex, 0, {
+      count: newState.greetCounts.value,
+      time: (new Date).valueOf()
+    });
+
+    // ensure the number of records we keep is limited
+    while(newState.timings.length > Component.MAX_RECORDS) {
+      newState.timings.pop();
+    }
+
+    // apply the updated state
+    setState('MyState', newState);
+  }
 
   Regreet(clickEvent) {
     // clone the state
@@ -31,6 +53,12 @@ class Component extends Base {
     }
 
     // apply the updated state
+    setState('MyState', newState);
+  }
+
+  CutOut(clickEvent) {
+    const newState = cloneState('MyState');
+    newState.timings.shift();
     setState('MyState', newState);
   }
 
