@@ -351,26 +351,30 @@
               });
               state.lastAnchor = newVal.nodes[0];
             } else {
+              const LISTD = false;
               const insertable = [];
+              (DEBUG || LISTD) && console.log('\n');
               Array.from(newVal.nodes).forEach(node => {
                 const inserted = document.contains(node.ownerDocument);
                 if ( ! inserted ) {
+                  (DEBUG || LISTD) && console.dirxml('not yet inserted', node);
                   insertable.push(node);
-                  DEBUG && console.dirxml('not inserted', node);
                 } else {
-                  DEBUG && console.dirxml('inserted', node);
+                  (DEBUG || LISTD) && console.dirxml('already inserted', node, `${insertable.length} to insert before`);
                   while( insertable.length ) {
                     const insertee = insertable.shift();
                     node.parentNode.insertBefore(insertee, node);
                   }
                 }
               });
+              (DEBUG || LISTD) && console.log('\n');
               while ( insertable.length ) {
                 const insertee = insertable.shift();
-                DEBUG && console.log({insertee});
+                (DEBUG || LISTD) && console.log({insertee});
                 lastAnchor.parentNode.insertBefore(insertee,lastAnchor);
               }
-              state.lastAnchor = newVal.nodes[0];
+              (DEBUG || LISTD) && console.log('Inserts done');
+              //state.lastAnchor = newVal.nodes[0];
             }
           }
         } else {
