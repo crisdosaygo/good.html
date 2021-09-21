@@ -30,6 +30,8 @@
       started: 0,
       finished: 0
     };
+    const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
+    let observer; // global mutation observer
     let systemKeys = 1;
     let _c$;
 
@@ -77,7 +79,7 @@
       }
 
       connectedCallback() {
-        DEBUG && say('log',name, 'connected');
+        say('log!',name, 'connected');
       }
 
       // private methods
@@ -133,13 +135,25 @@
             const listening = nodes.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
             listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
             DEBUG && say('log',nodes, cooked, state);
-            const shadow = this.shadowRoot || this.attachShadow({mode:'open'});
-            shadow.replaceChildren(nodes);
-          } else if ( !this.shadowRoot ) {
-            const shadow = this.attachShadow({mode:'open'});
-            cooked.to(shadow, 'insert');
-            const listening = shadow.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
-            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            if ( this.shadowRoot ) {
+              this.shadowRoot.replaceChildren(nodes);
+            } else {
+              const shadow = this.attachShadow({mode:'open'});
+              console.log({observer});
+              observer.observe(shadow, OBSERVE_OPTS);
+              shadow.replaceChildren(nodes);
+           }
+          } else {
+            if ( this.shadowRoot ) {
+              //this.shadowRoot.replaceChildren(nodes);
+            } else {
+              const shadow = this.attachShadow({mode:'open'});
+              //console.log({observer});
+              observer.observe(shadow, OBSERVE_OPTS);
+              cooked.to(shadow, 'insert');
+              const listening = shadow.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
+              listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            }
           }
         })
         .catch(err => DEBUG && say('warn',err))
@@ -239,9 +253,9 @@
         becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
       }
 
-      const observer = new MutationObserver(transformBangs);
+      observer = new MutationObserver(transformBangs);
       /* we are interested in bang nodes (which start as comments) */
-      observer.observe(document.documentElement, {subtree: true, childList: true, characterData: true}); 
+      observer.observe(document, OBSERVE_OPTS);
       findBangs(transformBang); 
       
       loaded().then(() => document.body.classList.add('bang-styled'));
@@ -346,7 +360,8 @@
 
       // replace the bang node (comment) with its actual custom element node
       const actualElement = createElement(name, data);
-      current.parentElement.replaceChild(actualElement, current);
+      current.linkedCustomElement = actualElement;
+      current.parentNode.replaceChild(actualElement, current);
     }
 
     function findBangs(callback, root = document.documentElement) {
@@ -605,8 +620,8 @@
     }
 
     function say(mode, ...stuff) {
-      (DEBUG || mode === 'error') && MOBILE && alert(`${mode}: ${stuff.join('\n')}`);
-      (DEBUG || mode === 'error') && console[mode](...stuff);
+      (DEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && alert(`${mode}: ${stuff.join('\n')}`);
+      (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!','')](...stuff);
     }
 
     function isMobile() {

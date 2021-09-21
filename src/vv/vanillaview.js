@@ -370,7 +370,7 @@
               (DEBUG || LISTD) && console.log('\n');
               while ( insertable.length ) {
                 const insertee = insertable.shift();
-                (DEBUG || LISTD) && console.log({insertee});
+                (DEBUG || LISTD) && console.log({insertee, lastAnchor, oldNodes});
                 lastAnchor.parentNode.insertBefore(insertee,lastAnchor);
               }
               (DEBUG || LISTD) && console.log('Inserts done');
@@ -419,6 +419,11 @@
         const newValue = before + newVal + after;
 
         node.nodeValue = newValue;
+
+        if ( node.linkedCustomElement && newValue.match(/state[\s\S]*=/gm) ) {
+          DEBUG && console.log('Updating linked customElement', node, newVal, node.linkedCustomElement);
+          node.linkedCustomElement.setAttribute('state', newVal);
+        }
 
         state.oldVal = newVal;
       }
@@ -734,9 +739,9 @@
 
     function summonPlaceholder(sibling) {
       let ph = [...sibling.parentNode.childNodes].find(
-        node => node.nodeType == Node.COMMENT_NODE && node.nodeValue == 'vanillaview-placeholder' );
+        node => node.nodeType == Node.COMMENT_NODE && node.nodeValue == 'vanillaview_placeholder' );
       if ( ! ph ) {
-        ph = toDOM(`<!--vanillaview-placeholder-->`).firstChild;
+        ph = toDOM(`<!--vanillaview_placeholder-->`).firstChild;
       }
       return ph;
     }

@@ -54,6 +54,7 @@
 <script type=application/javascript src=./bang.js?sadfkh234kj234></script>
 <script>
   bangLoaded().then(() => {
+    use('latest-greet');
     use('warm-greeter');
     use('greet-count');
 
@@ -63,6 +64,10 @@
         value: 1
       },
       timings: [],
+      latestGreet: {
+        count: 0,
+        time: 'none'
+      }
     });
   });
 </script>

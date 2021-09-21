@@ -41,11 +41,16 @@ class Component extends Base {
     // update the greet count
     newState.greetCounts.value += 1;
 
-    // add a record of the greet
-    newState.timings.unshift({
+    const latest = {
       count: newState.greetCounts.value,
       time: (new Date).valueOf()
-    });
+    };
+
+    newState.latestGreet = latest;
+
+    // add a record of the greet
+    newState.timings.unshift(latest);
+    
 
     // ensure the number of records we keep is limited
     while(newState.timings.length > Component.MAX_RECORDS) {
