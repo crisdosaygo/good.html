@@ -22,7 +22,7 @@
 
   function setupErrorCatchers() {
     (DEBUG.dev || DEBUG.err) && (self.onerror = (...v) => (func()(v, extractMeat(v).message, extractMeat(v).stack, v+''), true));
-    (DEBUG.dev || DEBUG.err) && (self.onunhandledrejection = ({reason}) => (func()(JSON.stringify(reason,null,2)), true));
+    (DEBUG.dev || DEBUG.err) && (self.onunhandledrejection = ({reason}) => (func()(reason+JSON.stringify(reason,null,2)), true));
   }
 
   function func() {
@@ -62,7 +62,7 @@
       greetCounts: {
         value: 1
       },
-      timings: []
+      timings: [],
     });
   });
 </script>

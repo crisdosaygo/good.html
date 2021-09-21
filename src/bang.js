@@ -605,8 +605,8 @@
     }
 
     function say(mode, ...stuff) {
-      DEBUG && MOBILE && alert(`${mode}: ${stuff.join('\n')}`);
-      DEBUG && console[mode](...stuff);
+      (DEBUG || mode === 'error') && MOBILE && alert(`${mode}: ${stuff.join('\n')}`);
+      (DEBUG || mode === 'error') && console[mode](...stuff);
     }
 
     function isMobile() {

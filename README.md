@@ -7,7 +7,7 @@
 
 # 🌱 *BANG!* *A custom element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) 
 
-***BANG!*** makes your UI work easy, and your syntax beautiful, by pairing **Web Components** with smooth template syntax, minimal DOM updates (*and without VDOM*), async values and **[empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** (*a.k.a void elements / "self-closing tags"*).
+***BANG!*** makes your UI work easy, and your syntax beautiful, by pairing **Web Components** with smooth template syntax, minimal DOM updates (*and without VDOM*), async values and **[empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** (*a.k.a void elements / self-closing tags*).
 
 ## Introducing: self-closing tags for Web Components
 
