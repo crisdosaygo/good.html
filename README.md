@@ -7,7 +7,7 @@
 
 # 🌱 *BANG!* *A custom element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) 
 
-***BANG!*** makes your UI work easy, and your syntax beautiful, by bringing smoother templating, async slots and [empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element) (*a.k.a void elements / "self-closing tags"*) to **Web Components**.
+***BANG!*** makes your UI work easy, and your syntax beautiful, by pairing **Web Components** with smooth template syntax, minimal DOM updates (*and without VDOM*), async values and **[empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** (*a.k.a void elements / "self-closing tags"*).
 
 ## Introducing: self-closing tags for Web Components
 
@@ -37,9 +37,64 @@ Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_el
 </custom-el>
 ```
 
+## Templates, and with async values
+
+Normally using web components you need to use the `<slot></slot>` tag to pull in values. In ***BANG!*** you can still use slots (they work just fine), but for simple values this can be too much HTML, and excessive typing when all you really want to say is, `${myValue}`. Now you can:
+
+```html
+<h1>${firstName} ${lastName}</h1>
+```
+
+In fact, any JavaScript expression works fine, even async/await expressions and Promises:
+
+`/components/item-list/markup.html`:
+```html
+<ul>${
+  items.map(async item => F`
+  <li>
+    <span class=name>${item.name}</span>
+    <img src=${img.imgSrc}</span>
+    <span class=price>${await item.getLatestPrice()}</span>
+    <!item-details state=${item.details} />
+  </li>
+ `)}</ul>
+```
+
+***BANG!*** automatically handles and awaits Promises to resolve, so the `await item.getLatestPrice()`, will fetch the most up to date price from the server and print that value into the template, with ***BANG!*** handling all the details. You can even leave out the `await` keyword, because ***BANG!*** will know it's value a Promise and treat it the same way. 
+
+#### A note on scope
+
+Variables (like `items`, and `firstName` and `lastName`) in the above examples are *in scope* for ***BANG!*** when they are properties of the state object you pass to the component the markup appears in. 
+
+So, in the example above, you'd be able to access the `items` variable if you saved state for your `item-list` component, like so:
+
+```js
+  setState('Items', {
+    items: myItemList
+  });
+```
+
+Then passed it to `item-list` components using `state=`:
+
+```js
+<item-list state=Items></item-list>
+```
+
+*Also note:* that in the example above the `item-details` component is passed state as an object to its `state=` attribute. This is fine too, but the object passing syntax is only available inside a component's `markup.html` file.
+
+#### The `F` tag function
+
+You'll notice in the above we print `<li>` elements within a `.map` iterator function using a special template tag function, `F`. This function is necessary if you want your markup to get all the benefits of ***BANG!***. In fact, all markup in your `markup.html` files is *implicitly* wrapped in `F` by ***BANG!***, so if you create new markup inside \'template backticks\`, you need to wrap that template string in an `F` tag. `F` is just a standard template tag function that is always in scope for your `markup.html` files. 
+
+## Minimal DOM diffing with minimal granular updates
+
+Minimal diffing is all the rage these days. It ensures that you don't do more work than you need to do to reflect the changes in your state into the DOM. Other frameworks use concepts like VDOM, which has a large overhead, as well as a large amount of code. ***BANG!*** uses the high-tech granular, linear-time updating technology from [vanillaview](https://github.com/i5ik/vanillaview), but builds on it and adds improvements to make the updates even more minimal in the case of lists (only items inserted or delete are the ones that change). In all other cases, only the text, attribute names or values, that contain templated state values that have changed, are the things that change. 
+
+It really is optimally minimal. 
+
 ## More Goodies
 
-Apart from self-closing tags, ***BANG!*** has numerous other special features that make it super productive for building interfaces. Read on to discover how ***BANG!*** makes UI work more productive. 
+Apart from self-closing tags, minimal granular updates  ***BANG!*** has numerous other special features that make it super productive for building interfaces. Read on to discover how ***BANG!*** makes UI work more productive. 
 
 You can jump in right away and get it on the npm: 
 [npmjs.com/@bang.html](https://www.npmjs.com/package/bang.html)
@@ -99,7 +154,7 @@ project
 |        |   |   script.js (optional)
 |        └───greet-count
 |           │   markup.html (optional)
-│          │   style.css (optional)
+│           │   style.css (optional)
 |           |   script.js (optional)
 │   
 ...
@@ -347,6 +402,35 @@ Plans may change, but right now, some aims for the future are:
 When the HTML parser [encounters a self-closing slash in a non-void element, it acts as if the slash isn't there](https://html.spec.whatwg.org/multipage/parsing.html#parse-error-non-void-html-element-start-tag-with-trailing-solidus), in effect opening the tag, and wrapping any subsequent content up to the next valid closing tag for that element, inside that open tag. This is not what you intend when you try to use a self-closing tag.
 
 Similarly, when the HTML parser encounters a single `<custom-tag>` it opens it, and so subsequent tags will be placed inside that open tag.
+
+### How do I add event handlers or event listeners to elements?
+
+Easy! Just implement a handler in your component class (the class that extends from `Base` and is located in component's `script.js` file), and use that handlers method name as the value of an `onevent=` attribute. For example:
+
+`/components/cta-button/script.js`:
+```js
+class Component extends Base {
+  BuyNow(clickEvent) {
+    this.paymentService.createCharge(this.from.getCardDetails()).then(status => this.Report(status));
+  }
+}
+```
+
+`/components/cta-button/markup.html`:
+```html
+<button onclick=BuyNow>Buy. Like RIGHT NOW</button>
+```
+
+Notice how we pass the string `BuyNow`, which is the name of our event handler function `BuyNow()` in our component class, to the `<button>` element using the `onclick=` event handler? This syntax ensures the `BuyNow()` function binds to that button, and listens for its `click` event. 
+
+#### A second slightly different syntax to add event handlers not currently supported
+
+Right now, you can't do this:
+```html
+<button click=${myHandlerFunc}>Do Stuff</button>
+```
+
+This old, vanillaview style syntax, by passing in a function, to a an attribute is not currently supported. This is because, right now, ***BANG!*** interprets any function value given it as a function to execute, not as an event handler to bind to an element. So if you pass it a function, it will execute that function and pass in the state object in scope in that component, `func(state)` and print the value returned by that call into the slot where the function was, in the markup.
 
 ### What are some gotchas or syntax I need to beware of?
 
