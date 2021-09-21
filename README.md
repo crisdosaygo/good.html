@@ -138,25 +138,21 @@ Now, onto the tutorial!
 ### Step 1: Make your directory structure:
 
 ```
-project
-│   README.md
-│   package.json   
-│
-└───public
-│   │   index.html
-│   │
-│   └───components
-│       │   config.js (optional)
-│       │  
-|        └───warm-greeter
-|        |   │   markup.html (optional)
-|        |   │   style.css (optional)
-|        |   |   script.js (optional)
-|        └───greet-count
-|           │   markup.html (optional)
-│           │   style.css (optional)
-|           |   script.js (optional)
-│   
+my-project/
+├── README.md
+├── package.json   
+└── public/
+    ├── index.html
+    └── components/
+        ├── config.js (optional)
+        ├── warm-greeter/
+        │   ├── markup.html (optional)
+        │   ├── style.css (optional)
+        │   └── script.js (optional)
+        └── greet-count/
+            ├── markup.html (optional)
+            ├── style.css (optional)
+            └── script.js (optional)
 ...
 ```
 
