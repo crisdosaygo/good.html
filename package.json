@@ -2,13 +2,14 @@
   "name": "bang.html",
   "version": "2.3.0",
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
-  "main": "dist/bang.js",
+  "main": "dist/pack.bang.js",
   "scripts": {
-    "test": "npm run clean && watch -n 3 ./scripts/cpfiles.sh & serve -p 8080 docs/",
-    "prod": "export BANG_PROD=test || set BANG_PROD=test&&npm run clean && watch -n 3 ./scripts/cpfiles.sh & serve -p 8080 docs/",
+    "dev": "npm run clean && watch -n 5 cp -r src/* docs/ & serve -p 8080 docs/",
+    "test": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/",
+    "prod": "export BANG_PROD=test || set BANG_PROD=test&&npm run clean && watch -n 30 npm run pack& serve -p 8080 docs/",
     "clean": "rm -rf dist/ && rm -rf docs/vv && rm docs/*.js || :",
-    "prepublishOnly": "export BANG_PROD=test || set BANG_PROD=test&&echo 'npm run pack' is not ready for mobile && rm -rf dist/ && ./scripts/cpfiles.sh",
-    "pack": "rm -rf dist/ && mkdir dist/ && cp src/style.css dist/style.css && npx roadroller -t text -a eval src/bang.js -o dist/bang.js && cp dist/bang.js docs/bang-dev.js",
+    "prepublishOnly": "export BANG_PROD=test || set BANG_PROD=test&&npm run pack && rm dist/bang.js",
+    "pack": "export BANG_PROD=test || set BANG_PROD=test&&./scripts/build.sh && npx roadroller -t text -a eval dist/bang.js -o dist/pack.bang.js && cp dist/pack.bang.js docs/bang.js",
     "tutorial": "npm run test"
   },
   "repository": {
@@ -42,6 +43,7 @@
     "babel-loader": "latest",
     "babel-preset-env": "latest",
     "roadroller": "latest",
+    "rollup": "^2.56.3",
     "serve": "^12.0.1",
     "webpack": "latest",
     "webpack-cli": "^4.8.0"

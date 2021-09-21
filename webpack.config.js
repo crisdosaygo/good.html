@@ -2,7 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
-  entry: "./src/bang.js",
+  entry: "./src/cat.bang.js",
   mode: process.env.BANG_PROD ? "production" : "development",
   output: {
     path: path.resolve('.', 'dist'),

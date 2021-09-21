@@ -79,7 +79,7 @@
       }
 
       connectedCallback() {
-        say('log!',name, 'connected');
+        say('log',name, 'connected');
       }
 
       // private methods
@@ -239,11 +239,11 @@
   // helpers
     async function install() {
       Object.assign(globalThis, {
-        use, setState, cloneState, loaded, sleep, bangfig, bangLoaded,
+        use, setState, cloneState, loaded, sleep, bangfig, bangLoaded, isMobile,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
 
-      const module = await import('./vv/vanillaview.js');
+      const module = globalThis.vanillaview || (await import('./vv/vanillaview.js'));
       const {s} = module;
       const That = {STATE,CONFIG,StateKey}; 
       _c$ = s.bind(That);
