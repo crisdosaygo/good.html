@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<title>How to make a custom element void tag? BANG! A Web Components framework for the new age</title>
+<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<link rel=stylesheet href=./style.css>
+<style>
+  body {
+    touch-action: pan-y;
+    zoom: 1;
+  }
+  button {
+    user-select: none;
+  }
+</style>
+<script>
+  const DEBUG = {
+    dev: true, 
+    err: true
+  };
+
+  setupErrorCatchers();
+
+  function setupErrorCatchers() {
+    (DEBUG.dev || DEBUG.err) && (self.onerror = (...v) => (func()(v, extractMeat(v).message, extractMeat(v).stack, v+''), true));
+    (DEBUG.dev || DEBUG.err) && (self.onunhandledrejection = ({reason}) => (func()(reason+JSON.stringify(reason,null,2)), true));
+  }
+
+  function func() {
+    if ( isMobile() ) {
+      return (...x) => {
+        for( const m of x ) {
+          try {
+            alert(m);
+            alert(JSON.stringify(m));
+          } catch(e) {
+
+          }
+        }
+      };
+    } else {
+      return (...x) => console.log(...x)
+    }
+  }
+
+  function extractMeat(list) {
+    const meatIndex = list.findIndex(val => !! val && val.message || val.stack);
+    if ( meatIndex == -1 || meatIndex == undefined ) {
+      return "";
+    } else {
+      return list[meatIndex];
+    }
+  }
+</script>
+<script type=application/javascript src=./bang.js?234832></script>
+<script>
+  bangLoaded().then(() => {
+    use('sg-look-book');
+    use('sg-counter');
+    use('sg-temp-converter');
+    use('sg-flight-booker');
+    use('sg-timer');
+    use('sg-crud');
+    use('sg-circle-drawer');
+    use('sg-cells');
+
+    setState('data', {
+      counter: {
+        initialCount: 42
+      },
+      temperatureConverter: {
+        initialKelvin: 198
+      },
+      flightBooker: {
+        initialValence: 'one-way',
+        initialDurationDays: '7',
+      },
+      timer: {
+        initialDurationSeconds: 37.518,
+        initialElapsed: 11.37100000
+      },
+      crud: {
+        initialNames: [
+          {
+            first: 'Cris',
+            last: 'Stringfellow'
+          },
+          {
+            first: 'YuShen',
+            last: 'Long'
+          },
+          {
+            first: 'Noboru',
+            last: 'Watanabe'
+          },
+          {
+            first: 'Saanvi',
+            last: 'Devi'
+          },
+          {
+            first: 'Seonghoon',
+            last: 'Kang'
+          }
+        ]
+      },
+      squarePusher_circleDrawer: {
+        initialCircles: [
+          {
+            center: '0.618,0.618',
+            radius: '0.618'
+          },
+          {
+            center: `${1/Math.PI},${1/Math.E}`,
+            radius: `${Math.LN2}`
+          },
+          {
+            center: `${Math.SQRT1_2},${Math.LOG10E}`,
+            radius: `${1/Math.sqrt(5)}`
+          }
+        ]
+      },
+      ex_cells: {
+        initialFormulae: [
+          {
+            loci: 'A12',
+            raw: 'A9=somethingTBA'
+          }
+        ]
+      }
+    });
+  });
+</script>
+<body>
+<!sg-look-book state=data />
