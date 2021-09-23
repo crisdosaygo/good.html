@@ -1,0 +1,17 @@
+.frame {
+  display: grid;
+  grid-template-areas: 
+    "top-bar"
+    "content";
+  grid-template-rows: auto 1fr;
+}
+
+.top-bar {
+  border-bottom: thin solid;
+  background: silver;
+  text-align: center;
+}
+
+.content {
+  background: mintcream;
+}
