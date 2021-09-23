@@ -312,6 +312,7 @@
     return recurseObject(o, keyPaths, '');
 
     function recurseObject(o, keyPathSet, lastLevel = '') {
+      if ( isUnset(o) ) return [];
       const levelKeys = Object.getOwnPropertyNames(o); 
       const keyPaths = levelKeys
         .map(k => lastLevel + (lastLevel.length ? '.' : '') + k)
