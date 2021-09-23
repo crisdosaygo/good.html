@@ -1,4 +1,4 @@
-button, input, select {
+button, input, select, label {
   font: inherit;
   font-size: smaller;
   color: inherit;

@@ -1,18 +1,18 @@
 <sg-frame state=${_self}>
-  <form class=layout onsubmit="event.preventDefault();">
-    <select required name=valence oninput=SetValence>
-      <option ${valence === 'one-way' ? 'selected': ''} value=one-way>One-way flight</option>
-      <option ${valence === 'round-trip' ? 'selected': ''} value=round-trip>Round-trip flight</option>
-    </select>
-    <input required name=out type=date oninput=SetOut value="${out}" 
-      min="${dateString(new Date)}"
-      max="${valence === 'round-trip' ? back : 'any'}">
-    <input required name=back type=date oninput=SetBack value="${back}"
-      min="${out}"
-      ${valence === 'one-way' ? 'disabled' : ''}
-    >
-    <button onclick=Book
-      ${ formValid ? '' : 'disabled' }
-    >Book</button>
+  <form class=layout>
+    <label>
+      Elapsed time: 
+      <meter name=elapsed value=${elapsed} min=0 max=${duration} step=.01></meter>
+    </label>
+    <!-- this is the behavior of the React/MobX demo on Eugene's site, but I don't like it
+    <span class=time>${elapsed < duration ? elapsed.toFixed(1) : duration.toFixed(1)}s</span>
+    so I just always display elapsed and grind elapsed down when duration is less than it
+    -->
+    <span class=time>${elapsed < duration ? elapsed.toFixed(1) : duration.toFixed(1)}s</span>
+    <label>
+      Duration:
+      <input type=range min=0.001 max=60 name=duration value=${duration} oninput=setDuration>
+    </label>
+    <button type=reset onclick=Reset>Reset</button>
   </form>
 </sg-frame>

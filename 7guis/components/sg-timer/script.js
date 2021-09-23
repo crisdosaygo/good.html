@@ -1,56 +1,53 @@
 class Component extends Base {
-  SetValence(inputEvent) {
-    const state = cloneState('data'); 
-    state.flightBooker.valence = inputEvent.target.value;
+  constructor() {
+    super();
+    const state = cloneState('data');
+    this.startKeepingTime(state);
+    setState('data', state);
+  }
+
+  startKeepingTime(state) {
+    if ( this.timeKeeper ) return;
+    state.timer.start = Date.now() - state.timer.elapsed*1000;
+    this.timeKeeper = setInterval(() => this.keepTime(), 40);
+  }
+
+  stopKeepingTime() {
+    clearInterval(this.timeKeeper);
+    this.timeKeeper = false;
+  }
+
+  keepTime() {
+    const state = cloneState('data');
+    state.timer.elapsed = (Date.now() - state.timer.start)/1000;
     setState('data', state);
 
-    this.showValidity(inputEvent.target);
+    if ( state.timer.elapsed >= state.timer.duration ) {
+      this.stopKeepingTime();
+    }
   }
 
-  SetOut(inputEvent) {
-    const state = cloneState('data'); 
-    state.flightBooker.out = dateString(inputEvent.target.valueAsDate);
+  setDuration(inputEvent) {
+    const state = cloneState('data');
+    state.timer.duration = inputEvent.target.valueAsNumber;
+
+    if ( state.timer.duration < state.timer.elapsed ) {
+      state.timer.elapsed = state.timer.duration;
+      this.stopKeepingTime();
+    }
+
+    if ( state.timer.duration > state.timer.elapsed ) {
+      this.startKeepingTime(state);
+    }
+
     setState('data', state);
-
-    this.showValidity(inputEvent.target);
   }
 
-  SetBack(inputEvent) {
-    const state = cloneState('data'); 
-    state.flightBooker.back = dateString(inputEvent.target.valueAsDate);
+  Reset() {
+    const state = cloneState('data');
+    state.timer.elapsed = 0;
+    this.stopKeepingTime(state);
+    this.startKeepingTime(state);
     setState('data', state);
-
-    this.showValidity(inputEvent.target);
-  }
-
-  Book(clickEvent) {
-    const state = cloneState('data'); 
-    const {valence, out, back} = state.flightBooker;
-    
-    alert(`
-      You have booked a ${
-        valence
-      } flight departing ${
-        out
-      }${ valence === 'round-trip' ? ` and returning ${
-        back
-      }` : '' 
-      }
-    `);
-  }
-
-  showValidity(target) {
-    /* in fact this should wait for the DOM to be printed 
-       which could be async with async value resolution
-       in the async case setTimeout is not sufficient
-       but it will do here as it works and its 
-       a demonstration of how to do it if you want to
-       more properly
-    */
-    setTimeout(() => {
-      const state = cloneState('data'); 
-      state.flightBooker.formValid = target.form.reportValidity();
-      setState('data', state);
-    }, 0);
   }
 }
