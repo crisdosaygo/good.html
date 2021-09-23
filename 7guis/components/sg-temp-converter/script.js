@@ -4,7 +4,6 @@ class Component extends Base {
     const state = cloneState('data');
     state.temperatureConverter.k = state.temperatureConverter.initialKelvin;
     setState('data', state);
-    console.log('constructed');
   }
 
   SetKelvin(inputEvent) {
@@ -13,8 +12,6 @@ class Component extends Base {
     const {target: targ} = inputEvent;
     const type = targ.name;
     const value = parseFloat(targ.value);
-
-    console.log(value+type);
 
     switch(type) {
       case "C":
@@ -28,18 +25,21 @@ class Component extends Base {
       }break;
     }
 
+    console.log('on input', this.kToC(t.k), this.kToF(t.k));
+
     setState('data', state);
-    console.log(state);
   }
 
   beforePrint() {
-    const state = cloneState('data');
+    //trace('temp-converter before print');
 
-    console.log(state);
+    const state = cloneState('data');
 
     const {temperatureConverter: t} = state;
     t.c = parseFloat(this.kToC(t.k).toFixed(2));
     t.f = parseFloat(this.kToF(t.k).toFixed(2));
+
+    console.log('before print', this.kToC(t.k), this.kToF(t.k));
 
     patchState('data', state);
   }
