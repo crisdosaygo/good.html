@@ -1,6 +1,9 @@
+${{key:title}}
 <section class=frame>
   <nav class=top-bar>
-    <a href=${sourceUrl}>${title}</a>
+    <a href=${sourceUrl} target=_blank>${title}</a>
   </nav>
-  <slot></slot>
+  <div class=content>
+    <slot></slot>
+  </div>
 </section>

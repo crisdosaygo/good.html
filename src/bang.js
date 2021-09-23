@@ -17,6 +17,7 @@
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
+        input change compositionstart compositionend text paste beforepast select cut copy
       `.split(/\s+/g).filter(s => s.length).map(e => `on${e}`),
       delayFirstPaintUntilLoaded: true,
       noHandlerPassthrough: false
@@ -52,8 +53,15 @@
       print() {
         Counts.started++;
         this.prepareVisibility();
+        this.beforePrint();
         const state = this.handleAttrs(this.attributes, {originals: true});
         return this.printShadow(state);
+      }
+
+      beforePrint() {
+        // implement to perform such action, such as
+        // calculate derived properties 
+        // before print is called
       }
 
       prepareVisibility() {
@@ -194,7 +202,7 @@
       Object.assign(CONFIG, newConfig);
     }
 
-    function setState(key, state, rerenderAll = false) {
+    function setState(key, state, rerenderAll = false, rerender = true) {
       STATE.set(key, state);
       STATE.set(state, key);
 
@@ -206,10 +214,14 @@
         const HTML = document.body.innerHTML;
         document.body.innerHTML = '';
         document.body.innerHTML = HTML;
-      } else { // re-render only those components depending on that key
+      } else if ( rerender ) { // re-render only those components depending on that key
         const acquirers = Dependents.get(key);
         if ( acquirers ) acquirers.forEach(host => host.print());
       }
+    }
+
+    function patchState(key, state) {
+      return setState(key, state, false, false);
     }
 
     function cloneState(key) {
@@ -239,7 +251,7 @@
   // helpers
     async function install() {
       Object.assign(globalThis, {
-        use, setState, cloneState, loaded, sleep, bangfig, bangLoaded, isMobile,
+        use, setState, patchState, cloneState, loaded, sleep, bangfig, bangLoaded, isMobile,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
 
@@ -296,14 +308,22 @@
         else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
       
         if ( CACHE.get(styleKey) instanceof Error ) { 
-          resp = text; 
+          resp = `<style>
+            @import url('${CONFIG.componentsPath}/style.css');
+          </style>${text}` 
           comp.setVisible();
         } else {
           // inlining styles for increase speed */
             // we setVisible (add bang-styled) straight away because the inline styles block the markup
             // so no FOUC while stylesheet link is loading, like previously: resp = `
             // <link rel=stylesheet href=${baseUrl}/${CONFIG.styleFile} onload=setVisible>${text}`;
-          resp = `<style>${await fetchStyle(name).catch(e => '')}</style>${text}`;
+          resp = `<style>
+            @import url('${CONFIG.componentsPath}/style.css');
+            ${await fetchStyle(name).then(e => {
+              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
+              return e;
+            })}
+          </style>${text}`;
           comp.setVisible();
         }
         
@@ -526,6 +546,7 @@
 
     async function _FUNC(strings, ...vals) {
       const s = Array.from(strings);
+      //console.log(strings, vals);
       const ret =  await _c$(s, ...vals);
       return ret;
     }

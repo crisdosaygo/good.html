@@ -1,4 +1,5 @@
-<sg-frame>
-  <label>${count}</label>
-  <button onclick=Increment>Count</button>
+<!-- we pass state to sg-frame because it needs the title and sourceUrl props -->
+<sg-frame state=${_self}> 
+  <button id=counter onclick=Increment>Count</button>
+  <label for=counter>${count}</label>
 </sg-frame>

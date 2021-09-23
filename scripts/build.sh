@@ -8,5 +8,6 @@ npx webpack -c webpack.config.js
 rm dist/vv.bundle.bang.js
 rm src/cat.bang.js
 cp dist/bang.js docs/bang.js
+cp dist/bang.js 7guis/bang.js
 
 

@@ -1,0 +1,5 @@
+button, input, select {
+  font: inherit;
+  font-size: smaller;
+  color: inherit;
+}
