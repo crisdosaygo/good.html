@@ -1,43 +1,30 @@
 class Component extends Base {
   SetValence(inputEvent) {
-    const {target: targ} = inputEvent;
-
-    if ( !targ.checkValidity() ) return;
-
     const state = cloneState('data'); 
-    
-    state.flightBooker.valence = targ.value;
-
+    state.flightBooker.valence = inputEvent.target.value;
     setState('data', state);
+
+    this.showValidity(inputEvent.target);
   }
 
   SetOut(inputEvent) {
-    const {target: targ} = inputEvent;
-
-    if ( !targ.checkValidity() ) return;
-
     const state = cloneState('data'); 
-
-    state.flightBooker.out = targ.value;
-
+    state.flightBooker.out = dateString(inputEvent.target.valueAsDate);
     setState('data', state);
+
+    this.showValidity(inputEvent.target);
   }
 
   SetBack(inputEvent) {
-    const {target: targ} = inputEvent;
-
-    if ( !targ.checkValidity() ) return;
-
     const state = cloneState('data'); 
-
-    state.flightBooker.back = targ.value;
-
+    state.flightBooker.back = dateString(inputEvent.target.valueAsDate);
     setState('data', state);
+
+    this.showValidity(inputEvent.target);
   }
 
   Book(clickEvent) {
     const state = cloneState('data'); 
-
     const {valence, out, back} = state.flightBooker;
     
     alert(`
@@ -50,5 +37,20 @@ class Component extends Base {
       }` : '' 
       }
     `);
+  }
+
+  showValidity(target) {
+    /* in fact this should wait for the DOM to be printed 
+       which could be async with async value resolution
+       in the async case setTimeout is not sufficient
+       but it will do here as it works and its 
+       a demonstration of how to do it if you want to
+       more properly
+    */
+    setTimeout(() => {
+      const state = cloneState('data'); 
+      state.flightBooker.formValid = target.form.reportValidity();
+      setState('data', state);
+    }, 0);
   }
 }

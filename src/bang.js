@@ -121,10 +121,14 @@
             if ( ! name.startsWith('on') ) continue;
             value = value.trim();
             if ( ! value ) continue;
+            if ( ! this[value] ) continue;
 
             const path = node === this ? 'this.' : 'this.getRootNode().host.';
             if ( value.startsWith(path) ) continue;
-            const ender = value.match(FUNC_CALL) ? '' : '(event)';
+            const ender = ( 
+              value.match(FUNC_CALL) || 
+              typeof this[value] !== "function" 
+            ) ? '' : '(event)';
             node.setAttribute(name, `${path}${value}${ender}`);
           }
         }
@@ -261,6 +265,7 @@
       Object.assign(globalThis, {
         use, setState, patchState, cloneState, loaded, 
         sleep, bangfig, bangLoaded, isMobile, trace,
+        dateString,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
 
@@ -665,6 +670,11 @@
 			console.log(msg, 'Call stack', tracer.stack);
     }
 
+    function dateString(date) {
+			const offset = date.getTimezoneOffset()
+			date = new Date(date.getTime() - (offset*60*1000))
+			return date.toISOString().split('T')[0];
+    }
 }
 
 
