@@ -1,7 +1,7 @@
 {
   // constants, classes, config and state
     const DEBUG = false;
-    const GET_ONLY = true;
+    const GET_ONLY = false;
     const LEGACY = false;
     const MOBILE = isMobile();
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
@@ -58,15 +58,8 @@
       print() {
         Counts.started++;
         this.prepareVisibility();
-        this.beforePrint();
         const state = this.handleAttrs(this.attributes, {originals: true});
         return this.printShadow(state);
-      }
-
-      beforePrint() {
-        // implement to perform such action, such as
-        // calculate derived properties 
-        // before print is called
       }
 
       prepareVisibility() {
@@ -219,7 +212,6 @@
         STATE.set(key, state);
         STATE.set(state, key);
       }
-      //console.log(JSON.stringify(STATE.get(key),null,2));
 
       if ( document.body && rerenderAll ) { // re-render all very simply
         // we need to remove styled because it will need to load after we set the innerHTML

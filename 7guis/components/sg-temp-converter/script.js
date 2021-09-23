@@ -25,24 +25,10 @@ class Component extends Base {
       }break;
     }
 
-    console.log('on input', this.kToC(t.k), this.kToF(t.k));
-
-    setState('data', state);
-  }
-
-  beforePrint() {
-    //trace('temp-converter before print');
-
-    const state = cloneState('data');
-
-    const {temperatureConverter: t} = state;
     t.c = parseFloat(this.kToC(t.k).toFixed(2));
     t.f = parseFloat(this.kToF(t.k).toFixed(2));
 
-    console.log('before print', this.kToC(t.k), this.kToF(t.k));
-
-    patchState('data', state);
-    //setState('data', state);
+    setState('data', state);
   }
 
   kToC(k) {
