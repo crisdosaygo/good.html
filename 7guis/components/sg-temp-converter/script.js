@@ -42,6 +42,7 @@ class Component extends Base {
     console.log('before print', this.kToC(t.k), this.kToF(t.k));
 
     patchState('data', state);
+    //setState('data', state);
   }
 
   kToC(k) {
