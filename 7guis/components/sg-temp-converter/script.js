@@ -7,11 +7,16 @@ class Component extends Base {
   }
 
   SetKelvin(inputEvent) {
+    const {target: targ} = inputEvent;
+
+    if ( !targ.checkValidity() ) return;
+
+    const type = targ.name;
+    const value = Number(targ.value);
+
     const state = cloneState('data');
     const {temperatureConverter: t} = state;
-    const {target: targ} = inputEvent;
-    const type = targ.name;
-    const value = parseFloat(targ.value);
+
 
     switch(type) {
       case "C":

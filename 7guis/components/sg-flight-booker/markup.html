@@ -1,0 +1,11 @@
+<sg-frame state=${_self}>
+  <div class=layout>
+    <select name=valence>
+      <option ${valence == 'one-way' ? 'selected': ''} value=one-way>One-way flight</option>
+      <option ${valence == 'round-trip' ? 'selected': ''} value=round-trip>Round-trip flight</option>
+    </select>
+    <input required name=out type=date oninput=SetOut value="${out}">
+    <input required name=back type=date oninput=SetBack value="${back}">
+    <button onclick=Book>Book</button>
+  </div>
+</sg-frame>
