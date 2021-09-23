@@ -1,13 +1,4 @@
 class Component extends Base {
-  constructor() {
-    super();
-    const state = cloneState('data');
-
-    state.flightBooker.valence = state.flightBooker.initialValence;
-
-    setState('data', state);
-  }
-
   SetValence(inputEvent) {
     const {target: targ} = inputEvent;
 

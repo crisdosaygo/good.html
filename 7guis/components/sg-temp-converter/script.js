@@ -1,11 +1,4 @@
 class Component extends Base {
-  constructor() {
-    super();
-    const state = cloneState('data');
-    state.temperatureConverter.k = state.temperatureConverter.initialKelvin;
-    setState('data', state);
-  }
-
   SetKelvin(inputEvent) {
     const {target: targ} = inputEvent;
 
