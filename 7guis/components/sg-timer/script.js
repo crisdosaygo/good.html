@@ -2,7 +2,7 @@ class Component extends Base {
   constructor() {
     super();
     const state = cloneState('data');
-    this.startKeepingTime(state);
+    //this.startKeepingTime(state);
     setState('data', state);
   }
 

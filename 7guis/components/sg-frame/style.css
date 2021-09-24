@@ -1,5 +1,6 @@
 :host {
   display: block;
+  --gap: 0.5rem;
   width: -moz-fit-content;
   width: fit-content;
   --border-color: silver;
@@ -36,5 +37,5 @@
 }
 
 .top-bar, .content {
-  padding: 0.5rem;
+  padding: var(--gap);
 }

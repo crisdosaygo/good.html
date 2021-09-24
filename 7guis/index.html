@@ -63,7 +63,7 @@
     use('sg-cells');
     use('sg-frame');
 
-    setState('data', {
+    const State = {
       counter: {
         title: 'Counter',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/7guis/components/sg-counter',
@@ -91,28 +91,32 @@
         elapsed: 11.3710000
       },
       crud: {
-        initialNames: [
+        title: 'CRUD',
+        sourceUrl: 'https://github.com/i5ik/_____/tree/main/7guis/components/sg-crud',
+        prefix: '',
+        names: [
           {
-            first: 'Cris',
-            last: 'Stringfellow'
+            firstName: 'Cris',
+            surname: 'Stringfellow'
           },
           {
-            first: 'YuShen',
-            last: 'Long'
+            firstName: 'YuShen',
+            surname: 'Long'
           },
           {
-            first: 'Noboru',
-            last: 'Watanabe'
+            firstName: 'Noboru',
+            surname: 'Watanabe'
           },
           {
-            first: 'Saanvi',
-            last: 'Devi'
+            firstName: 'Saanvi',
+            surname: 'Devi'
           },
           {
-            first: 'Seonghoon',
-            last: 'Kang'
+            firstName: 'Seonghoon',
+            surname: 'Kang'
           }
-        ]
+        ].map(name => (name.key = Math.random()+'', name)),
+        selected: '',
       },
       squarePusher_circleDrawer: {
         initialCircles: [
@@ -138,8 +142,11 @@
           }
         ]
       }
-    });
+    };
+    setState('data', State);
+    setState('crud', State.crud);
   });
 </script>
 <body>
 <!sg-look-book state=data />
+<!sg-crud state=crud />

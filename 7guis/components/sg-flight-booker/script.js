@@ -1,26 +1,26 @@
 class Component extends Base {
   SetValence(inputEvent) {
+    this.showValidity(inputEvent.target);
+
     const state = cloneState('data'); 
     state.flightBooker.valence = inputEvent.target.value;
     setState('data', state);
-
-    this.showValidity(inputEvent.target);
   }
 
   SetOut(inputEvent) {
+    this.showValidity(inputEvent.target);
+
     const state = cloneState('data'); 
     state.flightBooker.out = dateString(inputEvent.target.valueAsDate);
     setState('data', state);
-
-    this.showValidity(inputEvent.target);
   }
 
   SetBack(inputEvent) {
+    this.showValidity(inputEvent.target);
+
     const state = cloneState('data'); 
     state.flightBooker.back = dateString(inputEvent.target.valueAsDate);
     setState('data', state);
-
-    this.showValidity(inputEvent.target);
   }
 
   Book(clickEvent) {

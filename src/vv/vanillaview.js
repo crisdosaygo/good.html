@@ -179,17 +179,8 @@
       if ( x instanceof Node ) return x.textContent;
 
       const isVVArray   = T.check(T`VanillaViewArray`, x);
-      const isVVK = isKey(x);
-      const isMO    = T.check(T`MarkupObject`, x);
-      const isMAO = T.check(T`MarkupAttrObject`, x);
-      const isVV      = T.check(T`Component`, x);
-      if ( isVVArray || isVVK || isMO || isMAO || isVV ) {
-        DEBUG && console.log('vv', x, {isVVArray, isVVK, isMO, isMAO, isVV});
-        return isVVArray ? join(x) : x; // let vanillaview guardAndTransformVal handle
-      }
-      else
-      
-      if ( isIterable(x) ) {
+
+      if ( isIterable(x) && ! isVVArray ) {
         // if an Array or iterable is given then
         // its values are recursively processed via this same function
         return process(that, (await Promise.all(
@@ -197,6 +188,16 @@
             await Promise.all(Array.from(x)).catch(e => err+'')
           ).map(v => process(that, v, state))
         )), state);
+      }
+
+
+      const isVVK = isKey(x);
+      const isMO    = T.check(T`MarkupObject`, x);
+      const isMAO = T.check(T`MarkupAttrObject`, x);
+      const isVV      = T.check(T`Component`, x);
+      if ( isVVArray || isVVK || isMO || isMAO || isVV ) {
+        DEBUG && console.log('vv', x, {isVVArray, isVVK, isMO, isMAO, isVV});
+        return isVVArray ? join(x) : x; // let vanillaview guardAndTransformVal handle
       }
 
       else 
@@ -891,6 +892,7 @@
       }
 
       function join(os) {
+        console.log(os);
         const externals = [];
         const bigNodes = [];
         const v = [];
@@ -903,6 +905,7 @@
         });
         DEBUG && console.log({oldVals,v});
         const retVal = {v,code:CODE,oldVals,nodes:bigNodes,to,update,externals};
+        console.log(retVal);
         return retVal;
       }
 
