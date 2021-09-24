@@ -532,6 +532,7 @@
     }
 
     async function cook(markup, state) {
+      const that = this;
       let cooked = '';
       try {
         if ( !Object.prototype.hasOwnProperty.call(state, '_self') ) {

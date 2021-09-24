@@ -45,6 +45,7 @@ class Component extends Base {
 
     const state = cloneState('data');
     state.crud.prefix = prefix;
+    state.crud.selected = '';
     setState('data', state);
   }
 

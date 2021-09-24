@@ -38,7 +38,8 @@
       oninput="SetSelected"
     >${names
         .map(({firstName,surname,key}) => F`${{key}}
-      <option ${!prefix || surname.startsWith(prefix) ? '' : 'hidden'}
+      <option 
+        ${!prefix || surname.startsWith(prefix) ? '' : 'hidden'}
         data-key=${key}
         ${selected === key ? 'selected' : ''}
         value="${surname}, ${firstName}">
@@ -57,8 +58,14 @@
     </fieldset>
     <fieldset name=commit>
       <button name=action value=create onclick=AddName>Create</button>
-      <button name=action value=update onclick=UpdateSelected>Update</button>
-      <button name=action value=delete onclick=DeleteSelected>Delete</button>
+      <button name=action value=update 
+        ${selected ? '' : 'disabled'} 
+        onclick=UpdateSelected
+      >Update</button>
+      <button name=action value=delete 
+        ${selected ? '' : 'disabled'} 
+        onclick=DeleteSelected
+      >Delete</button>
     </fieldset>
   </form>
 </sg-frame>

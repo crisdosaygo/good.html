@@ -895,7 +895,6 @@
       }
 
       function join(os) {
-        console.log(os);
         const externals = [];
         const bigNodes = [];
         const v = [];
@@ -908,7 +907,6 @@
         });
         DEBUG && console.log({oldVals,v});
         const retVal = {v,code:CODE,oldVals,nodes:bigNodes,to,update,externals};
-        console.log(retVal);
         return retVal;
       }
 

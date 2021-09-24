@@ -8,7 +8,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = true;
+    const DEBUG             = false;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
@@ -895,7 +895,6 @@
       }
 
       function join(os) {
-        console.log(os);
         const externals = [];
         const bigNodes = [];
         const v = [];
@@ -908,7 +907,6 @@
         });
         DEBUG && console.log({oldVals,v});
         const retVal = {v,code:CODE,oldVals,nodes:bigNodes,to,update,externals};
-        console.log(retVal);
         return retVal;
       }
 
