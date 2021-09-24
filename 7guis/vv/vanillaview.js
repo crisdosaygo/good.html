@@ -8,7 +8,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = false;
+    const DEBUG             = true;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
@@ -375,7 +375,7 @@
                 lastAnchor.parentNode.insertBefore(insertee,lastAnchor);
               }
               (DEBUG || LISTD) && console.log('Inserts done');
-              //state.lastAnchor = newVal.nodes[0];
+              state.lastAnchor = newVal.nodes[newVal.nodes.length-1];
             }
           }
         } else {
@@ -740,7 +740,10 @@
 
     function summonPlaceholder(sibling) {
       let ph = [...sibling.parentNode.childNodes].find(
-        node => node.nodeType == Node.COMMENT_NODE && node.nodeValue == 'vanillaview_placeholder' );
+        node => node.isConnected && 
+          node.nodeType == Node.COMMENT_NODE && 
+          node.nodeValue == 'vanillaview_placeholder' 
+        );
       if ( ! ph ) {
         ph = toDOM(`<!--vanillaview_placeholder-->`).firstChild;
       }
