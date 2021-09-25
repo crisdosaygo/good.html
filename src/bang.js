@@ -424,7 +424,6 @@
       if ( CACHE.has(key) ) return CACHE.get(key);
 
       const url = `${CONFIG.componentsPath}/${name}/${file}`;
-      console.log(url);
       let resp;
       const fileText = await fetch(url).then(r => { 
         if ( r.ok ) {
