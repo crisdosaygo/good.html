@@ -45,10 +45,10 @@
       }
       #name = name;
 
-      constructor() {
+      constructor({task: task = () => void 0} = {}) {
         super();
         DEBUG && say('log',name, 'constructed');
-        this.print();
+        this.print().then(task);
       }
 
       get name() {
@@ -59,8 +59,15 @@
       print() {
         Counts.started++;
         this.prepareVisibility();
-        const state = this.handleAttrs(this.attributes, {originals: true});
+        const state = this.handleAttrs(this.attributes);
         return this.printShadow(state);
+      }
+
+      connectedCallback() {
+        say('log',name, 'connected');
+        // attributes must be assigned on connection so we can search for
+        // references to parents
+        this.handleAttrs(this.attributes, {originals: true});
       }
 
       prepareVisibility() {
@@ -85,10 +92,6 @@
         }
       }
 
-      connectedCallback() {
-        say('log',name, 'connected');
-      }
-
       // private methods
       handleAttrs(attrs, {node, originals} = {}) {
         let state = {};
@@ -96,6 +99,7 @@
         if ( ! node ) node = this;
 
         for( let {name,value} of attrs ) {
+          //console.log({name,value}, this);
           if ( isUnset(value) ) continue;
 
           if ( name === 'state' ) {
@@ -122,13 +126,22 @@
             if ( ! name.startsWith('on') ) continue;
             value = value.trim();
             if ( ! value ) continue;
-            if ( ! this[value] ) continue;
 
-            const path = node === this ? 'this.' : 'this.getRootNode().host.';
+            const Local = () => node[value];
+            const Parent = () => node.getRootNode().host[value];
+            const path = Local() ? 'this.' 
+              : Parent() ? 'this.getRootNode().host.' 
+              : null;
+            if ( ! path ) continue;
+
             if ( value.startsWith(path) ) continue;
+            // Conditional logic explained:
+              // don't add a function call bracket if
+              // 1. it already has one
+              // 2. the reference is not a function
             const ender = ( 
               value.match(FUNC_CALL) || 
-              typeof this[value] !== "function" 
+              !(typeof Local() === "function" || typeof Parent() === "function")
             ) ? '' : '(event)';
             node.setAttribute(name, `${path}${value}${ender}`);
           }

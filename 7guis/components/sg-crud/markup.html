@@ -37,15 +37,17 @@
     <select size=2 name=names
       oninput="SetSelected"
     >${names
-        .map(({firstName,surname,key}) => F`${{key}}
+        .map(({firstName,surname,key}) => {
+          const value= `${surname}, ${firstName}`;
+          return F`${{key}}
       <option 
-        ${!prefix || surname.startsWith(prefix) ? '' : 'hidden'}
         data-key=${key}
         ${selected === key ? 'selected' : ''}
-        value="${surname}, ${firstName}">
-        ${surname}, ${firstName}
+        ${!prefix || surname.startsWith(prefix) ? '' : 'hidden'}
+        value="${value}" title="${value}">
+        ${value}
       </option>
-    `)}</select>
+    `})}</select>
     <fieldset name=edit>
       <label>
         Name:
