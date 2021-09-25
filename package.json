@@ -1,6 +1,6 @@
 {
   "name": "bang.html",
-  "version": "2.4.6",
+  "version": "2.4.7",
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
   "main": "dist/pack.bang.js",
   "scripts": {
