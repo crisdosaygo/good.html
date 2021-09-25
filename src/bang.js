@@ -69,6 +69,7 @@
         if ( OPTIMIZE ) {
           const nextState = JSON.stringify(state);
           if ( this.alreadyPrinted && this.lastState === nextState ) {
+            DEBUG && console.log(this, 'state no change, returning');
             return;
           }
           this.lastState = nextState;
@@ -100,9 +101,8 @@
       attributeChangedCallback(name, oldValue, value) {
         // setting the state attribute casues the custom element to re-render
         if ( name === 'state' && !isUnset(oldValue) ) {
-          DEBUG && say('log',`Changing state, so calling print.`, oldValue, value, this);
-          say('log',`Changing state, so calling print.`, oldValue, value, this);
-          if ( JSON.stringify(STATE.get(oldValue)) !== JSON.stringify(STATE.get(value)) ) {
+          if ( STATE.get(oldValue+'.json.last') !== JSON.stringify(STATE.get(value)) ) {
+            DEBUG && say('log',`Changing state, so calling print.`, oldValue, value, this);
             this.print();
           }
         }
@@ -118,7 +118,7 @@
           if ( isUnset(value) ) continue;
           if ( name === 'state' ) {
             const stateKey = value; 
-            const stateObject = STATE.get(stateKey);
+            const stateObject = cloneState(stateKey);
             
             if ( isUnset(stateObject) ) {
               throw new TypeError(`
@@ -135,6 +135,7 @@
                 Dependents.set(stateKey, acquirers);
               }
               acquirers.add(node);
+              DEBUG && console.log({acquirers, Dependents});
             }
           } else if ( originals ) { // set event handlers to custom element class instance methods
             if ( ! name.startsWith('on') ) continue;
@@ -167,6 +168,7 @@
       printShadow(state) {
         return fetchMarkup(this.#name, this).then(async markup => {
           const cooked = await cook.call(this, markup, state);
+          DEBUG && console.log(cooked);
           if ( LEGACY ) {
             const nodes = toDOM(cooked);
             // attributes on each node in the shadom DOM that has an even handler or state
@@ -180,7 +182,7 @@
               console.log({observer});
               observer.observe(shadow, OBSERVE_OPTS);
               shadow.replaceChildren(nodes);
-           }
+            }
           } else {
             if ( this.shadowRoot ) {
               //this.shadowRoot.replaceChildren(nodes);
@@ -257,7 +259,6 @@
     }
 
     function setState(key, state, {
-      rerenderAll: rerenderAll = false, 
       rerender: rerender = true, 
       save: save = false
     } = {}) {
@@ -266,16 +267,33 @@
           STATE.set(key, state);
           STATE.set(state, key);
           DEBUG && console.log('Setting stringified state', state, key);
-          STATE.set(JSON.stringify(state), key);
+          STATE.set(JSON.stringify(state), key+'.json.last');
+          STATE.set(key+'.json.last',JSON.stringify(state));
         } else {
-          Object.assign(STATE.get(key), state);
-          STATE.delete(JSON.stringify(STATE.get(key)));
-          STATE.set(JSON.stringify(STATE.get(key)), key);
+          DEBUG && console.log('Updating state', key);
+          const oState = STATE.get(key);
+          const oStateJSON = STATE.get(key+'.json.last');
+          if ( JSON.stringify(state) !== oStateJSON ) {
+            DEBUG && console.log('State really changed. Will update', key);
+            Object.assign(oState, state);
+            STATE.delete(oStateJSON);
+            if ( key.startsWith('system-key:') ) {
+              STATE.delete(key);
+              STATE.delete(key+'.json.last');
+              key = new StateKey();
+              STATE.set(key, oState);
+              STATE.set(oState, key);
+            }
+            const stateJSONLast = JSON.stringify(oState);
+            STATE.set(key+'.json.last', stateJSONLast);
+            STATE.set(stateJSONLast, key+'.json.last');
+          }
         }
       } else {
         STATE.set(key, state);
         STATE.set(state, key);
-        STATE.set(JSON.stringify(state), key);
+        STATE.set(JSON.stringify(state), key+'.json.last');
+        STATE.set(key+'.json.last',JSON.stringify(state));
       }
 
       if ( save ) {
@@ -284,16 +302,9 @@
         DEBUG && console.log('set state history add', hindex, History.length-1, History);
       }
 
-      if ( document.body && rerenderAll ) { // re-render all very simply
-        // we need to remove styled because it will need to load after we set the innerHTML
-        Array.from(document.querySelectorAll(':not(body).bang-styled'))
-          .forEach(node => node.classList.remove('bang-styled'));
-        
-        const HTML = document.body.innerHTML;
-        document.body.innerHTML = '';
-        document.body.innerHTML = HTML;
-      } else if ( rerender ) { // re-render only those components depending on that key
+      if ( rerender ) { // re-render only those components depending on that key
         const acquirers = Dependents.get(key);
+        DEBUG && console.log({acquirers, Dependents});
         if ( acquirers ) acquirers.forEach(host => host.print());
       }
     }
@@ -581,7 +592,8 @@
 
             STATE.set(stateKey, x);
             STATE.set(x, stateKey);
-            STATE.set(JSON.stringify(x), stateKey);
+            STATE.set(JSON.stringify(x), stateKey+'.json.last');
+            STATE.set(stateKey+'.json.last',JSON.stringify(x));
           }
         } 
 
@@ -593,7 +605,8 @@
             stateKey = new StateKey()+'';
             STATE.set(stateKey, x);
             STATE.set(x, stateKey);
-            STATE.set(JSON.stringify(x), stateKey);
+            STATE.set(JSON.stringify(x), stateKey+'.json.last');
+            STATE.set(stateKey+'.json.last',JSON.stringify(x));
           }
         }
 
