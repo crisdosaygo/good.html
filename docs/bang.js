@@ -1,734 +1,1 @@
-{
-  // constants, classes, config and state
-    const DEBUG = false;
-    const GET_ONLY = false;
-    const LEGACY = false;
-    const MOBILE = isMobile();
-    const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
-    const F = _FUNC; 
-    const FUNC_CALL = /\);?$/;
-    const CONFIG = {
-      htmlFile: 'markup.html',
-      scriptFile: 'script.js',
-      styleFile: 'style.css',
-      bangKey: '_bang_key',
-      componentsPath: `${location.pathname}/components`,
-      allowUnset: false,
-      unsetPlaceholder: '',
-      EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
-        mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
-        dragmove drag mouseover mouseout focus blur focusin focusout scroll
-        input change compositionstart compositionend text paste beforepast select cut copy
-        contextmenu
-      `.split(/\s+/g).filter(s => s.length).map(e => `on${e}`),
-      delayFirstPaintUntilLoaded: true,
-      noHandlerPassthrough: false
-    };
-    const History = [];
-    const STATE = new Map();
-    const CACHE = new Map();
-    const Started = new Set();
-    const TRANSFORMING = new WeakSet();
-    const Dependents = new Map();
-    const Counts = {
-      started: 0,
-      finished: 0
-    };
-    const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
-    let hindex = 0;
-    let observer; // global mutation observer
-    let systemKeys = 1;
-    let _c$;
-
-    const BangBase = (name) => class Base extends HTMLElement {
-      static #activeAttrs = ['state']; // we listen for changes to these attributes only
-      static get observedAttributes() {
-        return Array.from(Base.#activeAttrs);
-      }
-      #name = name;
-
-      constructor({task: task = () => void 0} = {}) {
-        super();
-        DEBUG && say('log',name, 'constructed');
-        this.print().then(task);
-      }
-
-      get name() {
-        return this.#name;
-      }
-
-      // BANG! API methods
-      async print() {
-        Counts.started++;
-        this.prepareVisibility();
-        const state = this.handleAttrs(this.attributes);
-        return this.printShadow(state);
-      }
-
-      connectedCallback() {
-        say('log',name, 'connected');
-        // attributes must be assigned on connection so we can search for
-        // references to parents
-        this.handleAttrs(this.attributes, {originals: true});
-      }
-
-      prepareVisibility() {
-        this.classList.add('bang-el');
-        this.classList.remove('bang-styled');
-        // this is like an onerror event for stylesheet's 
-          // we do this because we want to display elements if they have no stylesheet defined
-          // becuase it's reasonabgle to want to not include a stylesheet with your custom element
-        fetchStyle(name).catch(err => this.setVisible());
-      }
-
-      setVisible() {
-        this.classList.add('bang-styled');
-      }
-
-      // Web Components methods
-      attributeChangedCallback(name, oldValue, value) {
-        // setting the state attribute casues the custom element to re-render
-        if ( name === 'state' && !isUnset(oldValue) ) {
-          DEBUG && say('log',`Changing state, so calling print.`, oldValue, value, this);
-          this.print();
-        }
-      }
-
-      // private methods
-      handleAttrs(attrs, {node, originals} = {}) {
-        let state = {};
-
-        if ( ! node ) node = this;
-
-        for( let {name,value} of attrs ) {
-          if ( isUnset(value) ) continue;
-          if ( name === 'state' ) {
-            const stateKey = value; 
-            const stateObject = STATE.get(stateKey);
-            
-            if ( isUnset(stateObject) ) {
-              throw new TypeError(`
-                <${name}> constructor passed state key ${stateKey} which is unset. It must be set.
-              `);
-            }
-            
-            state = stateObject;
-            
-            if ( originals ) {
-              let acquirers = Dependents.get(stateKey);
-              if ( ! acquirers ) {
-                acquirers = new Set();
-                Dependents.set(stateKey, acquirers);
-              }
-              acquirers.add(node);
-            }
-          } else if ( originals ) { // set event handlers to custom element class instance methods
-            if ( ! name.startsWith('on') ) continue;
-            value = value.trim();
-            if ( ! value ) continue;
-
-            const Local = () => node[value];
-            const Parent = () => node.getRootNode().host[value];
-            const path = Local() ? 'this.' 
-              : Parent() ? 'this.getRootNode().host.' 
-              : null;
-            if ( ! path ) continue;
-
-            if ( value.startsWith(path) ) continue;
-            // Conditional logic explained:
-              // don't add a function call bracket if
-              // 1. it already has one
-              // 2. the reference is not a function
-            const ender = ( 
-              value.match(FUNC_CALL) || 
-              !(typeof Local() === "function" || typeof Parent() === "function")
-            ) ? '' : '(event)';
-            node.setAttribute(name, `${path}${value}${ender}`);
-          }
-        }
-
-        return state;
-      }
-
-      printShadow(state) {
-        return fetchMarkup(this.#name, this).then(async markup => {
-          const cooked = await cook.call(this, markup, state);
-          if ( LEGACY ) {
-            const nodes = toDOM(cooked);
-            // attributes on each node in the shadom DOM that has an even handler or state
-            const listening = nodes.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
-            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-            DEBUG && say('log',nodes, cooked, state);
-            if ( this.shadowRoot ) {
-              this.shadowRoot.replaceChildren(nodes);
-            } else {
-              const shadow = this.attachShadow({mode:'open'});
-              console.log({observer});
-              observer.observe(shadow, OBSERVE_OPTS);
-              shadow.replaceChildren(nodes);
-           }
-          } else {
-            if ( this.shadowRoot ) {
-              //this.shadowRoot.replaceChildren(nodes);
-            } else {
-              const shadow = this.attachShadow({mode:'open'});
-              //console.log({observer});
-              observer.observe(shadow, OBSERVE_OPTS);
-              cooked.to(shadow, 'insert');
-              const listening = shadow.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
-              listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-            }
-          }
-        })
-        .catch(err => DEBUG && say('warn',err))
-        .finally(() => Counts.finished++);
-      }
-    };
-
-    class StateKey extends String {
-      constructor (keyNumber) {
-        if ( keyNumber == undefined ) super(`system-key:${systemKeys++}`); 
-        else super(`client-key:${keyNumber}`);
-      }
-    }
-
-  install();
-
-  // API
-    async function use(name) {
-      let component;
-      await fetchScript(name)
-        .then(script => { // if there's a script that extends base, evaluate it to be component
-          const Base = BangBase(name);
-          const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;
-          try {
-            component = eval(Compose);
-          } catch(e) {
-            DEBUG && say('warn',e, Compose, component)
-          }
-        }).catch(() => {  // otherwise if there is no such extension script, just use the Base class
-          component = BangBase(name);
-        });
-      
-      self.customElements.define(name, component);
-      DEBUG && self.customElements.whenDefined(name).then(obj => say('log',name, 'defined', obj));
-    }
-
-    function undoState(key, transform = x => x) {
-      while( hindex > 0 ) {
-        hindex -= 1;
-        if ( History[hindex].name === key ) {
-          setState(key, transform(History[hindex].value));
-          DEBUG && console.log('Undo state to', History[hindex], hindex, History);
-          return true;
-        }
-      }
-      return false;
-    }
-
-    function redoState(key, transform = x => x) {
-      while( hindex < History.length - 1 ) {
-        hindex += 1;
-        if ( History[hindex].name === key ) {
-          setState(key, transform(History[hindex].value));
-          DEBUG && console.log('Redo state to', History[hindex], hindex, History);
-          return true;
-        }
-      }
-      return false;
-    }
-
-    function bangfig(newConfig = {}) {
-      Object.assign(CONFIG, newConfig);
-    }
-
-    function setState(key, state, {
-      rerenderAll: rerenderAll = false, 
-      rerender: rerender = true, 
-      save: save = false
-    } = {}) {
-      if ( GET_ONLY ) {
-        if ( !STATE.has(key) ) {
-          STATE.set(key, state);
-          STATE.set(state, key);
-        } else {
-          Object.assign(STATE.get(key), state);
-        }
-      } else {
-        STATE.set(key, state);
-        STATE.set(state, key);
-      }
-
-      if ( save ) {
-        hindex = Math.min(hindex+1, History.length);
-        History.splice(hindex, 0, {name: key, value: clone(state)});
-        DEBUG && console.log('set state history add', hindex, History.length-1, History);
-      }
-
-      if ( document.body && rerenderAll ) { // re-render all very simply
-        // we need to remove styled because it will need to load after we set the innerHTML
-        Array.from(document.querySelectorAll(':not(body).bang-styled'))
-          .forEach(node => node.classList.remove('bang-styled'));
-        
-        const HTML = document.body.innerHTML;
-        document.body.innerHTML = '';
-        document.body.innerHTML = HTML;
-      } else if ( rerender ) { // re-render only those components depending on that key
-        const acquirers = Dependents.get(key);
-        if ( acquirers ) acquirers.forEach(host => host.print());
-      }
-    }
-
-    function patchState(key, state) {
-      return setState(key, state, {rerender: false});
-    }
-
-    function cloneState(key, getOnly = GET_ONLY) {
-      if ( getOnly ) return STATE.get(key);
-      if ( STATE.has(key) ) return clone(STATE.get(key));
-      else {
-        throw new TypeError(`State store does not have the key ${key}`);
-      }
-    }
-
-    async function loaded() {
-      const loadCheck = () => {
-        const nonZeroCount = Counts.started > 0; 
-        const finishedWhatWeStarted = Counts.finished === Counts.started;
-        return nonZeroCount && finishedWhatWeStarted;
-      };
-      return becomesTrue(loadCheck);
-    }
-
-    async function bangLoaded() {
-      const loadCheck = () => {
-        const c_defined = typeof _c$ === "function";
-        return c_defined;
-      };
-      return becomesTrue(loadCheck);
-    }
-
-  // helpers
-    async function install() {
-      Object.assign(globalThis, {
-        use, setState, patchState, cloneState, loaded, 
-        sleep, bangfig, bangLoaded, isMobile, trace,
-        undoState, redoState,
-        dateString,
-        ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
-      });
-
-      const module = globalThis.vanillaview || (await import('./vv/vanillaview.js'));
-      const {s} = module;
-      const That = {STATE,CONFIG,StateKey}; 
-      _c$ = s.bind(That);
-      That._c$ = _c$;
-
-      if ( CONFIG.delayFirstPaintUntilLoaded ) {
-        becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
-      }
-
-      observer = new MutationObserver(transformBangs);
-      /* we are interested in bang nodes (which start as comments) */
-      observer.observe(document, OBSERVE_OPTS);
-      findBangs(transformBang); 
-      
-      loaded().then(() => document.body.classList.add('bang-styled'));
-    }
-
-    async function fetchMarkup(name, comp) {
-      // cache first
-        // we make any subsequent calls for name wait for the first call to complete
-        // otherwise we create many in parallel without benefitting from caching
-
-      const key = `markup:${name}`;
-
-      if ( Started.has(key) ) {
-        if ( ! CACHE.has(key) ) await becomesTrue(() => CACHE.has(key));
-      } else Started.add(key);
-
-      const styleKey = `style${name}`;
-      const baseUrl = `${CONFIG.componentsPath}/${name}`;
-      if ( CACHE.has(key) ) {
-        const markup = CACHE.get(key);
-        if ( CACHE.get(styleKey) instanceof Error ) comp.setVisible();
-        
-        // if there is an error style and we are still includig that link
-        // we generate and cache the markup again to omit such a link element
-        if ( CACHE.get(styleKey) instanceof Error && markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {
-          // then we need to set the cache for markup again and remove the link to the stylesheet which failed 
-        } else {
-          comp.setVisible();
-          return markup;
-        }
-      }
-      
-      const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;
-      let resp;
-      const markupText = await fetch(markupUrl).then(async r => { 
-        let text = '';
-        if ( r.ok ) text = await r.text();
-        else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
-      
-        if ( CACHE.get(styleKey) instanceof Error ) { 
-          resp = `<style>
-            @import url('${CONFIG.componentsPath}/style.css');
-          </style>${text}` 
-          comp.setVisible();
-        } else {
-          // inlining styles for increase speed */
-            // we setVisible (add bang-styled) straight away because the inline styles block the markup
-            // so no FOUC while stylesheet link is loading, like previously: resp = `
-            // <link rel=stylesheet href=${baseUrl}/${CONFIG.styleFile} onload=setVisible>${text}`;
-          resp = `<style>
-            @import url('${CONFIG.componentsPath}/style.css');
-            ${await fetchStyle(name).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
-              return e;
-            })}
-          </style>${text}`;
-          comp.setVisible();
-        }
-        
-        return resp;
-      }).finally(async () => CACHE.set(key, await resp));
-      return markupText;
-    }
-
-    async function fetchFile(name, file) {
-      const key = `${file}:${name}`;
-
-      if ( Started.has(key) ) {
-        if ( ! CACHE.has(key) ) await becomesTrue(() => CACHE.has(key));
-      } else Started.add(key);
-
-      if ( CACHE.has(key) ) return CACHE.get(key);
-
-      const url = `${CONFIG.componentsPath}/${name}/${file}`;
-      let resp;
-      const fileText = await fetch(url).then(r => { 
-        if ( r.ok ) {
-          resp = r.text();
-          return resp;
-        } 
-        resp = new TypeError(`Fetch error: ${url}, ${r.statusText}`);
-        throw resp;
-      }).finally(async () => CACHE.set(key, await resp));
-      
-      return fileText;
-    }
-
-    async function fetchStyle(name) {
-      return fetchFile(name, CONFIG.styleFile);
-    }
-
-    async function fetchScript(name) {
-      return fetchFile(name, CONFIG.scriptFile);
-    }
-
-    // search and transform each added subtree
-    function transformBangs(records) {
-      records.forEach(record => {
-        DEBUG && say('log',record);
-        const {addedNodes} = record;
-        if ( !addedNodes ) return;
-        addedNodes.forEach(node => findBangs(transformBang, node));
-      });
-    }
-
-    function transformBang(current) {
-      DEBUG && say('log',{transformBang},{current});
-      const [name, data] = getBangDetails(current);
-      DEBUG && say('log',{name, data});
-
-      // replace the bang node (comment) with its actual custom element node
-      const actualElement = createElement(name, data);
-      current.linkedCustomElement = actualElement;
-      current.parentNode.replaceChild(actualElement, current);
-    }
-
-    function findBangs(callback, root = document.documentElement) {
-      const Acceptor = {
-        acceptNode(node) {
-          if ( node.nodeType !== Node.COMMENT_NODE ) return NodeFilter.FILTER_SKIP;
-          const [name] = getBangDetails(node); 
-          if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
-          else return NodeFilter.FILTER_REJECT;
-        }
-      };
-      const iterator = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT, Acceptor);
-      const replacements = [];
-
-      // handle root node
-        // it's a special case because it will be present in the iteration even if
-        // the NodeFilter would filter it out if it were not the root
-      let current = iterator.currentNode;
-
-      if ( Acceptor.acceptNode(current) === NodeFilter.FILTER_ACCEPT ) {
-        if ( !TRANSFORMING.has(current) ) {
-          TRANSFORMING.add(current);
-          const target = current;
-          replacements.push(() => transformBang(target));
-        }
-      }
-
-      // handle any descendents
-        while (true) {
-          current = iterator.nextNode();
-          if ( ! current ) break;
-
-          if ( !TRANSFORMING.has(current) ) {
-            TRANSFORMING.add(current);
-            const target = current;
-            replacements.push(() => transformBang(target));
-          }
-        }
-
-      while(replacements.length) replacements.pop()();
-    }
-
-    function getBangDetails(node) {
-      const text = node.textContent.trim();
-      const [name, ...data] = text.split(/[\s\t]/g);
-      return [name, data.join(' ')];
-    }
-
-    async function process(x, state) {
-      if ( typeof x === 'string' ) return x;
-      else 
-
-      if ( typeof x === 'number' ) return x+'';
-      else
-
-      if ( typeof x === 'boolean' ) return x+'';
-      else
-
-      if ( x instanceof Date ) return x+'';
-      else
-
-      if ( isUnset(x) ) {
-        if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || '';
-        else {
-          throw new TypeError(`Value cannot be unset, was: ${x}`);
-        }
-      }
-      else
-
-      if ( x instanceof Promise ) return await x.catch(err => err+'');
-      else
-
-      if ( x instanceof Element ) return x.outerHTML;
-      else
-
-      if ( x instanceof Node ) return x.textContent;
-      else
-
-      if ( isIterable(x) ) {
-        // if an Array or iterable is given then
-        // its values are recursively processed via this same function
-        return (await Promise.all(
-          (
-            await Promise.all(Array.from(x)).catch(e => err+'')
-          ).map(v => process(v, state))
-        )).join(' ');
-      }
-      else
-
-      if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) return await x(state);
-      else
-
-      if ( x instanceof Function ) return x(state);
-      else // it's an object, of some type 
-
-      {
-        // State store     
-          /* so we assume an object is state and save it */
-          /* to the global state store */
-          /* which is two-sides so we can find a key */
-          /* given an object. This avoid duplicates */
-        let stateKey;
-
-        // own keys
-          // an object can specify it's own state key
-          // to provide a single logical identity for a piece of state that may
-          // be represented by many objects
-
-        if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {
-          stateKey = new StateKey(x[CONFIG.bangKey])+'';
-          // in that case, replace the previously saved object with the same logical identity
-          const oldX = STATE.get(stateKey);
-          STATE.delete(oldX);
-
-          STATE.set(stateKey, x);
-          STATE.set(x, stateKey);
-        } 
-
-        else  /* or the system can come up with a state key */
-
-        {
-          if ( STATE.has(x) ) stateKey = STATE.get(x);
-          else {
-            stateKey = new StateKey()+'';
-            STATE.set(stateKey, x);
-            STATE.set(x, stateKey);
-          }
-        }
-
-        stateKey += '';
-        DEBUG && say('log',{stateKey});
-        return stateKey;
-      }
-    }
-
-    async function cook(markup, state) {
-      const that = this;
-      let cooked = '';
-      try {
-        if ( !Object.prototype.hasOwnProperty.call(state, '_self') ) {
-          Object.defineProperty(state, '_self', {
-            get: () => state
-          });
-        }
-        DEBUG && say('log','_self', state._self);
-      } catch(e) {
-        DEBUG && say('warn',
-          `Cannot add '_self' self-reference property to state. 
-            This enables a component to inspect the top-level state object it is passed.`
-        );
-      }
-      try {
-        with(state) {
-          cooked = await eval("(async function () { return await _FUNC`${{state}}"+markup+"`; }())");  
-        }
-        DEBUG && console.log({cooked});
-        return cooked;
-      } catch(error) {
-        say('error', 'Template error', {markup, state, error});
-        throw error;
-      }
-    }
-
-    async function _FUNC(strings, ...vals) {
-      const s = Array.from(strings);
-      //console.log(strings, vals);
-      const ret =  await _c$(s, ...vals);
-      return ret;
-    }
-
-    async function old_FUNC(strings, ...vals) {
-      const s = Array.from(strings);
-      let SystemCall = false;
-      let state;
-      let str = '';
-
-      DEBUG && say('log',s.join('${}'));
-
-      if ( s[0].length === 0 && vals[0].state ) {
-        // by convention (see how we construct the template that we tag with FUNC)
-        // the first value is the state object when our system calls it
-        SystemCall = true;
-      }
-
-      // resolve all the values now if it's a SystemCall of _FUNC
-      if ( SystemCall ) {
-        const {state} = vals.shift();
-        s.shift();
-        vals = await Promise.all(vals.map(v => process(v, state)));
-        DEBUG && say('log','System _FUNC call: ' + vals.join(', '));
-
-        while(s.length) {
-          str += s.shift();
-          if ( vals.length ) {
-            str += vals.shift();
-          }
-        }
-        return str;
-      } 
-
-      else 
-
-      // otherwise resolve them when we have access to the top-level state
-        // this is effectively just a little bit of magic that lets us "overload"
-        // the method signature of F
-
-      return async state => {
-        vals = await Promise.all(vals.map(v => process(v, state)));
-        DEBUG && say('log','in-template _FUNC call:' + vals.join(', '));
-
-        while(s.length) {
-          str += s.shift();
-          if ( vals.length ) str += vals.shift();
-        }
-
-        return str;
-      };
-    }
-
-    function createElement(name, data) {
-      const df = document.createDocumentFragment();
-      const container = document.createElement('div');
-      df.appendChild(container);
-      container.insertAdjacentHTML(`afterbegin`, `<${name} ${data}></${name}>`);
-      return container.firstElementChild;
-    }
-
-    function toDOM(str) {
-      const f = (new DOMParser).parseFromString(
-          `<template>${str}</template>`,
-          "text/html"
-        ).head.firstElementChild.content;
-      f.normalize();
-      return f;
-    }
-
-    async function becomesTrue(check = () => true) {
-      return new Promise(async res => {
-        while(true) {
-          await sleep(47);
-          if ( check() ) break;
-        }
-        res();
-      });
-    }
-
-    async function sleep(ms) {
-      return new Promise(res => setTimeout(res, ms));
-    }
-
-    function isIterable(y) {
-      if ( y === null ) return false;
-      return y[Symbol.iterator] instanceof Function;
-    }
-
-    function isUnset(x) {
-      return x === undefined || x === null;
-    }
-
-    function say(mode, ...stuff) {
-      (DEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && alert(`${mode}: ${stuff.join('\n')}`);
-      (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!','')](...stuff);
-    }
-
-    function isMobile() {
-			let check = false;
-			(function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
-			return check;
-    }
-  
-    function trace(msg = '') {
-			const tracer = new Error('Trace');
-			console.log(msg, 'Call stack', tracer.stack);
-    }
-
-    function dateString(date) {
-			const offset = date.getTimezoneOffset()
-			date = new Date(date.getTime() - (offset*60*1000))
-			return date.toISOString().split('T')[0];
-    }
-
-    function clone(o) {
-      return JSON.parse(JSON.stringify(o));
-    }
-}
-
-
+eval(Function("[M='AAUsDXGjoznEOCv^C^TWOQH`YRt]NIZ~B`WZWZBtHioshS}M]VhQMst|@aa]N?lz]oOIAqEjJMJjibUAkqhZhkem}wzLeowg_dAI{Ndq~j^dugOe}HJYP[e}ogj}MC}AUVvRSwAo]k~fqzb_zptHgsc^gImCWHEzE~ctujGSCI}A_`SpIi[tgXoU@FTasnO`O|v_P{CyQmdPq}yKiMd}^CzsBhTgWd@x?]pKkc{]@|V]ln|WBUUK@_RMMLHb~MR|A_}BXg]VXuYCjlcGYOYz~FX^pALm}}tcP|jDTpfL~IcWhgE}}ux]sU{UjQz|yJv?RPnkqIKmN[ULFQuItzZDyodnXVvLqhFd`Jq[LwmmVvTUVlyANUP[|T|I^yy^kBP~bdeV^^e?}IqM]]YTlXw[}gKeup]XDZ~}CzRevlSdoYIyTuDmzDt?lejFaiJBEZfLvHzSoPBoInb[sEIFyNixGmMBDPKKmyl@[zPWIBk{PiZXUzHR@FVfEBsPUMTeqNkiVOCJ`khKen}qqLIo~x{S^OCSvs}sdYHEs{T{oia]|UDHbWV?gPiAlSbVEzxzlCtYc~eDQp^ooZrmWOjC?gzkq`FAAilCPRXvNW?kG~eGB`bkwEPiWroB}CE_pbKscovVSQ@gsTzAvBKBQ{bW__qw{NCmqZINAlj{Jm~DeD]dQxYteCztCun^P]qQOtHmI`szmMR~pd^qtLrzuLYOlKGVaw_CqiqPYw[[W^NBuz_g@|`JXZ[cIF_?Ocj{}SXBPVZ_smugoNiahSk_?JL{~~auZWmIZ|IjuE^ZAwaUvhZhmxvFL^FVzrkAttgX@^`eWo@ho^byoiV`AdCAjfFGnWo~fcdEEVSOH|a~~WQhsoCEqsOARYNF?Fa_k^dv}ogUNNGHh?G~{?rrUNsLQpeHTVphlk?pM^j@f]oQATJ@dSVajD~`REqLI@zz|znMc?K~JKIxPEp`nHxd}`NqoYDWyOAZ@tAsaVs|[NxBoRroUwYIZO}Xxb~MozfQ~W?kUoduxRX~Rg@rY`g`DbApS~ZHCcP{`LLQ@BGmF~tcBoXm_sLVwbbbIl~k|TuXc@_PDr}{YNWqFWTBWaq{bNIaI^vDGWipM[tTsxDyVWmDbX_TTxvsBMtcncxjA]o^tTm@LY^lkb{m^Ctznrcg[rENY[L]FsqDk[AebiHNn@O[p{?A|GJNRpC]EJbGy]mCeEGwlFlpoBvpN{}DrcVIiFgEIFpathY@rYW|@|eSYd@U]gbTR@BKAteLoQ~Gcih~SRiWozpXBusdzpU^PBnl}LW}G[e^ySUqHVVfx[NUBQlCJvZGipU~yrIZ|cNifcECCnblDBFnvXQ|qP]WoIELrbbuCktcSYwUXXzYBxzD?lofU_DoPIRjXAg|CVNB^ahxYx@NanASTRcvkMY}izh{F}bl?gKfUWGBOGp?IVfe@AKlziI?fsc{hRCZMyzajWTJM?ctn[ka?jTiujTrVjR@Juo]YKMucAUTzafTAC`U~jduqme|y~QXDBepESy{WKTv[yXAcOPgA^QnaUBoTSQVvXe@rkHLep{MdIiP|OopOKVGK]nNoJLAJG{c|}xdMM{Cb]xLfzY^lFiUvIexLsbG~KzNekBwcbMJ|?C]MxYCPw^brsNAiYm[]PSh[bdbkSx]YE^r@JCjERHWEJdoiNtMJRJYksUR]SAh[Qs_xmQWzjshYYd~sS~Zfu{XH?{cHcDVEGWJnx~|ZAWdAatR{P^QpYoO`n^]U[l`aMNJZuPjmd[kyi^bl}ZOXLw|kUpDPdV}J^sn~|U[FvI]bDFeQTSNweQMiclRHfSXt?^V}N^D@w{EuLIYU|z`nYKOx_vprYRJvgjsbMKfAGIK|Isuj{gVrVzGpU`qRwAI^CFNaFONUf^|`QIeUTbm_cylYUKmEd^bzqh]`|LMODbZORYVH~Faa?vRp_@BZiJJboTYRB`svet~xw[SYtG^{xI~}cOKFLMw^GlVdjpvDorrp@hrrJIT]@h^PWzdrtvlZ|H@s{EJhafcqzuuhLyecUVWRdSW@cUJNWwvfRYlkk{YrQrDKt@`[LWblZ@nN@tIAKXmFVE_mfnovl|GcFNIOupAYw_i~PQPeD_dIpgBIgPfblIvBuyEtEZ_gwmQIFOuF}ZBwJyFMwcBQhucgU{DfN]sXPnK?]GrMCgSOmy[cVi~?}AvYUDUf{HEaGNGaqx~r`NCQPEBYb`BDlpNhiElCY~ZXzh_eIFzaOLWgfJY?Xxf[GO~SBeuJkIhTyAa@IaY_I|guQZEZKRZQ`G]IrIBbCkC[IYbU}KjPdrmAK@`?N`oK{dcf{jEjIECi}Soxq}{}aqLSQ~LGbJj^rNP?W^fnSMDuJ]dX}Uy@?CEm}h|b~ylH[cbSgoxobISREBBS|isigWnvywf^kN_AP~|gpZhoVJulBVNCqd[^IrTxGOep[zuQAiPpPkpcIoQbHOezmC~QDcEh|Bwo?EfwmW_dKHPGA~{HmZcnlY~STuIK~XLQWw~IAibDCk~d^{~XYl~CsZKJdKomcu{YDhX~BgOfvNqBGmnj^]h]iiwbWETkunCtHxc{wpTaKgdvdKjX|dJztFvOHmSg]dYFeuhFwUNfEhbAJQUo~F{oDoJxoX~I_|atSidB|hKKUogNPjpal^Vad]|sJ?ccIT{oishndACrO?E@VH?_eVkg|uE`egdtyn]cyk}]{{xWnGD@~EJ_{OTP@{DkP@cI~mV@XhhHB_Yh`fh{fcyyg[c[cTLA~@hvTFz]pMiWwAd_tElWDxV_XZP[ifAkDwNGuPU@F}nvxyjrmZJ[uQR|NCE`peh[vjqcSFcTwWgNgvzqO}^zRUOGu[AnYYC?N@GYi|rcr`vBoF~mvUpLzcITne?~UupCa[v}jfmFPVdIcZd?`V}Bx^WDDpbFwpqKuzfdVzthFB^L`xp^mzIheS^sEbAtiBVi^UhmCbh^|e_KqHw@qnywj]LU?gnq[^~mRS`vf_LAEDr[?MOY`|OyOrVP@UQXKSIq?IdazxB{yfpnYRj@^br~]vrL~tIC|@[grDnYRPeAwDBDm@[qb[Ewo^gC]dociKiFBXTHtGoNJ~u_HMZr@xVwcOOLnXl?AFXBtjTMPKTKJlQalsOZzUUDAykSF_MUz|}bK[RLnydqlzQjV?ASnuUxR}tbzxvshlSFduXbaNcVkY]`_[RNWI`DY[GZqHDUsG~[V|LE|ufld^RLTAMUrIJt{TUNQYF{YjsM|yj_iwGtgABiO?wTtDBy~PitRaG@pG}?NHdp?mbUVphDis|hrM]|G?{DRvCxNp_TlBoX[LGDN[ICTJEoyT_Lfbx[@XkYpKZKo][nhMxLSvS@mEZ`h`Lhs]FqEKh}_CGu]BChpoZcPAYNY||q}|JPUETSqfaAt_FFmTD|t{PkPyIPpWrSJKsJKCvq@V`zdQwTdvbzPjE@X|xJkazDipzMs{FDzTmBBI@yhTIYulWM]VVXi_~`S_CPXnOgp^biabTdY^ekHWNRflfM]hujNiySMegDA{q]Ep]L|OJ{XlVmzb?LOP]]zO`k?HjFhLtxa^YN|sS{IpXaYKNd?S`MtBZwai`H^AjJ_X[QICNh[ymQAdObLKwf`ncof}koso|gUYuID|Ot]^JQ[VeB@MYfB~JoXZM`h~VF}ncD_cRvoptoMhI}uvEmZ~{xy_sNx{hNDMIE{qAETwFdiCAdeNJmKM^NJxDkDZKr`Afh}|rstljuazTQAqKjskdWxldlR]TIwchzIHcIseucTBQcxJK[WfuTtv}cNnD}JLIgqiJmUcpFxHS]d{sJDIishDUKzCU|emZo]s[szbMvTO}LhOAUbFO{mNhCZQnvoRW|lx@vbrb`AnoaqtV}ASWfEITfjiauu[NJLw_|Mlaa[YwwvuY~QSnrY`Gca|BmK~JDxAUVfdcsOfFS?i~l|Y{~[VkWbwGLjuz|FFS`DSt_SjEl_nuzDw|Zs{?LBsCJaIdIQ|rw[oVZNwJgQ_wfUUOOOaXYQmjkBpG`wEQc~Fl{eEGUvFbOIA|FFfTim]]wo~MhhW~WkFq{IjxRfwx?zjxRlW}KXrbZD^GYDmuzIS_NU}PPTgk{D}jDz}P@FWpdVKzE_vyojzEFLcg^vVT}[qfi?RuD}WrPYFPpzFqcLcSNSNDG]Wy~RFPaOiO@rRCVc}yVXdul~DnsEZhWA~EbwGphEyVKjcITxqrWSJWDfKbHE~hNL~KxuRmD?_HsrU]c`sI~??tswui}JBpm]~Py|]eV{HOZy}EF^oVhTa^fEXJ^kXI[WOZZt}}XAVnR`cTJw{KalapwPaBY]|AYRP]yCIA_apr~LRcMUfqfuiGlv@?~qU[bNIZcVXno~RrRCDRu@pSwawS}iUMPs}llgaDbU_sh`xerm@CGh`GAK[_HbDeGB@Fn~n}kPtsewzxrYYwiipAngHotCkB^uygjVUV?|V^IHzXCfuc]tVQYEmncAVA?DLnxqBZLH`ytmCu?ROeXcg^AfA{iNZ|pBl{Znga~D}IlOtaBNKErMqAcRIzj|mtYilPano_vQChk^j|W@pzlC]nNASmGjipbc{}zGh[OrvxDFQQerC`HpVF_Y[ZrjhfF`VV]AM^OH|L[CPrtHxpnXCpLbigxDr{K^vvLBn|aQGQS~wOaCiaAvHSMuZYHaoLexsKckFiHv]Kgm[JErszmLs[hWYOwvAW`O{SX{WdRHeTc]an?Sal_VNwwkYR@scJFoi~B]m^bBNVrWorZ^pBJfG[jDL_CyvHqjs[UiMmUhe{thtjL{MB`pek@y{QK{mKwYX^vqi]}~RKiCNiuHF`c`QtfKgapoIT_UhOmhPdkZahuHyL^yfdukOL@eoQyz@PebbHdshvb|NfG^rIQbaYwtehxox^{fUwJleAwFSQsUq|B]JVIKgCJuKrKx^[nGHB^^NNWkc[K@mSaG^]B_WreU]{niiapJDxv{zEEtfsVpZlYYDiozqA~pV{}lPVEsaFUGMRriDxBDFAnCCg_a|lbDLwly^`uipXnjffxC{{CBAVA{^bL{pIiJPT?wJ?Jpw@wavPQOe}_qkh]a{zIE?`hz~lBC]}IhFxxNC^iRNTMhU^fYTtBt[UkJTC_D]RurSqwZ?qPOgiS[[t[SgJWhUYMCdNGtOpoPpDdL`wK`hHmLyW{blBQPwf}FSQd{pHWmDILqvxfWen}FXtId?ym{cCgYIkKzFe?tqrwso@r^}OK^zUxBkMZ|auYELIdQiGC||JuVE]j}CfB]ykvGZa@Iqe}t^^kGEGX_~x|Wypix{C]dqSwghazDLbwd^LrffhmBzV^EeQ~uhYlCobTR~PoJCRETnbhUVNkA?NPsOmRS|WKC]kkF|mevwyxVp[JIMNcaBq|^dbkFgTfX[trrFHs@wA|qHSCEEWZFqFeiVFOYH}gOBMEbPOC]FSd|caXgvu[pVPPOzCQryYreb|dOmYKKg@m|f|Bu@xCnFSe^t@@fJJX?trfbqKgpheP_MVNHMrogcs^Rn`_PBdZof~vQgL@dx|?Des?o{]eFW|NRFz}t]~AN?@QtlbBUMByQPS`kAEEJvzFpD@~JDv`ziGYUjygbUgMghtWvolATNJnk?Z?HxJ@zXrplFVcLY|NjpQGsfXrtrZYTcaTzbdpE|AOfqkTO@nRHV^QYVdKPnh`Me[NSUExoWhUO}tUArpr@ASyDpssreeRpSGbUR?hTFPseJ[L_LNGUfgIFHbPvdtUs]gRfwasdQcqDqt[pW?oNohXotkGz~eRqHWpasQ^QnOjA]ljdlX^AUf{TyH]h}LSO`[ZjUyEQtnLxmWYVG~{tnDXohnBy@Qu`hKoqww_mWlPg@[Pqr?klR|jtzFZ}}xZbaG``KCuXlOqmypNQLyYLPFcNNKZDUWsH^Xr@B~Y]jVYpgKjSYmhAC@LVM{xdmCaCQNIiptqFKLegCxaXD^QadxxUIj@I?skCFHGrKp{{BuuntN]wLN?zF}rqdinPLW`p|xCg[jNpZCRSRXeyM{cEDRDVoN|lYjB^Bc_dTW`qqrVK{[z?QNUCU@ZKVphnXwjNn|wX`K^jAKniGeLq`wboQTpBeJGNgTektsg@RNnUAiES~js~ZFdmbdym]JuTupzhlJPzaxeRE^T`ZQ~xVdW^fTrNHNnf`fCHlEw{wE{sA^I}N|cRhO`hvQbnIVQD?atPyKxTYhzHD]WcDqMwWFTbV[KFrZbCxEpid_x]xXH_xbBFy?{en|ZRy~ooW{cJn[[qix_kkQdXeCi^wx_ZSoXWfcNKyQth]yA[u?{ZvuX|@f{{VMdZkuYJTGgQ[i]qLPOV]_LH`|T|QmRtOjweaH]AdEWsWdy`SigXwTionDsCZ]qJ||q{~wHU}XerDsEVxfazps}CPq^P|KUAPS~Ma??vaTpkLnbBUxxnoe`tzJG?~zA[wOxk|_YCKqlfpQz|?IctBbvU_}JLKWeGOVzTvp?D`KBK`fWT~pxTBQLfYEQclTGikgaJMDF?osd}GWouS]VTdNjBEdZiNr@dFJK[soorTCR|F|{voJ?{{FyGjwmVgBqMWe@Uft^lYB@P|UH[kUkOp^RIDTvD`Vtzcrnq_l?N@n^i[bm@hllD`ZBfUEOylbudINggKcyaCtuOSK~C_JsEX]f[C?~dqTTMxXqd[wJEO{umxNE?RiYRsX^RFi~Fy?NmGBYz~xmiCwAS_qaM{fJz^Ovftb[jBniOXsB@jKBnwYQNfAb_@X~]sM~{K?zW?hkD?zNQln~qUa}CrDU|KUtLUOv~mB@aKE_Cq|u_qqUFjsYhGRjYD`q[QNbA@PTF_DkGdQti|EE}^XMgpw~HDMIbs^fc{GvlqDejsl@yF`FRrk@lOhzWJ[s^]oZWtLjeCI}Ug{qrP@VgTq]XxeQjpEsHQ~eGaK_tzNXtnjPrInGd?KXVBgbFf`sbD_p^kalAtZ@ArVSL_]PPeFlEK]o{iyUrMppeBeDsarIcpHeYgKXJHjcURHOmac?okufv`c`pnKCcUofIZLAcR~cJo_aw`y]tUCAEDXJSdTKmgcMf~FxbtGLXJlkuMIYQrb}^h]CZz~c_UYo{hIGsUqr@NMWjYCUYaZr[Fl~rKf~l?M_@UpX[nK}kg`iprVz~aS[P_rWh_xk?qyfPhTwX`Ntf?dPIF[hoLRB^f|FOF`KjOvyCLvHJ@CXV]|QJY_daGAUqAzWZljh@|BRWb?MOVv]?UmajSYyHnsWXVkGOS|w[?i{Ac@IQtSJ[WBYZyXhu_P?|Tr@OK|M~|?q?TAcNedHJvZqs^DHIkBUfflI~R^_towL`}hvi[`I`D^FGwrt~JJhUbdkrsWcK`]PwTHll}e~elDqF]mymyWx@|xwcyeRZAlpTupRMZwXMiRTg_Fctf@VYbft}AQX`h]TQiNHH[isR{MRbVUjNSFnVjEnYhQItsL_kom`gaLFQeUic{O^WDKctMNwGDFnUF?@jNDmxEJACs{[xVDrDPLgHMm}YRZ^sOTpeOSqgSsWL~aSLNZkv_`h_k`rb]OAkVoIUoTjD[oNmQ[vZ|Dmti{qESSRtsxLhFAlAwA_DhSZ^LpevTvqj{rCs?mNwEWmXjivMqq@eK|hxrfDtkPIsckyJUAl~B_{ip{StXfRqCkdJn]IvAp[~@S}[zXkZ`[XwnTurJbBEA}hABvaW~XFqOQDLd_KnFsUEiIhYOyLzxYWFlG@VQq_^EDzFaPu]mCsJzdZQMTfezg}LPZnKSbR[?ojhHLEMrUVVwadgbwW}QTuC|cbaHI~vNsuqEsGZEUvvifrRkTB}VCoY]j|EuIGMjh@NqiVqwSyFcTznvS]HembMwkVO]TIpbAxhXzrWlpEaEd[I}HxQZXVC`y{^`iuHd~]llU[BnEcGZKlK{[?]?ClC{PQGnmzC}LOiENnkIw`uEvTZo{xALxRk]CiNmq^khepQFOCdZ_tSnNqGaYjadY{JDJHVY^o^NTJuy_M[sO{QzdcYxv{kb{OVfrwTG{qbHdedDUFD_iLpsmaH~csPiPL?lROUND`od^`o{rd`PpSpxFBqIfEF~IO|zXHhBqKItROZNL@cIz^ZNHKF{nz|vtcLU^cw}dlo|DXuiiEIpuNPv{AHzBCTodgrMKKPJynss?^uaxNHi^_phUFPRpKnkzntmQmXZMUGbZDyc|hUfJs{WYiWWYQ{oDFBS?pzhVRn|Q]zMza^qJIgeHV~JQOeUdw@L}CELCT]hPmVpNUm[QMIPbGXeRXSen]Q_|s@e]YK~dK`_SCjKZgaDzjSgOyQrOD}mDyXFjxYVCs{mJ|Vdj|atQxbG]BV|QOX[gxcx}E]Ew?TJV@}~QjRbuiW@Qf^Oh`phO}_XS_Dr~{HpQv@]aJjEZa@lsJBIwwmlu|CPA^EPKxQsUADciZ|^lwbqzaVvPcXVh?pTDLNDpAIJzlabe@ZWyeFyGlXmltALzm}hcUsk]cePYgyxZOrQ]BIOxEFoSIz|nJfSax[B{}@ugTIwlhGp|AD?^HLLWA_^@d]^_Wp~JyWQdpyg_BdaGqQVgWfsais`mS`HJKeE}ykJK~TnhlFCcs|E{MWyOuG_DbYbcPDInBsWIh{qPj}{ujfjEpTnxs~U{TvCAVRadIZ@YwcgvvX~wlrAY{MdH_DJl[gCbHPKErNmWYtAF{xW@aICoOzqcs_on^S]dZx{uXvgxlgupDTm}^srmtekQW?ENU{?AQ?SKwvuBJZnmH_gCfizofCTMujkqBB`{t^fv{rVyOpRceRh{jEelxB[RHvT@k|txp|Wa`gpUb_?^Mx?EKMhuxkCIc~OnGNTzgtpQVe|hEK}ax`PiJCNUMo}ZRCEVRJMZJCyfSa}l{tDNhSpu@FMXpwMAxHVBoP`iVKUqf[^vAGNEYE[uoi|wPrIfoE{Yn?KJ_eugnOVBP|rRtAxuvWhBYD^ulUoD`KbCkRAHjYwJ`FBcV?fZ_pvKIpR^R]fl^ZgB{nrxwdRLGBMWdccJxwo?}opQ?`W@exgmu[IABkFTV~sHdtr[[OcjCmWE@MFbma^?NEkQVPZA{LNV@xgeXPbKTtH@n]rxm{jWBuQarrJXBFo[}hbmsdUFTVo|]WgKVgg?r|ZBXg]s_hKbOFfoqQmF@`bd~xPxZiKTOE?wvmQR?xbpsX^[lerVfSlPmApKyk[^rEBananIdG]dBS]ak^]UjLG@JanTDR}?ptaSHDG~Ec|qVi~[|w`iNw{vwcv?jl]wTgi[c]rwN_GhrZgE`@zC_JGjmLxU|uCf|ZyefJ]SMoeh{BBzrCVpDJrvAtbLDMUCimsfDzFfyFPHvsyYfvsPfLU?K`u[uTd~XbTWY}OwovopznuYCNGhpA@Gp]QuzEcO[Kxt[kSkxPhfSHzQnTkWx~~P`?HF`qoPwtHJQidj{JzoL@yUXML^EJ~}oJRRrduXUfgPXQ]ruxvBBshLi@lm{YozgrGVwF`GUA^jTYyWRib]AhXbU^B|BR?qnV[cjBs[tHhDGqaZu|Qq|kfynLheLvLs]JpSTxQzFdh?Sn^@UVyPdZDQ_ukAp?{EL~GYhhURhAaALcWKW|SAzECDgpu{CsNfx}{}b|hEDIP`bZdlH|iqZGBkTWUFfg[ZrSjMSTh_EbfPSohyqFEsVXosA]gQhbND_[|^qvXeWH~PFB}hP]~HUvYKFzXSC?x]LgEviHrdFllWWpAj[pTXfE{dHdUm{U?hXjamrePc@sXS?w~~H[J[lB?zSZ{AEW{|SgoJHKwEuOj|WR]^cgx|~a[THclcLtS[{xbHW{nz@IUVTAChMGAPyjAsYwIO|`Y}KteqX?RDUu{M@wcNyFu|c]gtaz_GxoyqqVVbYynIglTNKz}vpda@]?R_CMYahcon^t?SFIPtR]UYBO[`ADPoSmEHLlIDSnkMqfY@F~MarxeNu?lKcwOPxc`spRXO]A}iGacIliOiPP?[j[Gbicke~aO`WhlaSNGfl@uHru^hHrTGNcMl?Bij[davtD|AOZ]DzhvHhCfXPM?WBoat^}SuLTUufb{idneq]DybH@pgNJdjxMBVpfu`IEBkWV|czF}SID@zSNKPCQ^EOgrsLaO?vjiZpRZVEGc~Kn`VtSr]DTy^}VlBwGsMCKvB}BAnuTiW]gtuoa~gBrI[ScTYtAITa{PqQcJqGSgLlphvnOPs?X_R~N[rVl|RTI[XGSA]VyahS^}WeCtSAg{g[YAXcAs^mVNqc|[qbAnXGyyRvqwTKdia]o_ISPg{JXLOlQIy@dw~_K[MKB_rZrj}@XzoZAKAKaJDYRdO}xm|zGe^ECf`OxjmLZtAL}_RDxWC]nN[surf[XLaVGhuP~[EGv|_raX@dmtGaHs?eUt?gA@U^mWw`vIvRAWbX?ccMexTCmHutONqkeZoxoQhKJWv[Q^Pkuy|?DhSY]qEe^DbFterfICh}htc]ZJgUG^d]IHx_GAJCsWAxf|bvQeEHSP}n`msyFsHo~raG|wljqpBtPKCWF|JIHSQ~|{xMTGGQ|WeZWBIFcV}_IHdpFWjeDPYugGRRl@yx~fNp`[LKHhIjBMBfH^ZZKBXeynRn{EAJZyP{dCUvqmHeZ]U@qzeEc^xtaxltYH}oDIXwoJcF`hcx?B][IcE?AFZnjtspQcKqshIuHqgLVJKOe@ffEI|zPet]DZAol_geWPHarpDej~w[LezRr~Zon[Dj_IbZjDgSUrIdy?RWncqSi@gTk[[@CU`O]@WeZtwwD]wIazFCpVwnL}NChDczLipegCz_|iNITOnoV`ohxQmMd?U^uEdndLtg@NgTIPckMUJ[_Nefm?}CU^Iu@QDPEoPFVj|NXL@gudsfEtQhq|xdX}Y]RbtSaWD@UtjtEMYUEwSP^qctXJUuthuHM~]{RC~ivlSz^}^vz@Bl?jPFK~UpgtbkY]koENSP`o@mqEo{@GJtBBfHPGxWDqWEuTwgfRBRb[GK@ZNIrdjNnZaoVu~VvAH~NkCH~h_cM_[WNbCOXoNFG_uz@imH~qG_r{O_PvQdLOm_tUUn?Oz]Li}c[lYgWhrXf?dp}Yo~WNkq_yuP~^KDRSyIP]kAHLxYy}MVR}M[BY]MRd@YE|KW}F~NQeyCnPlDvBGH{fWNro_P^EYjynLfW~FWcRSMuFjCCEEYumBv`njinrqvmKgo_EMX~Ae]hQvs^DQU|pg?{ImJMdViXmjbSFSVKX`I|p[GyW[hl^baAXN_RVedzbr_orpmWnwykTOO|~os]mdVBDthfkvTvKnkO@n]loa}IkaP^u_]lSRVGuRLzf@tfzOpGlyJnoq?~NQuyLpcnp_mpBWO`hwbqvHW|tOJEczn?wCD`tp{HuUqpHT_l]}yd{KVA{Yy[u|~PrYcH][oHIwf_EPrZgaQcgtWxzNnX`DR~~iQSs]jL`C[IunEov`|ke_L_{d_SGl`S}pAxAn`Gl~?rWcBuder_QW{fEDraxERtuVkaVJkAW}hzq@]HjJF?e^WRWQduWFp@nfULwB[EOt{tJ?SDDM[bEKYOUvf{fe^VOKqtxmF@iuTGlQd~SaxlqzdPmPI^GwWn@ZO]txvvukvlzMNgWhKZRgYlZHVwwPphY_DU~jGKLzEY?r]B~Tb_ESQRcVvPmaIDC}hCxVH]RgWqRMIDe{[~NTcnJSbXh^h?sEeU]SPV~xsXxp_QZmNPhqtTbEL^]XoQ[?aWSDjIZsf|tN^G^hLGRreU]cRd{lykWZjzn^ysFVEQXenPL?mPec`CRDOqXiVBOuDqM_pIPNz[`GS}FK{tCBqbyb{gC@]otgvuU}U{xQkOzRSYVxuFUhvVbGY~~koeW?rgPuU@OusY_ph|kZdoZc_OB{Mmuojctv|tI?WKEgPgCdBfKoIgkpoEs}F?bdbGisQlBRpALgwhfgmwByx@vcm@LHwzSY{f{|rhORsG~[`Drdky^nfcj[sclcMRHU_pYCaWakZWWozHrHWL?u[ItusbL^Qwu[UlWuw[qIB~VHG?MCrm`JgkaXm^AVU_qc?I@whe_jfaxilqC{aW?HU~jHyCmZMpWpGj[K`ohENf[_ElHu@RXoaAqPSkHP_F|KBMRiV_MWobzJeornmzQ{R~[mEmUGyfM`@sjweoA?CIaU_AOmS]iN`WIYcJk{L}K}dQJSXvUdWme{ArcFS`}`^@S]PDkRm`gGcqaQRr?ScgKxONfRbqdfrnKU~SoWZpiVgmfF{SSdJc|h]vhAHWXYTPhmMExFkN^NHIv^rAwDN^bXO@c}lxRlW]Cq@bMxafc~s^NMxChhSWkZ|GuSA}[zsoarG~^UXU^kut~^|v`KWzhevQG|My[{x}COWrpApbw@{YlpzQlj]TNTGCr]EVpjrJxzuttRoZAyr]^qzRQFr{|tObNJcRK[s^msdWkTVjdTIomXE|fM~wKwvwI?Msh{xsDmJMoDQNTJQe}|j@_naq}ZoUKvgCwkP}og?Lo}ZRI?CCKqmSeS_eWuZTEZMcdmBObt|YYlDl@mDJi?~NB@O??lnGlCkhweyc`z@@yBpghcbwIt]FmfLJyZxSzTM~FRhD?deGcZt~XB]JkaMygdiDEqWEjH^mlMk_`[@mUiHjJT@XJuw~RpXcQj_I{@^fI_XqqnU?itP|SmJWKU?eyKCniMEXLFHMEcm|v|VJjBysFh^FFBesqWKPwsBRijbHisPIoDH}ew_HwZpP?[[VHWVDFIfDIbynWpP@YKb?qTF}VXLYfPvAJj{aipxGspl_k^BrVQoE?fzR{BrLpp{n|ndk?NbRWfQp_{VRxTESnoasdCh[RTcNRoCixBqaGjJaALNyC@rGdEnnCCXWo{YHdpWl`auBh|XijwydTBVs^vOLzuB{Majs`zKTMqzX[Kg[W`ihDLwnTlQjPMfw~DEp?dwsgpokzUd]zNZTXd{zLMRSriZNDmBzTwd{dA@@mhsVxdy{avQxKd|eBuNLCnHRdW_z[KWfy}BqH@MsQeUkTp~gameuzYLUZ@Ymm[NkQNMKrkFs{joIJGg_d_hnjs[@`Stliu{H[?eRipmXgonsjT?o~{awz^^bEf_GcSlIQGWXcugRjVY[hUHRgG}gvFQ}YrUnnsHs@~?^Vm]lsoT}dBqMjuHBjRqtIR|{PbLxsXmpabvIuabDKlAUtK[lzqnJ[DhsHiMmPkXu{]XJoFZEHl{[fcEm[puGTAajt|KgDcQ@`Id{Ft^yULgXYbSuNdSctCm~imtFR`N_vHHakJqMHcxcrxPrd}zzSXtZQWOmPmqKOSP]wAcCrrt^g}B?VBDdwYyYpuK`|hDv}YPGmubPVVO`Cq|DuG^Q}UbyELpHLAcayk?aAnnFXPLw|X|M@}?}RqayRgDkv^nZfe?f@v`hZ[OjBg^SPyyy_CxOt~bPhmxRiC^P{j?Xd`|_Tof]ZqEkrocyo]bI`b^|MRHq{APK|vC@|^p{fkT}MTRjsAOA@~y]SS]I~MwcW[Lw^x`]G{RnaPlZ]_|yYvbGo@D@RBmJMkUtz@|`}nsGIWkisesjVuFgCXFKWSjowvM}BTx{XYRusZgbSkhfjsgJEGf[FHLltq[ryuGsitaphPzM[{Mj^dk]QG`bXj}lPoSOaurQ|]wugMmP[}CqFXxc{OLAMKega}FQ[EbYzmhwls@@akWxwfwu{fMMjMb~{nQh]`Kp|h|rGEXL_@I[RI~QoV^a|~ZtgfLM]`_^L^Y{EKp`^wcjJZnJiJK?}wnHW}I^]SWRsSTIrPSan]V~AAjOiwv`bdQjhBjIrjKmpsBGzbvIqqPGBBKTbESoY_ml]?TNXyeuODr[?juYHxU]vZKTzaUUHGpjWY|ElFv[foEQVTTjrqR{CG|oCYnidOwRNatzkrhdYekLJ`pK@@R^R^xlyvzEvvDufkamnjb}N?gA|J[cGcrAtVW_ZJgh~odBUV|}[^lncWc{gIOWtcFtquLv]gk[Ud?pMSGtxwRMEzqyEmNfHvNvjUQzHNHvPtTzCXh^o^AnPpkmCEfhxMzVKmBaLFA^{PS`gROpiqV_BJfjNjP~Pjn?FlAVEZaVbYlPBNt_[TO~]Sm~TILdaozCTu?pSClj{L~U|_jLnwfNO?uoHZ~hTw_t}@WHs_NRTdSLgy]Ruz~^P~C}YvtcRfAczbNKXb?sEFG^mP?}DRBRrr^XIX?IjzHnzqXmArYJoGzwDtJ|pehksIXQ|XMGBALmeKrmE}ndP}~NgBCRR@`yysjjK|KMDddw]XltohxdvOSVCSV`tYoL_H`dLwHcsvjY@NIDGgkO[F[BedELKEgQhvLkOFERC^Pq}kTbO}dK`}cTPnqtYk`zhPJvIbKzZAgoGtp{}t]oFQy?JuyuuRAKj]jBuiMuA}Q|jbFLpJlQHw`}tTUHLw]tma[K@aZNS~tmKWKjjjvOJ@tS`]]|GLH_C?MN?mXpUDcxvCyVKJPsWxI^?RaFyYSh@UpMEIpvV]]nOYIP?LdLG]KisYmiberSvgyAh]FbilE{mqryuCGbYlFt?qMx}JMxQFOg^Wtk@gDnLZexvW?ii@OIj^qMeAaMLdmKpxof?l[op__?{UMBnXzh[DY]fDW?z{HeH~QAPevcwtzktVH{wu]B]ILqv|?mjyv{SNtxaLip~jInMn{L@FlaJLB?[tnd~bmYygqBu[uz{eI`tt?Jn@E[Sx|n}BipfEj}J_ESaVRA]pF]tYBwYpbWb|WKrFxl@uQ?cwY@mJzjPIPyXXFtTm?oH|`}njb^jl_fa}pyS{^ZH^zG@bxBUTYTW{im`uKSNfQXJG`i?LXECGpmfJVdBHP}^HHO?FsA_ySggi^zhZi?LYwdUyWJ_UVQ@eCee{HpDMW?iOucMIl^yY?MZkWP@mCNv|jlZYpiqojlJ`jXhwORf{XRUUS@Pg}vjAQdUC^cwEbWPAAhD@~]AStU}OgIOEF_ioO_S`]UGenXtn~xdCoGJixWmHLS_IrIUF@tgWlqXeyAdhTLjxuaXTmO`z]RWcfz]gyml}pgbi~i{Y}nSuUUbzCwDqH|UHCUturRZkIC~dvxh?eqMaazT^@|skOdMKQN^CohKWjBqtL_uA@NkkWWKixrkPKa~anXbZcWYx^~~m]G^QoBeclU``JXMbotOIIVjXFhGr^CaeI~rWjKhSdNh}HJfBJCpK_~`unnLpbvcViVGJem}^hNfigzs@_tq~g|hCb}q@K~rOVxYLgA]lkZKwgBG}|BMut[lKbZkiLLLJkRKInnCA`zaI^EWnTYT{ng]POnGjCCu`}dHlRz^aIWnRbxCF^~cj^qRw^[PUpYU[SfUTH@lqOpW}sQ@UDp~ptMxQ}HVIJEhCx}|TmJHaRhyKthd]LWehdoh@~pYvTKxdOpKTQgcrXxFCoXh?Qa_uCjVjACn]{Ec~CjqdS~^MFXbAAmWpL}znbY[an}gvrASZWL[HVj]JsdIENr@U{EI|VEXPiiNQJI^YMtZkR[HtajIk^?`npNiIb[uWizvxMkYW^GDTdOdECw^BhNaFpGacLd_Oxr[MN`lPX[IVO|KOHvM~]IDSzCCXfhQI_Q@IxoHiXu`ts'",...']charCodeAtUinyxp',"for(;e<37839;c[e++]=x-128)for(x=1;x<128;n=p.map((i,y)=>(t=r[i]*2+1,t=Math.log(t/(h-t)),A-=a[y]*t,t/1000)),A=~-h/(1+Math.exp(A))|1,U=o%h<A,o=o%h+(U?A:h-A)*(o>>15)-!U*A,p.map((i,y)=>(t=r[i]+=(U*h/2-r[i]<<15)/((C[i]+=C[i]<6)+1/20)>>15,a[y]+=n[y]*(U-A/h))),x=x*2+U)for(p='01020210321043105410642065206541097310987532'.split(A=0).map((i,y)=>(t=0,[...i].map((i,y)=>(t=t*997+(c[e-i]|0)|0)),h*128-1&t*997+x)*12+y);o<h*128;o=o*64|M.charCodeAt(d++)&63);return String.fromCharCode(...c)")([],[],1<<15,[0,0,0,0,0,0,0,0,0,0,0,0],new Uint16Array(51e6).fill(1<<13),new Uint8Array(51e6),0,0,0))
