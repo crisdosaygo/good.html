@@ -689,6 +689,10 @@
         newAttrValue = before + newVal + after;
       }
 
+      if ( DEBUG && name === 'style' ) {
+        console.log('style attribute', {newAttrValue, before, newVal, after});
+      }
+
       DEBUG && console.log(JSON.stringify({
         newVal,
         valIndex,
@@ -713,15 +717,18 @@
       }
 
       try {
-        node.setAttribute(name,value);
+        node.setAttribute(name,isUnset(value) ? name : value);
       } catch(e) {
         DEBUG && console.warn(e);
       }
 
-      try {
-        node[name] = value == undefined ? true : value;
-      } catch(e) {
-        DEBUG && console.warn(e);
+      // if you set style like this is fucks it up
+      if ( name !== 'style' ) {
+        try {
+          node[name] = isUnset(value) ? true : value;
+        } catch(e) {
+          DEBUG && console.warn(e);
+        }
       }
     }
 

@@ -24,6 +24,7 @@
       delayFirstPaintUntilLoaded: true,
       noHandlerPassthrough: false
     };
+    const History = [];
     const STATE = new Map();
     const CACHE = new Map();
     const Started = new Set();
@@ -34,6 +35,7 @@
       finished: 0
     };
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
+    let hindex = 0;
     let observer; // global mutation observer
     let systemKeys = 1;
     let _c$;
@@ -99,9 +101,7 @@
         if ( ! node ) node = this;
 
         for( let {name,value} of attrs ) {
-          //console.log({name,value}, this);
           if ( isUnset(value) ) continue;
-
           if ( name === 'state' ) {
             const stateKey = value; 
             const stateObject = STATE.get(stateKey);
@@ -214,11 +214,27 @@
       DEBUG && self.customElements.whenDefined(name).then(obj => say('log',name, 'defined', obj));
     }
 
+    function undoState(key) {
+      hindex -= 1;
+      if ( History[hindex] ) {
+        console.log(History, hindex);
+        setState(key, History[hindex], false, true, false);
+      }
+    }
+
+    function redoState(key) {
+      hindex += 1;
+      if ( History[hindex] ) {
+        console.log(History, hindex);
+        setState(key, History[hindex], false, true, false);
+      }
+    }
+
     function bangfig(newConfig = {}) {
       Object.assign(CONFIG, newConfig);
     }
 
-    function setState(key, state, rerenderAll = false, rerender = true) {
+    function setState(key, state, rerenderAll = false, rerender = true, historyAdd = true) {
       if ( GET_ONLY ) {
         if ( !STATE.has(key) ) {
           STATE.set(key, state);
@@ -229,6 +245,11 @@
       } else {
         STATE.set(key, state);
         STATE.set(state, key);
+      }
+
+      if ( historyAdd ) {
+        History.splice(hindex, 0, clone(state));
+        hindex++;
       }
 
       if ( document.body && rerenderAll ) { // re-render all very simply
@@ -251,7 +272,7 @@
 
     function cloneState(key, getOnly = GET_ONLY) {
       if ( getOnly ) return STATE.get(key);
-      if ( STATE.has(key) ) return JSON.parse(JSON.stringify(STATE.get(key)));
+      if ( STATE.has(key) ) return clone(STATE.get(key));
       else {
         throw new TypeError(`State store does not have the key ${key}`);
       }
@@ -279,6 +300,7 @@
       Object.assign(globalThis, {
         use, setState, patchState, cloneState, loaded, 
         sleep, bangfig, bangLoaded, isMobile, trace,
+        undoState, redoState,
         dateString,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
@@ -690,6 +712,11 @@
 			date = new Date(date.getTime() - (offset*60*1000))
 			return date.toISOString().split('T')[0];
     }
+
+    function clone(o) {
+      return JSON.parse(JSON.stringify(o));
+    }
+
 }
 
 

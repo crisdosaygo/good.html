@@ -17,3 +17,7 @@ button:active {
 :disabled {
   opacity: 0.5;
 }
+
+button, label {
+  user-select: none;
+}

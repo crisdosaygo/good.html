@@ -1,17 +1,33 @@
-<sg-frame state=${_self}>
-  <form class=layout onsubmit="event.preventDefault();">
+<sg-frame 
+    oncontextmenu=CloseSizer
+    onclick=CloseSizer
+    state=${_self}
+  >
+  <form class=layout 
+    onsubmit="event.preventDefault();">
     <fieldset class=history>
-      <button name=action value=undo onclick=Undo>Undo</button>
-      <button name=action value=redo onclick=Redo>Redo</button>
+      <button name=action value=undo ${selected ? 'disabled' : ''} onclick=Undo>Undo</button>
+      <button name=action value=redo ${selected ? 'disabled' : ''} onclick=Redo>Redo</button>
     </fieldset>
-    <fieldset class=canvas>${circles.map(({center,radius}) => {
-      const [x,y] = center.split(',').map(a => parseFloat(a)*200);
-      radius *= 200;
-      return F`${{key:center}}
-        <!sg-circle 
+    <div 
+      onclick=AddCircle
+      class=canvas
+    >${circles.map(({key,x,y,radius}) => {
+      return F`${{key}}
+        <sg-circle 
+          class="${selected === key ? 'selected' : ''}"
+          data-key=${key}
+          style="left: ${x}px; top: ${y}px; --radius: ${radius}px;" 
+          onclick=OpenSizer
           oncontextmenu=OpenSizer
-          style="left: ${x}px; top: ${y}px; --radius: ${radius}px;"/> 
+        ></sg-circle>
       `;
-    })}</fieldset>
+    })}</div>
+    <sg-sizer-modal 
+      onclick=CloseSizer
+      oninput=SizeSelected
+      ${selected ? '' : 'hidden' }
+      state=${circles.find(({key}) => key === selected) || {radius:100}}
+    ></sg-sizer-modal>
   </form>
 </sg-frame>

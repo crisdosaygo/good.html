@@ -61,6 +61,7 @@
     use('sg-crud');
     use('sg-circle-drawer');
     use('sg-circle');
+    use('sg-sizer-modal');
     use('sg-cells');
     use('sg-frame');
 
@@ -119,22 +120,31 @@
         ].map(name => (name.key = Math.random()+'', name)),
         selected: '',
       },
-      squarePusher_circleDrawer: {
+      circleDrawer: {
         title: 'Cricle Drawer',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/7guis/components/sg-circle-drawer',
+        selected: '',
         circles: [
           {
-            center: '0.618,0.618',
-            radius: '0.618'
-          },
-          {
-            center: `${1/Math.PI},${1/Math.E}`,
-            radius: `${Math.LN2}`
-          },
-          {
-            center: `${Math.SQRT1_2},${Math.LOG10E}`,
-            radius: `${1/Math.sqrt(5)}`
+            key: `20,40`,
+            x: 20,
+            y: 40,
+            radius: 15
           }
+          /*
+            {
+              center: '0.618,0.618',
+              radius: '0.618'
+            },
+            {
+              center: `${1/Math.PI},${1/Math.E}`,
+              radius: `${Math.LN2}`
+            },
+            {
+              center: `${Math.SQRT1_2},${Math.LOG10E}`,
+              radius: `${1/Math.sqrt(5)}`
+            }
+          */
         ],
       },
       ex_cells: {
@@ -152,4 +162,3 @@
 </script>
 <body>
 <!sg-look-book state=data />
-<!sg-crud state=crud />

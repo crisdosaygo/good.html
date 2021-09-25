@@ -1,3 +1,6 @@
+:host {
+  --modal-gap: 32px;
+}
 
 .layout {
   position: relative;
@@ -20,10 +23,16 @@ fieldset {
 
 fieldset.history {
   grid-area: history;
+  text-align: center;
+  min-height: var(--modal-gap);
 }
 
-fieldset.canvas {
+.canvas {
+  position: relative;
   grid-area: canvas;
   min-width: 250px;
   min-height: 250px;
+  background: white;
+  border: thin solid lightslategray;
+  overflow: hidden;
 }
