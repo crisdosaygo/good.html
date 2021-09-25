@@ -9,6 +9,6 @@ rm .build-temp/vv.bundle.bang.js
 npx webpack -c webpack.config.js
 rm src/cat.bang.js
 cp .build-temp/bang.js docs/bang.js
-cp .build-temp/bang.js 7guis/bang.js
+cp .build-temp/bang.js docs/7guis/bang.js
 
 
