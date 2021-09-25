@@ -216,18 +216,26 @@
 
     function undoState(key) {
       hindex -= 1;
-      if ( History[hindex] ) {
-        console.log(History, hindex);
-        setState(key, History[hindex], false, true, false);
+      while( !History[hindex].name === 'key' ) {
+        hindex -= 1;
+        if ( hindex < 0 ) return false;
       }
+      DEBUG && console.log(key, hindex, History.length - 1, 
+        'Undo Setting', History[hindex].value.circleDrawer);
+      setState(key, History[hindex].value, false, true, false);
+      return true;
     }
 
     function redoState(key) {
       hindex += 1;
-      if ( History[hindex] ) {
-        console.log(History, hindex);
-        setState(key, History[hindex], false, true, false);
+      while( !History[hindex].name === 'key' ) {
+        hindex += 1;
+        if ( hindex >= (History.length - 1) ) return false;
       }
+      DEBUG && console.log(key, hindex, History.length - 1, 
+        'Redo Setting', History[hindex].value.circleDrawer);
+      setState(key, History[hindex].value, false, true, false);
+      return true;
     }
 
     function bangfig(newConfig = {}) {
@@ -248,8 +256,9 @@
       }
 
       if ( historyAdd ) {
-        History.splice(hindex, 0, clone(state));
-        hindex++;
+        hindex = Math.min(hindex+1, History.length-1);
+        History.splice(hindex, 0, {name, value: clone(state)});
+        console.log('set state history add', hindex, History.length-1, History);
       }
 
       if ( document.body && rerenderAll ) { // re-render all very simply
