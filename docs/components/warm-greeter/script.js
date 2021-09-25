@@ -89,8 +89,9 @@ class Component extends Base {
     setState('MyState', newState);
   }
 
+  /* print must be async of return a promise */
   print() {
-    super.print().then(() => {
+    return super.print().then(() => {
       // some task after we have re-rednered
     });
   }

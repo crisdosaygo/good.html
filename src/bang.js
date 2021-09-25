@@ -58,7 +58,7 @@
       }
 
       // BANG! API methods
-      print() {
+      async print() {
         Counts.started++;
         this.prepareVisibility();
         const state = this.handleAttrs(this.attributes);
