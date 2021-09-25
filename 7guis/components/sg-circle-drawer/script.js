@@ -3,7 +3,7 @@ class CircleDrawer extends Base {
 
   AddCircle(clickEvent) {
     if ( clickEvent.target.matches('sg-circle') ) return;
-    console.log('AddCircle');
+    //console.log('AddCircle');
 
     const {clientX,clientY} = clickEvent;
     const frame = clickEvent.target.closest('.canvas');
@@ -18,11 +18,21 @@ class CircleDrawer extends Base {
       x, y, 
       radius: r
     });
-    setState('data', state);
+    setState('data', state, {save:true});
+  }
+
+  _hackCircles(state) {
+    // this hack is to circumvent the bug where nodes removed (in VV)
+    // will never be reconnected (I think I can fix that tho)
+    state.circleDrawer.circles = state.circleDrawer.circles.map(c => {
+      c.key = `${c.x},${c.y},${Math.random()}`;
+      return c;
+    });
+    return state;
   }
 
   OpenSizer(event) {
-    console.log('OpenSizer');
+    //console.log('OpenSizer');
     if ( event.type === 'contextmenu' ) {
       //event.preventDefault();
     }
@@ -33,7 +43,7 @@ class CircleDrawer extends Base {
   }
 
   SizeSelected(inputEvent) {
-    console.log('SizeSelected');
+    //console.log('SizeSelected');
     const state = cloneState('data');
     const circle = state.circleDrawer.circles.find(({key}) => key === state.circleDrawer.selected);
     // we use path[0] rather than target because we attach to sg-sizer-modal not input[type="range"]
@@ -54,7 +64,7 @@ class CircleDrawer extends Base {
 
     if ( ! state.circleDrawer.selected ) return;
 
-    console.log('CloseSizer');
+    //console.log('CloseSizer');
 
     if ( event.type === 'contextmenu' ) {
       //event.preventDefault();
@@ -65,13 +75,27 @@ class CircleDrawer extends Base {
     setState('data', state);
   }
 
+  SaveCircleSize(changeEvent) {
+    //console.log('Size Change: Saving...');
+
+    // modify the state we are saving to history so we remove the modal / selected node
+    // this might be a single call if we had a 'saveState' method
+
+    const state = cloneState('data'); 
+    const {selected} = state.circleDrawer;
+    state.circleDrawer.selected = '';
+    setState('data', state, {save:true, rerender: false});
+    state.circleDrawer.selected = selected;
+    setState('data', state, {rerender: false});
+  }
+
   Undo() {
-    console.log('Undo');
-    undoState('data');
+    //console.log('Undo');
+    undoState('data', state => this._hackCircles(state));
   }
 
   Redo() {
-    console.log('Redo');
-    redoState('data');
+    //console.log('Redo');
+    redoState('data', state => this._hackCircles(state));
   }
 }

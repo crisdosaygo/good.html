@@ -26,6 +26,7 @@
     <sg-sizer-modal 
       onclick=CloseSizer
       oninput=SizeSelected
+      onchange=SaveCircleSize
       ${selected ? '' : 'hidden' }
       state=${circles.find(({key}) => key === selected) || {radius:100}}
     ></sg-sizer-modal>

@@ -12,7 +12,7 @@
       scriptFile: 'script.js',
       styleFile: 'style.css',
       bangKey: '_bang_key',
-      componentsPath: './components',
+      componentsPath: `${location.pathname}/components`,
       allowUnset: false,
       unsetPlaceholder: '',
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
@@ -214,35 +214,39 @@
       DEBUG && self.customElements.whenDefined(name).then(obj => say('log',name, 'defined', obj));
     }
 
-    function undoState(key) {
-      hindex -= 1;
-      while( !History[hindex].name === 'key' ) {
+    function undoState(key, transform = x => x) {
+      while( hindex > 0 ) {
         hindex -= 1;
-        if ( hindex < 0 ) return false;
+        if ( History[hindex].name === key ) {
+          setState(key, transform(History[hindex].value));
+          DEBUG && console.log('Undo state to', History[hindex], hindex, History);
+          return true;
+        }
       }
-      DEBUG && console.log(key, hindex, History.length - 1, 
-        'Undo Setting', History[hindex].value.circleDrawer);
-      setState(key, History[hindex].value, false, true, false);
-      return true;
+      return false;
     }
 
-    function redoState(key) {
-      hindex += 1;
-      while( !History[hindex].name === 'key' ) {
+    function redoState(key, transform = x => x) {
+      while( hindex < History.length - 1 ) {
         hindex += 1;
-        if ( hindex >= (History.length - 1) ) return false;
+        if ( History[hindex].name === key ) {
+          setState(key, transform(History[hindex].value));
+          DEBUG && console.log('Redo state to', History[hindex], hindex, History);
+          return true;
+        }
       }
-      DEBUG && console.log(key, hindex, History.length - 1, 
-        'Redo Setting', History[hindex].value.circleDrawer);
-      setState(key, History[hindex].value, false, true, false);
-      return true;
+      return false;
     }
 
     function bangfig(newConfig = {}) {
       Object.assign(CONFIG, newConfig);
     }
 
-    function setState(key, state, rerenderAll = false, rerender = true, historyAdd = true) {
+    function setState(key, state, {
+      rerenderAll: rerenderAll = false, 
+      rerender: rerender = true, 
+      save: save = false
+    } = {}) {
       if ( GET_ONLY ) {
         if ( !STATE.has(key) ) {
           STATE.set(key, state);
@@ -255,10 +259,10 @@
         STATE.set(state, key);
       }
 
-      if ( historyAdd ) {
-        hindex = Math.min(hindex+1, History.length-1);
-        History.splice(hindex, 0, {name, value: clone(state)});
-        console.log('set state history add', hindex, History.length-1, History);
+      if ( save ) {
+        hindex = Math.min(hindex+1, History.length);
+        History.splice(hindex, 0, {name: key, value: clone(state)});
+        DEBUG && console.log('set state history add', hindex, History.length-1, History);
       }
 
       if ( document.body && rerenderAll ) { // re-render all very simply
@@ -276,7 +280,7 @@
     }
 
     function patchState(key, state) {
-      return setState(key, state, false, false);
+      return setState(key, state, {rerender: false});
     }
 
     function cloneState(key, getOnly = GET_ONLY) {

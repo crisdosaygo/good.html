@@ -1,0 +1,23 @@
+button, input, select, label {
+  font: inherit;
+  font-size: smaller;
+  color: inherit;
+}
+
+button {
+  border-radius: 0.25rem;
+  border-color: silver;
+}
+
+button:active {
+  background: linear-gradient(to bottom, lightskyblue, dodgerblue 25%, dodgerblue 75%, lightskyblue);
+  outline: none;
+}
+
+:disabled {
+  opacity: 0.5;
+}
+
+button, label {
+  user-select: none;
+}

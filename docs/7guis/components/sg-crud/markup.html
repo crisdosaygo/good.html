@@ -1,0 +1,73 @@
+<sg-frame state=${_self}>
+  <form class=layout onsubmit="event.preventDefault();">
+    <label class=filter>
+      Filter prefix:
+      <input type=text name=prefix oninput=SetPrefix>
+    </label>
+    <!-- 
+      notice we "filter" with a 'hidden' attribute
+      rather than saying
+      .filter(({surname}) => surname.startsWith(prefix)
+      why?
+      we do this because the min diff library I depend on (mine own vanillaview, 
+      well-loved of me, discerning to fulfil this labor by slow prudence to make 
+      mild a rugged people and thro soft degrees subdue them to the useful and the good.)
+      operates as follows:
+      keyed templates, when removed from the DOM, have no way to be inserted back in.
+      if you intend to insert and remove something best use a singleton template 
+      (which is not cached), for keyed (cached) templates, the intent is they are 
+      updated while attached (or moved around while attached), but if removed from the DOM
+      they still require memory, but their updates are not shown...and i do not know
+      how to change the code right now to make nodes removed be reattached
+      i think nodes are inserted into parent nodes via updator functions
+      (perhaps handleMarkupInNode) but what happens after we remove the nodes below
+      (if we didn't use a hidden attribute to ensure they remain in the DOM althought
+      become invisible in the interface) is they continue to be updated on every call
+      where they are present, but since they are removed, they do not return
+      tho they still continue to occupy memory, which is also a potential memory leak
+      so singleton uncached templates have some advantages 
+      and previously I did not understand the subtleness of these issues so whenever
+      something didn't work with a cached keyed template I just used a singleton unkeyed one  
+      and it worked, and so I thought no further of it at the time.
+      but now, with the requirement to both Update, and Filter, I need to think more of it.
+      if there were some way for an updator function to see nodes that are removed, 
+      and recognize they are removed, but are required to be present at the current render
+      and reinsert them...well that would be great.
+    -->
+    <select size=2 name=names
+      oninput="SetSelected"
+    >${names
+        .map(({firstName,surname,key}) => {
+          const value= `${surname}, ${firstName}`;
+          return F`${{key}}
+      <option 
+        data-key=${key}
+        ${selected === key ? 'selected' : ''}
+        ${!prefix || surname.startsWith(prefix) ? '' : 'hidden'}
+        value="${value}" title="${value}">
+        ${value}
+      </option>
+    `})}</select>
+    <fieldset name=edit>
+      <label>
+        Name:
+        <input type=text autocomplete=given-name name=firstname>
+      </label>
+      <label>
+        Surname:
+        <input type=text autocomplete=family-name name=surname>
+      </label>
+    </fieldset>
+    <fieldset name=commit>
+      <button name=action value=create onclick=AddName>Create</button>
+      <button name=action value=update 
+        ${selected ? '' : 'disabled'} 
+        onclick=UpdateSelected
+      >Update</button>
+      <button name=action value=delete 
+        ${selected ? '' : 'disabled'} 
+        onclick=DeleteSelected
+      >Delete</button>
+    </fieldset>
+  </form>
+</sg-frame>

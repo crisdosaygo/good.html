@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "npm run clean && watch -n 5 cp -r src/* docs/ & serve -p 8080 docs/",
     "test": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/",
-    "7guis": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 7guis/",
-    "7guis-dev": "npm run clean && watch -n 5 cp -r src/* 7guis/ & serve -p 8080 7guis/",
+    "7guis": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/7guis/",
+    "7guis-dev": "npm run clean && watch -n 5 cp -r src/* docs/7guis/ & serve -p 8080 docs/7guis/",
     "prod": "npm run clean && watch -n 30 npm run pack& serve -p 8080 docs/",
     "clean": "rm -rf .build-temp || : && rm -rf dist/ && rm -rf docs/vv && rm docs/*.js || :",
     "x-prepublishOnly": "npm run pack",
