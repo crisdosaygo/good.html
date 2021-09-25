@@ -8,12 +8,13 @@
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
+    const path = location.pathname;
     const CONFIG = {
       htmlFile: 'markup.html',
       scriptFile: 'script.js',
       styleFile: 'style.css',
       bangKey: '_bang_key',
-      componentsPath: `${location.pathname}/components`,
+      componentsPath: `${path}${path.endsWith('/') ? '' : '/'}components`,
       allowUnset: false,
       unsetPlaceholder: '',
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
@@ -423,6 +424,7 @@
       if ( CACHE.has(key) ) return CACHE.get(key);
 
       const url = `${CONFIG.componentsPath}/${name}/${file}`;
+      console.log(url);
       let resp;
       const fileText = await fetch(url).then(r => { 
         if ( r.ok ) {
