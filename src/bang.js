@@ -19,6 +19,7 @@
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
         input change compositionstart compositionend text paste beforepast select cut copy
+        contextmenu
       `.split(/\s+/g).filter(s => s.length).map(e => `on${e}`),
       delayFirstPaintUntilLoaded: true,
       noHandlerPassthrough: false
@@ -90,7 +91,7 @@
 
       // private methods
       handleAttrs(attrs, {node, originals} = {}) {
-        let state;
+        let state = {};
 
         if ( ! node ) node = this;
 
