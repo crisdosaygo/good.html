@@ -5,7 +5,7 @@ module.exports = {
   entry: "./src/cat.bang.js",
   mode: process.env.BANG_PROD ? "production" : "development",
   output: {
-    path: path.resolve('.', 'dist'),
+    path: path.resolve('.', '.build-temp'),
     /*publicPath: 'auto',*/
     filename: "bang.js"
   },
