@@ -1,7 +1,8 @@
 {
   // constants, classes, config and state
     const DEBUG = false;
-    const GET_ONLY = false;
+    const OPTIMIZE = true;
+    const GET_ONLY = true;
     const LEGACY = false;
     const MOBILE = isMobile();
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
@@ -60,9 +61,18 @@
       // BANG! API methods
       async print() {
         Counts.started++;
-        this.prepareVisibility();
+        if ( !this.alreadyPrinted ) {
+          this.prepareVisibility();
+        }
         const state = this.handleAttrs(this.attributes);
-        return this.printShadow(state);
+        if ( OPTIMIZE ) {
+          const nextState = JSON.stringify(state);
+          if ( this.alreadyPrinted && this.lastState === nextState ) {
+            return;
+          }
+          this.lastState = nextState;
+        }
+        return this.printShadow(state).then(() => this.alreadyPrinted = true);
       }
 
       connectedCallback() {
@@ -90,7 +100,10 @@
         // setting the state attribute casues the custom element to re-render
         if ( name === 'state' && !isUnset(oldValue) ) {
           DEBUG && say('log',`Changing state, so calling print.`, oldValue, value, this);
-          this.print();
+          say('log',`Changing state, so calling print.`, oldValue, value, this);
+          if ( JSON.stringify(STATE.get(oldValue)) !== JSON.stringify(STATE.get(value)) ) {
+            this.print();
+          }
         }
       }
 
@@ -251,12 +264,17 @@
         if ( !STATE.has(key) ) {
           STATE.set(key, state);
           STATE.set(state, key);
+          DEBUG && console.log('Setting stringified state', state, key);
+          STATE.set(JSON.stringify(state), key);
         } else {
           Object.assign(STATE.get(key), state);
+          STATE.delete(JSON.stringify(STATE.get(key)));
+          STATE.set(JSON.stringify(STATE.get(key)), key);
         }
       } else {
         STATE.set(key, state);
         STATE.set(state, key);
+        STATE.set(JSON.stringify(state), key);
       }
 
       if ( save ) {
@@ -557,20 +575,24 @@
           stateKey = new StateKey(x[CONFIG.bangKey])+'';
           // in that case, replace the previously saved object with the same logical identity
           const oldX = STATE.get(stateKey);
-          STATE.delete(oldX);
+          if ( JSON.stringify(oldX) !== JSON.stringify(x) ) {
+            STATE.delete(oldX);
 
-          STATE.set(stateKey, x);
-          STATE.set(x, stateKey);
+            STATE.set(stateKey, x);
+            STATE.set(x, stateKey);
+            STATE.set(JSON.stringify(x), stateKey);
+          }
         } 
 
         else  /* or the system can come up with a state key */
 
         {
-          if ( STATE.has(x) ) stateKey = STATE.get(x);
+          if ( STATE.has(JSON.stringify(x)) ) stateKey = STATE.get(JSON.stringify(x));
           else {
             stateKey = new StateKey()+'';
             STATE.set(stateKey, x);
             STATE.set(x, stateKey);
+            STATE.set(JSON.stringify(x), stateKey);
           }
         }
 
