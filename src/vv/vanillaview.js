@@ -237,12 +237,25 @@
         else  /* or the system can come up with a state key */
 
         {
-          if ( that.STATE.has(x) ) stateKey = that.STATE.get(x);
-          else {
+          if ( that.STATE.has(x) ) {
+            stateKey = that.STATE.get(x);
+            const lastXJSON = that.STATE.get(stateKey+'.json.last');
+            if ( JSON.stringify(x) !== lastXJSON ) {
+              that.STATE.delete(lastXJSON); 
+              if ( stateKey.startsWith('system-key') ) {
+                that.STATE.delete(stateKey);
+                stateKey = new that.StateKey()+'';
+              }
+              that.STATE.set(stateKey, x);
+              that.STATE.set(x, stateKey);
+            }
+          } else {
             stateKey = new that.StateKey()+'';
             that.STATE.set(stateKey, x);
             that.STATE.set(x, stateKey);
           }
+          that.STATE.set(JSON.stringify(x), stateKey+'.json.last');
+          that.STATE.set(stateKey+'.json.last', JSON.stringify(x));
         }
 
         stateKey += '';

@@ -1,5 +1,6 @@
 :host {
   --measure-width: 200px;
+  --height: 2rem;
 }
 
 .layout {
@@ -10,7 +11,9 @@
 
 meter {
   width: 100%;
-  height: 1rem;
+  height: var(--height);
+  border-radius: 0;
+  color: turquoise;
 }
 
 meter, input[type="range"] {
@@ -24,6 +27,10 @@ label {
   display: flex;
   justify-content: space-between;
   margin: 0.25rem 0;
+}
+
+label.elapsed {
+  line-height: var(--height);
 }
 
 span.time {

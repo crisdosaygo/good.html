@@ -9,7 +9,7 @@
     "7guis": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/7guis/",
     "7guis-dev": "npm run clean && watch -n 5 cp -r src/* docs/7guis/ & serve -p 8080 docs/7guis/",
     "prod": "npm run clean && watch -n 30 npm run pack& serve -p 8080 docs/",
-    "clean": "rm -rf .build-temp || : && rm -rf dist/ && rm -rf docs/vv && rm docs/*.js || :",
+    "clean": "rm -rf .build-temp || : && rm -rf dist/ && rm -rf docs/vv && rm docs/*.js || : && rm docs/7guis/*.js || :",
     "x-prepublishOnly": "npm run pack",
     "pack": "export BANG_PROD=test || set BANG_PROD=test&&./scripts/build.sh && npx roadroller -t text -a eval .build-temp/bang.js -o dist/pack.bang.js && rm -rf .build-temp || : && cp dist/pack.bang.js docs/bang.js && killall serve || :",
     "tutorial": "npm run test"
