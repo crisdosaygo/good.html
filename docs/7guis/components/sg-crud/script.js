@@ -11,6 +11,7 @@ class Component extends Base {
   DeleteSelected(clickEvent) {
     const {name, state} = this.getSelected(clickEvent);
     state.crud.names.splice(state.crud.names.findIndex(({key}) => key === name.key), 1);
+    state.crud.selected = '';
     setState('data', state);
   }
 

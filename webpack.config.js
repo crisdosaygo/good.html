@@ -33,7 +33,16 @@ module.exports = {
 	},
   */
   optimization: {
-    minimize: process.env.BANG_PROD ? true : false
-  },
-  target: "browserslist:last 1 years",
+    minimize: process.env.BANG_PROD ? true : false,
+    /*
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          keep_fnames: false,
+        },
+      }),
+    ],
+    */
+	},
+  target: "browserslist:last 2 versions",
 };

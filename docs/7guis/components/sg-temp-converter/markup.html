@@ -1,11 +1,15 @@
 <sg-frame state=${_self}>
-  <label>
-    <input required name=C type=number oninput=SetKelvin value="${c}" step=0.05>
-    &deg;C
-  </label>
-  &approx;
-  <label>
-    <input required name=F type=number oninput=SetKelvin value="${f}" step=0.05>
-    &deg;F
-  </label>
+  <div class=box>
+    <label>
+      <input required name=C type=number oninput=SetKelvin value="${c}" step=0.05>
+      &deg;C
+    </label>
+    <span class=relation>
+      &approx;
+    </span>
+    <label>
+      <input required name=F type=number oninput=SetKelvin value="${f}" step=0.05>
+      &deg;F
+    </label>
+  </div>
 </sg-frame>

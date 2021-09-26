@@ -1,6 +1,6 @@
 {
   // constants, classes, config and state
-    const DEBUG = false;
+    const DEBUG = true;
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const LEGACY = false;

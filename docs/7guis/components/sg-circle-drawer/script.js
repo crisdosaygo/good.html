@@ -21,16 +21,6 @@ class CircleDrawer extends Base {
     setState('data', state, {save:true});
   }
 
-  _hackCircles(state) {
-    // this hack is to circumvent the bug where nodes removed (in VV)
-    // will never be reconnected (I think I can fix that tho)
-    state.circleDrawer.circles = state.circleDrawer.circles.map(c => {
-      c.key = `${c.x},${c.y},${Math.random()}`;
-      return c;
-    });
-    return state;
-  }
-
   OpenSizer(event) {
     //console.log('OpenSizer');
     if ( event.type === 'contextmenu' ) {
@@ -93,11 +83,11 @@ class CircleDrawer extends Base {
 
   Undo() {
     //console.log('Undo');
-    undoState('data', state => this._hackCircles(state));
+    undoState('data');
   }
 
   Redo() {
     //console.log('Redo');
-    redoState('data', state => this._hackCircles(state));
+    redoState('data');
   }
 }

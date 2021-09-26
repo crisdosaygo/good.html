@@ -11,7 +11,8 @@
     T.defOr('KeyValue', T`String`, T`Number`);
 
     export const TKey = T.def('Key', {
-      key: T`KeyValue`
+      key: T`KeyValue`,
+      kill: T.defOption(T`Boolean`)
     });
 
     export const THandlers = T.def('Handlers', null, {verify: i => {
@@ -51,6 +52,8 @@
   // Browser side
 
     export const TVanillaViewLikeObject = T.def('VanillaViewLikeObject', {
+      instance: T.maybe(T`Key`),
+      cacheKey: T.maybe(T`String`),
       code: T`String`,
       externals: T`Array`,
       nodes: T`Array`,
@@ -61,6 +64,8 @@
     });
 
     export const TVanillaViewObject = T.def('VanillaViewObject', {
+      instance: T.maybe(T`Key`),
+      cacheKey: T.maybe(T`String`),
       code: T`String`,
       externals: T`Array`,
       nodes: T`Array`,
