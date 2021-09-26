@@ -11,7 +11,8 @@
     T.defOr('KeyValue', T`String`, T`Number`);
 
     export const TKey = T.def('Key', {
-      key: T`KeyValue`
+      key: T`KeyValue`,
+      kill: T.defOption(T`Boolean`)
     });
 
     export const THandlers = T.def('Handlers', null, {verify: i => {

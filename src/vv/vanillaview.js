@@ -90,14 +90,14 @@
   // main function (TODO: should we refactor?)
     function vanillaview(p,v,{useCache:useCache=true}={}) {
       const retVal = {};
-      let instance, cacheKey;
+      let instanceKey, cacheKey;
 
       v = v.map(guardAndTransformVal);
 
       if ( useCache ) {
-        (instance = (v.find(isKey) || {}));
+        ({key:instanceKey} = (v.find(isKey) || {}));
         cacheKey = p.join('<link rel=join>');
-        const {cached,firstCall} = isCached(cacheKey,v,instance);
+        const {cached,firstCall} = isCached(cacheKey,v,instanceKey);
        
         if ( ! firstCall ) {
           cached.update(v);
@@ -130,7 +130,6 @@
       Object.assign(retVal, {
         externals,
         v:Object.values(vmap),
-        cacheKey,
         to,
         update,
         code:CODE,
@@ -138,8 +137,8 @@
       });
 
       if ( useCache ) {
-        if ( instance.key !== undefined ) {
-          cache[cacheKey].instances[instance.key] = retVal;
+        if ( instanceKey !== undefined ) {
+          cache[cacheKey].instances[instanceKey] = retVal;
         } else {
           cache[cacheKey] = retVal;
         }
@@ -147,6 +146,7 @@
 
       return retVal;
     }
+
 
   // bang integration functions (modified from bang versions)
     async function process(that, x, state) {
@@ -272,6 +272,7 @@
     function isUnset(x) {
       return x === undefined || x === null;
     }
+
 
   // to function
     function to(location, options) {
@@ -400,10 +401,7 @@
         const dn = diffNodes(oldNodes,newVal.nodes);
         if ( dn.size ) {
           const f = document.createDocumentFragment();
-          dn.forEach(n => {
-            f.appendChild(n);
-             
-          });
+          dn.forEach(n => f.appendChild(n));
         }
         state.oldNodes = newVal.nodes || [lastAnchor];
         while ( newVal.externals.length ) {
@@ -774,34 +772,27 @@
 
     // cache helpers
       // FIXME: function needs refactor
-      function isCached(cacheKey,v,instance) {
+      function isCached(cacheKey,v,instanceKey) {
         let firstCall;
         let cached = cache[cacheKey];
         if ( cached == undefined ) {
           cached = cache[cacheKey] = {};
-          if ( instance.key !== undefined ) {
+          if ( instanceKey !== undefined ) {
             cached.instances = {};
-            cached = cached.instances[instance.key] = {};
+            cached = cached.instances[instanceKey] = {};
           }
           firstCall = true;
         } else {
-          if ( instance.key !== undefined ) {
+          if ( instanceKey !== undefined ) {
             if ( ! cached.instances ) {
               cached.instances = {};
               firstCall = true;
             } else {
-              cached = cached.instances[instance.key];
+              cached = cached.instances[instanceKey];
               if ( ! cached ) {
                 firstCall = true;
               } else {
-                if ( instance.kill === true ) {
-                  // cached = cached[cacheKey]; // ? or cached = null ? 
-                  cached = null;
-                  cached.instances[instance.key] = null;
-                  firstCall = true;
-                } else {
-                  firstCall = false;
-                }
+                firstCall = false;
               }
             }
           } else {
