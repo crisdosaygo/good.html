@@ -90,14 +90,14 @@
   // main function (TODO: should we refactor?)
     function vanillaview(p,v,{useCache:useCache=true}={}) {
       const retVal = {};
-      let instanceKey, cacheKey;
+      let instance, cacheKey;
 
       v = v.map(guardAndTransformVal);
 
       if ( useCache ) {
-        ({key:instanceKey} = (v.find(isKey) || {}));
+        (instance = (v.find(isKey) || {}));
         cacheKey = p.join('<link rel=join>');
-        const {cached,firstCall} = isCached(cacheKey,v,instanceKey);
+        const {cached,firstCall} = isCached(cacheKey,v,instance);
        
         if ( ! firstCall ) {
           cached.update(v);
@@ -130,6 +130,7 @@
       Object.assign(retVal, {
         externals,
         v:Object.values(vmap),
+        cacheKey,
         to,
         update,
         code:CODE,
@@ -137,8 +138,8 @@
       });
 
       if ( useCache ) {
-        if ( instanceKey !== undefined ) {
-          cache[cacheKey].instances[instanceKey] = retVal;
+        if ( instance.key !== undefined ) {
+          cache[cacheKey].instances[instance.key] = retVal;
         } else {
           cache[cacheKey] = retVal;
         }
@@ -146,7 +147,6 @@
 
       return retVal;
     }
-
 
   // bang integration functions (modified from bang versions)
     async function process(that, x, state) {
@@ -272,7 +272,6 @@
     function isUnset(x) {
       return x === undefined || x === null;
     }
-
 
   // to function
     function to(location, options) {
@@ -401,7 +400,10 @@
         const dn = diffNodes(oldNodes,newVal.nodes);
         if ( dn.size ) {
           const f = document.createDocumentFragment();
-          dn.forEach(n => f.appendChild(n));
+          dn.forEach(n => {
+            f.appendChild(n);
+             
+          });
         }
         state.oldNodes = newVal.nodes || [lastAnchor];
         while ( newVal.externals.length ) {
@@ -772,27 +774,34 @@
 
     // cache helpers
       // FIXME: function needs refactor
-      function isCached(cacheKey,v,instanceKey) {
+      function isCached(cacheKey,v,instance) {
         let firstCall;
         let cached = cache[cacheKey];
         if ( cached == undefined ) {
           cached = cache[cacheKey] = {};
-          if ( instanceKey !== undefined ) {
+          if ( instance.key !== undefined ) {
             cached.instances = {};
-            cached = cached.instances[instanceKey] = {};
+            cached = cached.instances[instance.key] = {};
           }
           firstCall = true;
         } else {
-          if ( instanceKey !== undefined ) {
+          if ( instance.key !== undefined ) {
             if ( ! cached.instances ) {
               cached.instances = {};
               firstCall = true;
             } else {
-              cached = cached.instances[instanceKey];
+              cached = cached.instances[instance.key];
               if ( ! cached ) {
                 firstCall = true;
               } else {
-                firstCall = false;
+                if ( instance.kill === true ) {
+                  // cached = cached[cacheKey]; // ? or cached = null ? 
+                  cached = null;
+                  cached.instances[instance.key] = null;
+                  firstCall = true;
+                } else {
+                  firstCall = false;
+                }
               }
             }
           } else {
