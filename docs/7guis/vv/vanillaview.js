@@ -34,6 +34,7 @@
       innerhtml   (frag,elem) { elem.innerHTML = ''; elem.appendChild(frag) }
       insert      (frag,node) { node.replaceChildren(frag) }
     };
+    const REMOVE_MAP = new Map();
 
   // logging
     globalThis.onerror = (...v) => (console.log(v, v[0]+'', v[4] && v[4].message, v[4] && v[4].stack), true);
@@ -144,6 +145,9 @@
         } else {
           cache[cacheKey] = retVal;
         }
+        retVal.nodes.forEach(node => {
+          REMOVE_MAP.set(node, JSON.stringify({cacheKey, instanceKey: instance.key+''}));
+        });
       }
 
       return retVal;
@@ -401,9 +405,20 @@
         const dn = diffNodes(oldNodes,newVal.nodes);
         if ( dn.size ) {
           const f = document.createDocumentFragment();
+          const killSet = new Set();
           dn.forEach(n => {
             f.appendChild(n);
-            console.log(`Node removed`, n);
+            if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\d+/) ) return;
+            const kill = REMOVE_MAP.get(n);
+            killSet.add(kill);
+          });
+          killSet.forEach(kill => {
+            const {cacheKey, instanceKey} = JSON.parse(kill);
+            if ( cacheKey && instanceKey ) {
+              cache[cacheKey].instances[instanceKey] = null;
+            } else if ( cacheKey ) {
+              cache[cacheKey] = null;
+            }
           });
         }
         state.oldNodes = newVal.nodes || [lastAnchor];
