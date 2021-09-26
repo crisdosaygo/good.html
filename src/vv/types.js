@@ -52,6 +52,8 @@
   // Browser side
 
     export const TVanillaViewLikeObject = T.def('VanillaViewLikeObject', {
+      instance: T.maybe(T`Key`),
+      cacheKey: T.maybe(T`String`),
       code: T`String`,
       externals: T`Array`,
       nodes: T`Array`,
@@ -62,6 +64,8 @@
     });
 
     export const TVanillaViewObject = T.def('VanillaViewObject', {
+      instance: T.maybe(T`Key`),
+      cacheKey: T.maybe(T`String`),
       code: T`String`,
       externals: T`Array`,
       nodes: T`Array`,
