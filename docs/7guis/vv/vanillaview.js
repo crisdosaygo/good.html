@@ -403,6 +403,7 @@
           const f = document.createDocumentFragment();
           dn.forEach(n => {
             f.appendChild(n);
+            console.log(`Node removed`, n);
           });
         }
         state.oldNodes = newVal.nodes || [lastAnchor];
