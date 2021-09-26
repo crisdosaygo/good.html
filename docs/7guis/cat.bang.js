@@ -653,7 +653,6 @@
         if ( SystemCall ) {
           ({state} = v.shift());
           p.shift();
-          say('log','System VV_FUNC call: ' + v.join(', '));
           v = await Promise.all(v.map(val => process(that, val, state)));
           const xyz = vanillaview(p,v);
           //xyz[Symbol.for('BANG-VV')] = true;
@@ -665,8 +664,6 @@
             //xyz[Symbol.for('BANG-VV')] = true;
             return xyz;
           };
-          //laterFunc[Symbol.for('BANG-VV')] = true;
-          console.log('async laterFunc', laterFunc);
           return laterFunc;
         }
       }
@@ -788,14 +785,12 @@
         const isMAO = T.check(T`MarkupAttrObject`, x);
         const isVV      = T.check(T`Component`, x);
         if ( isVVArray || isVVK || isMO || isMAO || isVV ) {
-          console.log('vv', x, {isVVArray, isVVK, isMO, isMAO, isVV});
           return isVVArray ? join(x) : x; // let vanillaview guardAndTransformVal handle
         }
 
         else 
 
         if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
-          console.log('asyncfunc', x);
           return await process(that, await x(state), state);
         }
         else
@@ -851,7 +846,6 @@
           }
 
           stateKey += '';
-          say('log');
           return stateKey;
         }
       }
@@ -875,11 +869,9 @@
         try {
           MOVE[position](frag,elem);
         } catch(e) {
-          console.log({location,options,e,elem,isNode});
-          console.warn(e);
           switch(e.constructor && e.constructor.name) {
-            case "DOMException":      die({error: INSERT()},e);             break;
-            case "TypeError":         die({error: NOTFOUND(location)},e);   break; 
+            case "DOMException":      die({error: INSERT()});             break;
+            case "TypeError":         die({error: NOTFOUND(location)});   break; 
             default:                  throw e;
           }
         }
@@ -942,27 +934,21 @@
             if ( sameOrder(oldNodes,newVal.nodes) ) ; else {
               {
                 const insertable = [];
-                console.log('\n');
                 Array.from(newVal.nodes).forEach(node => {
                   const inserted = document.contains(node.ownerDocument);
                   if ( ! inserted ) {
-                    console.dirxml('not yet inserted', node);
                     insertable.push(node);
                   } else {
-                    console.dirxml('already inserted', node, `${insertable.length} to insert before`);
                     while( insertable.length ) {
                       const insertee = insertable.shift();
                       node.parentNode.insertBefore(insertee, node);
                     }
                   }
                 });
-                console.log('\n');
                 while ( insertable.length ) {
                   const insertee = insertable.shift();
-                  console.log({insertee, lastAnchor, oldNodes});
                   lastAnchor.parentNode.insertBefore(insertee,lastAnchor);
                 }
-                console.log('Inserts done');
                 state.lastAnchor = newVal.nodes[newVal.nodes.length-1];
               }
             }
@@ -979,6 +965,9 @@
             const killSet = new Set();
             dn.forEach(n => {
               f.appendChild(n);
+              if ( n.linkedCustomElement ) {
+                f.appendChild(n.linkedCustomElement);
+              }
               if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\d+/) ) return;
               const kill = REMOVE_MAP.get(n);
               killSet.add(kill);
@@ -1023,33 +1012,49 @@
 
           node.nodeValue = newValue;
 
-          if ( node.linkedCustomElement && newValue.match(/state[\s\S]*=/gm) ) {
-            console.log('Updating linked customElement', node, newVal, node.linkedCustomElement);
-            node.linkedCustomElement.setAttribute('state', newVal);
+          if ( node.linkedCustomElement && newValue !== oldVal ) {
+            updateLinkedCustomElement(node);
           }
 
           state.oldVal = newVal;
         }
 
       // element attribute functions
-        function handleElement({node,vmap,externals}) {
-          getAttributes(node).forEach(({name,value} = {}) => {
-            const attrState = {node, vmap, externals, name, lengths: []};
+        function updateLinkedCustomElement(node) {
+  				const lce = node.linkedCustomElement;
+  				const span = toDOM(`<span ${node.textContent}></span>`).firstChild;
+          const toRemove = new Set(
+            getAttributes(lce)
+              .filter(({name}) => !name.startsWith('on'))
+              .map(({name}) => name)
+          );
+  				getAttributes(span).forEach(({name, value}) => {
+  					if ( name === lce.localName ) return; // i.e., it's the bang tag name
+            if ( name.startsWith('on') ) return; // we don't handle event handlers here, that's in bang
+  					lce.setAttribute(name, value);
+            toRemove.delete(name);
+  				});
+          toRemove.forEach(name => lce.removeAttribute(name));
+        }
 
-            KEYMATCH.lastIndex = 0;
-            let result = KEYMATCH.exec(name);
-            while( result ) {
-              prepareAttributeUpdater(result, attrState, {updateName:true});
-              result = KEYMATCH.exec(name);
-            }
+  			function handleElement({node,vmap,externals}) {
+  				getAttributes(node).forEach(({name,value} = {}) => {
+  					const attrState = {node, vmap, externals, name, lengths: []};
 
-            KEYMATCH.lastIndex = 0;
-            result = KEYMATCH.exec(value);
-            while( result ) {
-              prepareAttributeUpdater(result, attrState, {updateName:false});
-              result = KEYMATCH.exec(value);
-            }
-          });
+  					KEYMATCH.lastIndex = 0;
+  					let result = KEYMATCH.exec(name);
+  					while( result ) {
+  						prepareAttributeUpdater(result, attrState, {updateName:true});
+  						result = KEYMATCH.exec(name);
+  					}
+
+  					KEYMATCH.lastIndex = 0;
+  					result = KEYMATCH.exec(value);
+  					while( result ) {
+  						prepareAttributeUpdater(result, attrState, {updateName:false});
+  						result = KEYMATCH.exec(value);
+  					}
+  				});
         }
 
         function prepareAttributeUpdater(result, attrState, {updateName}) {
@@ -1291,23 +1296,6 @@
           newAttrValue = before + newVal + after;
         }
 
-        if ( name === 'style' ) {
-          console.log('style attribute', {newAttrValue, before, newVal, after});
-        }
-
-        console.log(JSON.stringify({
-          newVal,
-          valIndex,
-          lengths,
-          attr,
-          lengthBefore,
-          originalLengthBefore,
-          correction,
-          before,
-          after,
-          newAttrValue
-        }, null, 2));
-
         reliablySetAttribute(node, name, newAttrValue);
 
         scope.oldVal = newVal;
@@ -1321,7 +1309,6 @@
         try {
           node.setAttribute(name,isUnset(value) ? name : value);
         } catch(e) {
-          console.warn(e);
         }
 
         // if you set style like this is fucks it up
@@ -1329,7 +1316,6 @@
           try {
             node[name] = isUnset(value) ? true : value;
           } catch(e) {
-            console.warn(e);
           }
         }
       }
@@ -1524,7 +1510,6 @@
             externals.push(...o.externals);
             bigNodes.push(...o.nodes);
           });
-          console.log({oldVals,v});
           const retVal = {v,code:CODE,oldVals,nodes:bigNodes,to,update,externals};
           return retVal;
         }
@@ -1545,13 +1530,11 @@
 
         function update(newVals) {
           const updateable = this.v.filter(({vi}) => didChange(newVals[vi], this.oldVals[vi]));
-          console.log({updateable, oldVals:this.oldVals, newVals});
           updateable.forEach(({vi,replacers}) => replacers.forEach(f => f(newVals[vi])));
           this.oldVals = Array.from(newVals);
         }
 
         function didChange(oldVal, newVal) {
-          console.log({oldVal,newVal});
           const [oldType, newType] = [oldVal, newVal].map(getType); 
           let ret;
           if ( oldType != newType ) {
@@ -1586,35 +1569,16 @@
               /* eslint-enable no-fallthrough */
             }
           }
-
-          console.log({ret});
           return ret;
         }
 
     // reporting and error helpers 
       function die(msg,err) {
-        if (err) console.warn(err);
-        msg.stack = ((err) || new Error()).stack.split(/\s*\n\s*/g);
+        msg.stack = (new Error()).stack.split(/\s*\n\s*/g);
         throw JSON.stringify(msg,null,2);
       }
 
       function say(msg) {
-        {
-          console.log(JSON.stringify(msg,showNodes,2));
-          console.info('.');
-        }
-      }
-
-      function showNodes(k,v) {
-        let out = v;
-        if ( T.check(T`>Node`, v) ) {
-          out = `<${v.nodeName.toLowerCase()} ${
-          !v.attributes ? '' : [...v.attributes].map(({name,value}) => `${name}='${value}'`).join(' ')}>${
-          v.nodeValue || (v.children && v.children.length <= 1 ? v.innerText : '')}`;
-        } else if ( typeof v === "function" ) {
-          return `${v.name || 'anon'}() { ... }`
-        }
-        return out;
       }
 
   exports.c = c;
@@ -1625,7 +1589,7 @@
 }));
 {
   // constants, classes, config and state
-    const DEBUG = true;
+    const DEBUG = false;
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const LEGACY = false;
@@ -1633,6 +1597,7 @@
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
+    const MirrorNode = Symbol.for('[[MirroNode]]');
     const path = location.pathname;
     const CONFIG = {
       htmlFile: 'markup.html',
@@ -2099,6 +2064,7 @@
       // replace the bang node (comment) with its actual custom element node
       const actualElement = createElement(name, data);
       current.linkedCustomElement = actualElement;
+      actualElement[MirrorNode] = current;
       current.parentNode.replaceChild(actualElement, current);
     }
 
