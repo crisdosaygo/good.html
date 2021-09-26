@@ -1,4 +1,3 @@
-{
   // constants, classes, config and state
     const DEBUG = false;
     const OPTIMIZE = true;
@@ -767,6 +766,5 @@
     function clone(o) {
       return JSON.parse(JSON.stringify(o));
     }
-}
 
 
