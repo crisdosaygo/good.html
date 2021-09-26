@@ -5,13 +5,14 @@ button, input, select, label {
 }
 
 button {
-  border-radius: 0.25rem;
-  border-color: silver;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 button:active {
   background: linear-gradient(to bottom, lightskyblue, dodgerblue 25%, dodgerblue 75%, lightskyblue);
   outline: none;
+  border-color: turquoise;
 }
 
 :disabled {

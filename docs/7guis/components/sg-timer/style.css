@@ -23,6 +23,10 @@ meter, input[type="range"] {
   margin-left: 0.5rem;
 }
 
+input[type="range"] {
+  margin-bottom: 1.5rem;
+}
+
 label {
   display: flex;
   justify-content: space-between;
@@ -39,4 +43,5 @@ span.time {
 
 button {
   align-self: stretch;
+  padding: 0.25rem;
 }
