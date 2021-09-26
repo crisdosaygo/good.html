@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-npx webpack
 cp -r src/* docs/
-cp dist/*.js docs/
-
+cp -r src/* docs/7guis/
 
