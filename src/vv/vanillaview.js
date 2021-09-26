@@ -8,7 +8,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = true;
+    const DEBUG             = false;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
@@ -147,6 +147,7 @@
         }
         retVal.nodes.forEach(node => {
           REMOVE_MAP.set(node, JSON.stringify({cacheKey, instanceKey: instance.key+''}));
+          DEBUG && console.log('rm set', node);
         });
       }
 
@@ -408,8 +409,12 @@
           const killSet = new Set();
           dn.forEach(n => {
             f.appendChild(n);
+            if ( n.linkedCustomElement ) {
+              f.appendChild(n.linkedCustomElement);
+            }
             if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\d+/) ) return;
             const kill = REMOVE_MAP.get(n);
+            DEBUG && console.log('rm get node', n);
             killSet.add(kill);
           });
           killSet.forEach(kill => {
@@ -452,33 +457,51 @@
 
         node.nodeValue = newValue;
 
-        if ( node.linkedCustomElement && newValue.match(/state[\s\S]*=/gm) ) {
+        if ( node.linkedCustomElement && newValue !== oldVal ) {
           DEBUG && console.log('Updating linked customElement', node, newVal, node.linkedCustomElement);
-          node.linkedCustomElement.setAttribute('state', newVal);
+          updateLinkedCustomElement(node);
         }
 
         state.oldVal = newVal;
       }
 
     // element attribute functions
-      function handleElement({node,vmap,externals}) {
-        getAttributes(node).forEach(({name,value} = {}) => {
-          const attrState = {node, vmap, externals, name, lengths: []};
+      function updateLinkedCustomElement(node) {
+				const lce = node.linkedCustomElement;
+				const span = toDOM(`<span ${node.textContent}></span>`).firstChild;
+        const toRemove = new Set(
+          getAttributes(lce)
+            .filter(({name}) => !name.startsWith('on'))
+            .map(({name}) => name)
+        );
+				getAttributes(span).forEach(({name, value}) => {
+					if ( name === lce.localName ) return; // i.e., it's the bang tag name
+          if ( name.startsWith('on') ) return; // we don't handle event handlers here, that's in bang
+          DEBUG && console.log(`setting ${name}=${value} on`, lce, node);
+					lce.setAttribute(name, value);
+          toRemove.delete(name);
+				});
+        toRemove.forEach(name => lce.removeAttribute(name));
+      }
 
-          KEYMATCH.lastIndex = 0;
-          let result = KEYMATCH.exec(name);
-          while( result ) {
-            prepareAttributeUpdater(result, attrState, {updateName:true});
-            result = KEYMATCH.exec(name);
-          }
+			function handleElement({node,vmap,externals}) {
+				getAttributes(node).forEach(({name,value} = {}) => {
+					const attrState = {node, vmap, externals, name, lengths: []};
 
-          KEYMATCH.lastIndex = 0;
-          result = KEYMATCH.exec(value);
-          while( result ) {
-            prepareAttributeUpdater(result, attrState, {updateName:false});
-            result = KEYMATCH.exec(value);
-          }
-        });
+					KEYMATCH.lastIndex = 0;
+					let result = KEYMATCH.exec(name);
+					while( result ) {
+						prepareAttributeUpdater(result, attrState, {updateName:true});
+						result = KEYMATCH.exec(name);
+					}
+
+					KEYMATCH.lastIndex = 0;
+					result = KEYMATCH.exec(value);
+					while( result ) {
+						prepareAttributeUpdater(result, attrState, {updateName:false});
+						result = KEYMATCH.exec(value);
+					}
+				});
       }
 
       function prepareAttributeUpdater(result, attrState, {updateName}) {

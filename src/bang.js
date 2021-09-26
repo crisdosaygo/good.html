@@ -1,6 +1,6 @@
 {
   // constants, classes, config and state
-    const DEBUG = true;
+    const DEBUG = false;
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const LEGACY = false;
@@ -8,6 +8,7 @@
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
+    const MirrorNode = Symbol.for('[[MirroNode]]');
     const path = location.pathname;
     const CONFIG = {
       htmlFile: 'markup.html',
@@ -474,6 +475,7 @@
       // replace the bang node (comment) with its actual custom element node
       const actualElement = createElement(name, data);
       current.linkedCustomElement = actualElement;
+      actualElement[MirrorNode] = current;
       current.parentNode.replaceChild(actualElement, current);
     }
 

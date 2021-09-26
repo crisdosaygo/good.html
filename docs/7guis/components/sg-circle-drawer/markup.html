@@ -14,21 +14,21 @@
       class=canvas
     >${circles.map(({key,x,y,radius}) => {
       return F`${{key}}
-        <sg-circle 
+        <!sg-circle 
           class="${selected === key ? 'selected' : ''}"
           data-key=${key}
           style="left: ${x}px; top: ${y}px; --radius: ${radius}px;" 
           onclick=OpenSizer
           oncontextmenu=OpenSizer
-        ></sg-circle>
+        />
       `;
     })}</div>
-    <sg-sizer-modal 
+    <!sg-sizer-modal 
       onclick=CloseSizer
       oninput=SizeSelected
       onchange=SaveCircleSize
       ${selected ? '' : 'hidden' }
       state=${circles.find(({key}) => key === selected) || {radius:100}}
-    ></sg-sizer-modal>
+    />
   </form>
 </sg-frame>
