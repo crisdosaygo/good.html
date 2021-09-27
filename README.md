@@ -29,13 +29,7 @@ Like HTML [void tags](https://developer.mozilla.org/en-US/docs/Glossary/Empty_el
 
 ## Regular tags
 
-***BANG!*** also makes it easy to define and use regular custom elements:
-
-```js
-<custom-el>
-  <my-humps></my-humps>
-</custom-el>
-```
+***BANG!*** also makes it easy to define and use regular custom elements.
 
 ## Templates, and with async values
 
@@ -61,6 +55,60 @@ In fact, any JavaScript expression works fine, even async/await expressions and 
 ```
 
 ***BANG!*** automatically handles and awaits Promises to resolve, so the `await item.getLatestPrice()`, will fetch the most up to date price from the server and print that value into the template, with ***BANG!*** handling all the details. You can even leave out the `await` keyword, because ***BANG!*** will know it's value a Promise and treat it the same way. 
+
+## Defining custom elements: markup, script and style
+
+```js
+// somewhere deep in your markup:
+
+<my-el state=myState>
+  <marquee>My Humps</marquee>
+</my-el>
+
+// elsewhere, in /my-el/markup.html
+// you define the Shadow DOM content:
+
+<dialog class=modal ${isOpen ? 'open' : ''}>
+  <nav class=titlebar>${message.title}</nav>
+  <section class=sparkles>
+    <details>
+      <summary>
+        ${message.summary}
+        <span class=button>More</button>
+      </summary>    
+      <slot></slot>
+    </details>
+    <button class=close onclick=close>OK</button>
+  </section>
+</aside>
+
+// eslewhere still, you seek out control with scripting
+// in /my-el/script.js
+
+class MyModal extends Base {
+  open(message) {
+    const state = getState('modalState');
+    state.open = true;
+    state.message = message;
+    setState('modalState', state);
+  }
+  
+  close(clickEvent) {
+    const state = getState('modalState');
+    state.open = false;
+    setState('modalState', state);
+  }
+}
+
+// meanwhile, across town in your /my-el/style.css you set the tone
+
+dialog.modal {
+  border: medium dashed var(--sparkle);
+}
+
+```
+
+All these files are optional. You don't need to provide a `markup.html`, `script.js` or `style.css` file in your component directory, but if you do, they will be utilized.
 
 #### A note on scope
 
@@ -521,7 +569,14 @@ Contributions are very welcome. No CLA needed. No license restrictions. Just get
 
 If you want to, of course. :P ;) xx
 
----
+## Roadmap
+
+These are just ideas, and I might not do them. :)
+
+- Convenience getters for named state (in other words, you can call `this.state.modalState` rather than writing `const state = getState('modalState')`
+- Passing instance property arguments or state scope through the custom element tag. Need to consider the syntax for this whether the values go to the constructor, or to the state or both. 
+
+------------
 
 # HTML ***but with a BANG!***
 
