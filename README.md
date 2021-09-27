@@ -39,6 +39,33 @@ Normally using web components you need to use the `<slot></slot>` tag to pull in
 <h1>${firstName} ${lastName}</h1>
 ```
 
+## Minimal DOM diffing with minimal granular updates
+
+Minimal diffing is all the rage these days. It ensures that you don't do more work than you need to do to reflect the changes in your state into the DOM. Other frameworks use concepts like VDOM, which has a large overhead, as well as a large amount of code. ***BANG!*** uses the high-tech granular, linear-time updating technology from [vanillaview](https://github.com/i5ik/vanillaview), but builds on it and adds improvements to make the updates even more minimal in the case of lists (only items inserted or delete are the ones that change). In all other cases, only the text, attribute names or values, that contain templated state values that have changed, are the things that change. 
+
+It really is optimally minimal. 
+
+## More Goodies
+
+Apart from self-closing tags, minimal granular updates  ***BANG!*** has numerous other special features that make it super productive for building interfaces. Read on to discover how ***BANG!*** makes UI work more productive. 
+
+You can jump in right away and get it on the npm: 
+[npmjs.com/@bang.html](https://www.npmjs.com/package/bang.html)
+
+------
+
+***The problem of custom void tags in HTML has been solved. Hoo-ray!***
+
+<p align=center>
+  <img width=80% 
+       src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+  >
+</p>
+
+------
+
+## More info on templating 
+
 In fact, any JavaScript expression works fine, even async/await expressions and Promises:
 
 `/components/item-list/markup.html`:
@@ -56,9 +83,35 @@ In fact, any JavaScript expression works fine, even async/await expressions and 
 
 ***BANG!*** automatically handles and awaits Promises to resolve, so the `await item.getLatestPrice()`, will fetch the most up to date price from the server and print that value into the template, with ***BANG!*** handling all the details. You can even leave out the `await` keyword, because ***BANG!*** will know it's value a Promise and treat it the same way. 
 
-## Defining custom elements: markup, script and style
+### A note on scope
+
+Variables (like `items`, and `firstName` and `lastName`) in the above examples are *in scope* for ***BANG!*** when they are properties of the state object you pass to the component the markup appears in. 
+
+So, in the example above, you'd be able to access the `items` variable if you saved state for your `item-list` component, like so:
 
 ```js
+  setState('Items', {
+    items: myItemList
+  });
+```
+
+Then passed it to `item-list` components using `state=`:
+
+```js
+<item-list state=Items></item-list>
+```
+
+*Also note:* that in the example above the `item-details` component is passed state as an object to its `state=` attribute. This is fine too, but the object passing syntax is only available inside a component's `markup.html` file.
+
+### The `F` tag function
+
+Inside a template slot if you want to include markup you need to wrap it in a `F` template tag function, like: ``` ${F`<my-markup></my-markup>`} ``` 
+
+You'll notice in the above `<item-list>` example, we printed `<li>` elements within a `.map` iterator function using a special template tag function, `F`. This function is necessary if you want your markup to get all the benefits of ***BANG!***. In fact, all markup in your `markup.html` files is *implicitly* wrapped in `F` by ***BANG!***, so if you create new markup inside \'template backticks\`, you need to wrap that template string in an `F` tag. `F` is just a standard template tag function that is always in scope for your `markup.html` files. 
+
+## The big picture: defining custom element bang components: markup, script and style
+
+```jsx
 // somewhere deep in your markup:
 
 <my-el state=myState>
@@ -116,55 +169,6 @@ span.button {
 All these files are optional. You don't need to provide a `markup.html`, `script.js` or `style.css` file in your component directory, but if you do, they will be utilized.
 
 Also if you define a top-level `style.css` file in your `/components` base directory, it will be automatically imported into all component's style files.
-
-#### A note on scope
-
-Variables (like `items`, and `firstName` and `lastName`) in the above examples are *in scope* for ***BANG!*** when they are properties of the state object you pass to the component the markup appears in. 
-
-So, in the example above, you'd be able to access the `items` variable if you saved state for your `item-list` component, like so:
-
-```js
-  setState('Items', {
-    items: myItemList
-  });
-```
-
-Then passed it to `item-list` components using `state=`:
-
-```js
-<item-list state=Items></item-list>
-```
-
-*Also note:* that in the example above the `item-details` component is passed state as an object to its `state=` attribute. This is fine too, but the object passing syntax is only available inside a component's `markup.html` file.
-
-#### The `F` tag function
-
-You'll notice in the above we print `<li>` elements within a `.map` iterator function using a special template tag function, `F`. This function is necessary if you want your markup to get all the benefits of ***BANG!***. In fact, all markup in your `markup.html` files is *implicitly* wrapped in `F` by ***BANG!***, so if you create new markup inside \'template backticks\`, you need to wrap that template string in an `F` tag. `F` is just a standard template tag function that is always in scope for your `markup.html` files. 
-
-## Minimal DOM diffing with minimal granular updates
-
-Minimal diffing is all the rage these days. It ensures that you don't do more work than you need to do to reflect the changes in your state into the DOM. Other frameworks use concepts like VDOM, which has a large overhead, as well as a large amount of code. ***BANG!*** uses the high-tech granular, linear-time updating technology from [vanillaview](https://github.com/i5ik/vanillaview), but builds on it and adds improvements to make the updates even more minimal in the case of lists (only items inserted or delete are the ones that change). In all other cases, only the text, attribute names or values, that contain templated state values that have changed, are the things that change. 
-
-It really is optimally minimal. 
-
-## More Goodies
-
-Apart from self-closing tags, minimal granular updates  ***BANG!*** has numerous other special features that make it super productive for building interfaces. Read on to discover how ***BANG!*** makes UI work more productive. 
-
-You can jump in right away and get it on the npm: 
-[npmjs.com/@bang.html](https://www.npmjs.com/package/bang.html)
-
-------
-
-***The problem of custom void tags in HTML has been solved. Hoo-ray!***
-
-<p align=center>
-  <img width=80% 
-       src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
-  >
-</p>
-
-------
 
 ## Get started in 5 simple steps
 
