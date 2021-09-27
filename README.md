@@ -5,8 +5,9 @@
   >
 </p>
 
-This is ***BANG!***, `my-el/markup.html`:
+This is ***BANG!***:
 
+`my-el/markup.html`
 ```html
   <i-am-a-custom-element state=thisIsAStateKey
     onclick=functionNameOnCustomElementClass>
@@ -36,4 +37,9 @@ This is ***BANG!***, `my-el/markup.html`:
 </script>
 <!my-el>
 ```
+
+That is all. 
+
+For more, [read the intro](INTRO.md).
+------------------------------------------------------------------
 
