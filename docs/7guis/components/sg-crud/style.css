@@ -16,11 +16,6 @@
   grid-area: filter-box;
 }
 
-select {
-  appearance: progress-bar;
-  display: table;
-}
-
 [name="names"] {
   grid-area: names-list;
   min-height: 150px;
