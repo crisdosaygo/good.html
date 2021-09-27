@@ -74,7 +74,7 @@ In fact, any JavaScript expression works fine, even async/await expressions and 
     <details>
       <summary>
         ${message.summary}
-        <span class=button>More</button>
+        <span class=button>More</span>
       </summary>    
       <slot></slot>
     </details>
@@ -106,9 +106,16 @@ dialog.modal {
   border: medium dashed var(--sparkle);
 }
 
+span.button {
+  appearance: button;
+  /* ... flesh it out ... */
+}
+
 ```
 
 All these files are optional. You don't need to provide a `markup.html`, `script.js` or `style.css` file in your component directory, but if you do, they will be utilized.
+
+Also if you define a top-level `style.css` file in your `/components` base directory, it will be automatically imported into all component's style files.
 
 #### A note on scope
 
