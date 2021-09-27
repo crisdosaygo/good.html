@@ -79,7 +79,7 @@
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-temp-converter',
         k: 198,
         c: 0,
-        f: 0
+        f: 32,
       },
       flightBooker: {
         title: 'Flight Booker',
@@ -123,35 +123,6 @@
         ].map(name => (name.key = Math.random()+'', name)),
         selected: '',
       },
-      circleDrawer: {
-        title: 'Cricle Drawer',
-        sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-circle-drawer',
-        selected: '',
-        circles: [
-          /*
-          {
-            key: `20,40`,
-            x: 20,
-            y: 40,
-            radius: 15
-          }
-          */
-          /*
-            {
-              center: '0.618,0.618',
-              radius: '0.618'
-            },
-            {
-              center: `${1/Math.PI},${1/Math.E}`,
-              radius: `${Math.LN2}`
-            },
-            {
-              center: `${Math.SQRT1_2},${Math.LOG10E}`,
-              radius: `${1/Math.sqrt(5)}`
-            }
-          */
-        ],
-      },
       ex_cells: {
         initialFormulae: [
           {
@@ -162,6 +133,12 @@
       }
     };
     setState('data', State, {save:true});
+    setState('circleDrawer', {
+      title: 'Cricle Drawer',
+      sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-circle-drawer',
+      selected: '',
+      circles: []
+    }, {save:true});
   });
 </script>
 <body>

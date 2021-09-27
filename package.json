@@ -8,11 +8,11 @@
     "test": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/",
     "7guis": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/7guis/",
     "7guis-dev": "npm run clean && watch -n 5 ./scripts/cpfiles.sh & serve -p 8080 docs/7guis/",
-    "prod": "npm run clean && watch -n 20 npm run pack& serve -p 8080 docs/",
+    "prod": "npm run clean && watch -n 10 npm run build& serve -p 8080 docs/",
     "clean": "rm -rf .build-temp || : && rm -rf dist/ || : && rm -rf docs/vv || : && rm docs/*.js || : && rm docs/7guis/*.js || :",
-    "prepublishOnly": "npm run pack",
+    "prepublishOnly": "npm run build",
     "build": "export BANG_PROD=test || set BANG_PROD=test&&killall serve || : &&./scripts/build.sh && cp .build-temp/bang.js dist/pack.bang.js && rm -rf .build-temp || : ./scripts/cpfiles.sh",
-    "pack": "export BANG_PROD=test || set BANG_PROD=test&&killall serve || : &&./scripts/build.sh && npx roadroller -t text -a eval .build-temp/bang.js -o dist/pack.bang.js && rm -rf .build-temp || : && ./scripts/cpfiles.sh",
+    "compress": "export BANG_PROD=test || set BANG_PROD=test&&killall serve || : &&./scripts/build.sh && npx roadroller -t text -a eval .build-temp/bang.js -o dist/pack.bang.js && rm -rf .build-temp || : && ./scripts/cpfiles.sh",
     "tutorial": "npm run test"
   },
   "repository": {

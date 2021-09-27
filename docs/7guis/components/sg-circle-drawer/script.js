@@ -12,13 +12,13 @@ class CircleDrawer extends Base {
     const x = clientX - left;
     const y = clientY - top;
 
-    const state = cloneState('data');
-    state.circleDrawer.circles.push({
+    const state = cloneState('circleDrawer');
+    state.circles.push({
       key: `${x},${y}`,
       x, y, 
       radius: r
     });
-    setState('data', state, {save:true});
+    setState('circleDrawer', state, {save:true});
   }
 
   OpenSizer(event) {
@@ -27,21 +27,21 @@ class CircleDrawer extends Base {
       //event.preventDefault();
     }
     const selected = event.target.dataset.key;
-    const state = cloneState('data');
-    state.circleDrawer.selected = selected;
-    setState('data', state);
+    const state = cloneState('circleDrawer');
+    state.selected = selected;
+    setState('circleDrawer', state);
   }
 
   SizeSelected(inputEvent) {
     //console.log('SizeSelected');
-    const state = cloneState('data');
-    const circle = state.circleDrawer.circles.find(({key}) => key === state.circleDrawer.selected);
+    const state = cloneState('circleDrawer');
+    const circle = state.circles.find(({key}) => key === state.selected);
     // explanation for reference
       // we use composedPath()[0] rather than target because we 
       // attach to sg-sizer-modal not input[type="range"]
       // just so we can keep all methods in circle drawer
     circle.radius = inputEvent.composedPath()[0].valueAsNumber;
-    setState('data', state);
+    setState('circleDrawer', state);
   }
 
   CloseSizer(event) {
@@ -52,9 +52,9 @@ class CircleDrawer extends Base {
       // the host sg-sizer-modal overlay
     if ( event.target.matches('sg-circle.selected') || event.composedPath()[0].closest('dialog,button') ) return;
 
-    const state = cloneState('data');
+    const state = cloneState('circleDrawer');
 
-    if ( ! state.circleDrawer.selected ) return;
+    if ( ! state.selected ) return;
 
     //console.log('CloseSizer');
 
@@ -63,8 +63,8 @@ class CircleDrawer extends Base {
     }
     event.stopPropagation();
 
-    state.circleDrawer.selected = '';
-    setState('data', state);
+    state.selected = '';
+    setState('circleDrawer', state);
   }
 
   SaveCircleSize(changeEvent) {
@@ -73,21 +73,21 @@ class CircleDrawer extends Base {
     // modify the state we are saving to history so we remove the modal / selected node
     // this might be a single call if we had a 'saveState' method
 
-    const state = cloneState('data'); 
-    const {selected} = state.circleDrawer;
-    state.circleDrawer.selected = '';
-    setState('data', state, {save:true, rerender: false});
-    state.circleDrawer.selected = selected;
-    setState('data', state, {rerender: false});
+    const state = cloneState('circleDrawer'); 
+    const {selected} = state;
+    state.selected = '';
+    setState('circleDrawer', state, {save:true, rerender: false});
+    state.selected = selected;
+    setState('circleDrawer', state, {rerender: false});
   }
 
   Undo() {
     //console.log('Undo');
-    undoState('data');
+    undoState('circleDrawer');
   }
 
   Redo() {
     //console.log('Redo');
-    redoState('data');
+    redoState('circleDrawer');
   }
 }
