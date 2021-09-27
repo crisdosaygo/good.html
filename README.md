@@ -8,7 +8,7 @@
 This is ***BANG!***:
 
 `my-el/markup.html`
-```html
+```jsx
   <i-am-a-custom-element state=thisIsAStateKey
     onclick=functionNameOnCustomElementClass>
   >
