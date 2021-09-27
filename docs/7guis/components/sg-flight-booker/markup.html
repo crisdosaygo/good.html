@@ -4,15 +4,19 @@
       <option ${valence === 'one-way' ? 'selected': ''} value=one-way>One-way flight</option>
       <option ${valence === 'round-trip' ? 'selected': ''} value=round-trip>Round-trip flight</option>
     </select>
-    <input required name=out type=date oninput=SetOut value="${out}" 
-      min="${dateString(new Date)}"
-      max="${valence === 'round-trip' ? back : 'any'}">
-    <input required name=back type=date oninput=SetBack value="${back}"
-      min="${out}"
-      ${valence === 'one-way' ? 'disabled' : ''}
-    >
-    <button onclick=Book
-      ${ formValid ? '' : 'disabled' }
+    <input required name=out type=date 
+      value=${out}
+      oninput=SetOut 
+      min=${dateString(new Date)}
+      max=${valence === 'round-trip' ? back : 'any'}>
+    <input required name=back type=date 
+      value=${back}
+      oninput=SetBack 
+      min=${out}
+      ${valence === 'one-way' ? 'disabled' : ''}>
+    <button 
+      onclick=Book
+      ${formValid ? '' : 'disabled'}
     >Book</button>
   </form>
 </sg-frame>

@@ -6,17 +6,16 @@
     </label>
     <select size=5 name=names
       oninput="SetSelected"
-    >${names
-        .filter(({surname}) => surname.startsWith(prefix))
-        .map(({firstName,surname,key}) => {
-          const value= `${surname}, ${firstName}`;
-          return F`${{key}}
+    >${names.filter(({surname}) => surname.startsWith(prefix))
+      .map(({firstName,surname,key}) => {
+        const value = `${surname}, ${firstName}`;
+        return F`${{key}}
       <option 
-        data-key=${key}
         ${selected === key ? 'selected' : ''}
-        value="${value}" title="${value}">
-        ${value}
-      </option>
+        data-key=${key}
+        value=${value}
+        title=${value}
+      >${value}</option>
     `})}</select>
     <fieldset name=edit>
       <label>
@@ -30,13 +29,15 @@
     </fieldset>
     <fieldset name=commit>
       <button name=action value=create onclick=AddName>Create</button>
-      <button name=action value=update 
-        ${selected ? '' : 'disabled'} 
+      <button name=action 
+        value=update 
         onclick=UpdateSelected
-      >Update</button>
-      <button name=action value=delete 
         ${selected ? '' : 'disabled'} 
+      >Update</button>
+      <button name=action 
+        value=delete 
         onclick=DeleteSelected
+        ${selected ? '' : 'disabled'} 
       >Delete</button>
     </fieldset>
   </form>

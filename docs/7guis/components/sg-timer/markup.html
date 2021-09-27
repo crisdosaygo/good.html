@@ -4,10 +4,6 @@
       Elapsed time: 
       <meter name=elapsed value=${elapsed} min=0 max=${duration} step=.01></meter>
     </label>
-    <!-- this is the behavior of the React/MobX demo on Eugene's site, but I don't like it
-    <span class=time>${elapsed < duration ? elapsed.toFixed(1) : duration.toFixed(1)}s</span>
-    so I just always display elapsed and grind elapsed down when duration is less than it
-    -->
     <span class=time>${elapsed < duration ? elapsed.toFixed(1) : duration.toFixed(1)}s</span>
     <label>
       Duration:

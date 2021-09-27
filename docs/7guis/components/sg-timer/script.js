@@ -35,7 +35,6 @@ class Component extends Base {
       state.timer.elapsed = state.timer.duration;
       this.stopKeepingTime();
     }
-
     if ( state.timer.duration > state.timer.elapsed ) {
       this.startKeepingTime(state);
     }

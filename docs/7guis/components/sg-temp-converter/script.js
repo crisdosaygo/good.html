@@ -1,15 +1,11 @@
 class Component extends Base {
   SetKelvin(inputEvent) {
+    if ( !inputEvent.target.checkValidity() ) return;
     const {target: targ} = inputEvent;
-
-    if ( !targ.checkValidity() ) return;
-
     const type = targ.name;
     const value = Number(targ.value);
-
     const state = cloneState('data');
     const {temperatureConverter: t} = state;
-
 
     switch(type) {
       case "C":
@@ -18,14 +14,10 @@ class Component extends Base {
       case "F":
         t.k = this.fToK(value);
         break;
-      default: {
-        throw new TypeError(`Unknown temperature type: ${type}`);
-      }break;
     }
 
     t.c = parseFloat(this.kToC(t.k).toFixed(2));
     t.f = parseFloat(this.kToF(t.k).toFixed(2));
-
     setState('data', state);
   }
 
