@@ -38,6 +38,7 @@
       finished: 0
     };
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
+    const isProxy = Symbol('[[isStateProxy]]');
     let hindex = 0;
     let observer; // global mutation observer
     let systemKeys = 1;
@@ -748,30 +749,30 @@
     }
 
     function isMobile() {
-			const toMatch = [
-				/Android/i,
-				/webOS/i,
-				/iPhone/i,
-				/iPad/i,
-				/iPod/i,
-				/BlackBerry/i,
-				/Windows Phone/i
-			];
+      const toMatch = [
+        /Android/i,
+        /webOS/i,
+        /iPhone/i,
+        /iPad/i,
+        /iPod/i,
+        /BlackBerry/i,
+        /Windows Phone/i
+      ];
 
-			return toMatch.some((toMatchItem) => {
-				return navigator.userAgent.match(toMatchItem);
-			});
-		}
+      return toMatch.some((toMatchItem) => {
+        return navigator.userAgent.match(toMatchItem);
+      });
+    }
   
     function trace(msg = '') {
-			const tracer = new Error('Trace');
-			console.log(msg, 'Call stack', tracer.stack);
+      const tracer = new Error('Trace');
+      console.log(msg, 'Call stack', tracer.stack);
     }
 
     function dateString(date) {
-			const offset = date.getTimezoneOffset()
-			date = new Date(date.getTime() - (offset*60*1000))
-			return date.toISOString().split('T')[0];
+      const offset = date.getTimezoneOffset()
+      date = new Date(date.getTime() - (offset*60*1000))
+      return date.toISOString().split('T')[0];
     }
 
     function clone(o) {

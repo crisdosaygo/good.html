@@ -12,7 +12,6 @@ class Component extends Base {
   static MAX_RECORDS = 15;
 
   RandomRegreet(clickEvent) {
-    // clone the state
     const newState = cloneState('MyState');
 
     // update the greet count

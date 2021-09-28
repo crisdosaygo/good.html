@@ -35,7 +35,7 @@ This is ***BANG!***:
     paragraphTextInScope: `Lorem ipsum, just kidding. I speak English, not Latin. Har har har.`
   });
 </script>
-<!my-el>
+<!my-el state=thisIsAStateKey />
 ```
 
 That is all. 

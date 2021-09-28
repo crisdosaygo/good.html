@@ -4,6 +4,7 @@
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
   "main": "dist/pack.bang.js",
   "scripts": {
+    "proxy-test": "npm run clean&&watch -n 5 cp src/proxy.js docs/proxy/ & serve -p 8080 docs/proxy/",
     "dev": "npm run clean && watch -n 5 ./scripts/cpfiles.sh & serve -p 8080 docs/",
     "test": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/",
     "7guis": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/7guis/",

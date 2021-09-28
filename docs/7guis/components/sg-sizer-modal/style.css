@@ -24,3 +24,8 @@ dialog {
   width: 85%;
   box-sizing: border-box;
 }
+
+label {
+  display: flex;
+  flex-direction: column;
+}
