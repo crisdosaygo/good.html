@@ -1,6 +1,5 @@
 <p align=center>
   <img width=80% 
-    src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20tomato-whitesmoke%20(1).png
     src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
 </p>
@@ -58,7 +57,7 @@ You can jump in right away and get it on the npm:
 
 <p align=center>
   <img width=80% 
-       src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+       src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20tomato-whitesmoke%20(1).png
   >
 </p>
 
