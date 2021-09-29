@@ -257,7 +257,7 @@
       return false;
     }
 
-    function bangfig(newConfig = {}) {
+    function bangFig(newConfig = {}) {
       Object.assign(CONFIG, newConfig);
     }
 
@@ -324,10 +324,16 @@
       }
     }
 
-    async function loaded() {
+    async function loaded(prop = 1.0) {
+      if ( Number.isNaN(prop) ) prop = 1.0;
+      //prop = Math.min(1.0,prop);
+
       const loadCheck = () => {
+        prop = globalThis.bangRatio;
+        if ( Number.isNaN(prop) ) prop = 1.0;
+
         const nonZeroCount = Counts.started > 0; 
-        const finishedWhatWeStarted = Counts.finished === Counts.started;
+        const finishedWhatWeStarted = Counts.finished >= prop * Counts.started;
         return nonZeroCount && finishedWhatWeStarted;
       };
       return becomesTrue(loadCheck);
@@ -345,7 +351,7 @@
     async function install() {
       Object.assign(globalThis, {
         use, setState, patchState, cloneState, loaded, 
-        sleep, bangfig, bangLoaded, isMobile, trace,
+        sleep, bangFig, bangLoaded, isMobile, trace,
         undoState, redoState,
         dateString,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
@@ -366,7 +372,7 @@
       observer.observe(document, OBSERVE_OPTS);
       findBangs(transformBang); 
       
-      loaded().then(() => document.body.classList.add('bang-styled'));
+      loaded(globalThis.bangRatio).then(() => document.body.classList.add('bang-styled'));
     }
 
     async function fetchMarkup(name, comp) {
