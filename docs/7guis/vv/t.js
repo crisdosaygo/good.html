@@ -65,9 +65,8 @@
     guardExists(type);
     const typeName = type.name;
 
-    const {spec,kind,help,verify,verifiers,sealed} = typeCache.get(typeName);
+    const {spec,specKeyPaths,kind,help,verify,verifiers,sealed} = typeCache.get(typeName);
 
-    const specKeyPaths = spec ? allKeyPaths(spec).sort() : [];
     const specKeyPathSet = new Set(specKeyPaths);
 
     const bigErrors = [];
@@ -377,7 +376,10 @@
 
     const kind = 'defCollection';
     const t = new Type(name);
-    const spec = {kind, spec: { container, member}, verify, sealed, type: t};
+    const Spec = {container, member};
+    const specKeyPaths = allKeyPaths(Spec).sort();
+    const spec = {kind, spec: Spec, verify, sealed, type: t};
+    spec.specKeyPaths = specKeyPaths;
     typeCache.set(name, spec);
     return t;
   }
@@ -390,6 +392,8 @@
     pattern.forEach((type,key) => specObj[key] = type);
     const t = new Type(name);
     const spec = {kind, spec: specObj, type:t};
+    const specKeyPaths = allKeyPaths(specObj).sort();
+    spec.specKeyPaths = specKeyPaths;
     typeCache.set(name, spec);
     return t;
   }
@@ -436,6 +440,8 @@
     }
     const t = new Type(name, {types, native});
     const cache = {spec,kind,help,verify,verifiers,sealed,types,native,type:t};
+    const specKeyPaths = allKeyPaths(spec).sort();
+    cache.specKeyPaths = specKeyPaths;
     typeCache.set(name, cache);
     return t;
   }

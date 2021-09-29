@@ -17,6 +17,7 @@
     use('sg-circle');
     use('sg-sizer-modal');
     use('sg-cells');
+    use('sg-cell');
     use('sg-frame');
 
     const State = {
@@ -74,16 +75,17 @@
         ].map(name => (name.key = Math.random()+'', name)),
         selected: '',
       },
-      ex_cells: {
+      cells: {
         title: 'Cells',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
-        formulae: [
-          {
-            loci: 'A12',
-            raw: 'A9=somethingTBA'
-          }
-        ],
-        values: []
+        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXY'.split(''),
+        rowNames: Array(100).join('.').split('').map((_,i) => i+1),
+        formulae: {
+
+        },
+        values: {
+
+        }
       }
     };
     setState('data', State, {save:true});

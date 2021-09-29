@@ -15,6 +15,7 @@
     /* eslint-enable no-useless-escape */
     const ATTRMATCH         = /\w+=/;
     const KEYLEN            = 20;
+    const DOM_PARSER        = new DOMParser;
     const XSS               = () => `Possible XSS / object forgery attack detected. ` +
                               `Object code could not be verified.`;
     const OBJ               = () => `Object values not allowed here.`;
@@ -40,8 +41,8 @@
     globalThis.onerror = (...v) => (console.log(v, v[0]+'', v[4] && v[4].message, v[4] && v[4].stack), true);
 
   // type functions
-    const isKey             = v => T.check(T`Key`, v); 
-    const isHandlers        = v => T.check(T`Handlers`, v);
+    const isKey             = v => !!v && (typeof v.key === 'string' || typeof v.key === 'number') && Object.getOwnPropertyNames(v).length <= 2;
+    const isHandlers        = v => typeof v === "object";
 
   // cache 
     const cache = {};
@@ -184,7 +185,7 @@
 
       if ( x instanceof Node ) return x.textContent;
 
-      const isVVArray   = T.check(T`VanillaViewArray`, x);
+      const isVVArray   = Array.isArray(x) && (x.length === 0 || Array.isArray(x[0].nodes));
 
       if ( isIterable(x) && ! isVVArray ) {
         // if an Array or iterable is given then
@@ -198,11 +199,10 @@
 
 
       const isVVK = isKey(x);
-      const isMO    = T.check(T`MarkupObject`, x);
-      const isMAO = T.check(T`MarkupAttrObject`, x);
-      const isVV      = T.check(T`Component`, x);
-      if ( isVVArray || isVVK || isMO || isMAO || isVV ) {
-        DEBUG && console.log('vv', x, {isVVArray, isVVK, isMO, isMAO, isVV});
+      const isVV      = x.code === CODE && Array.isArray(x.nodes);
+      const isMAO = x.code === CODE && typeof x.str === "string";
+      if ( isVVArray || isVVK || isMAO || isVV ) {
+        DEBUG && console.log('vv', x, {isVVArray, isVVK, isMAO, isVV});
         return isVVArray ? join(x) : x; // let vanillaview guardAndTransformVal handle
       }
 
@@ -663,7 +663,7 @@
 
     function updateAttrWithHandlersValue(newVal, scope) {
       let {oldVal,node,externals,} = scope;
-      if ( !!oldVal && T.check(T`Handlers`, oldVal) ) {
+      if ( !!oldVal && typeof oldVal === 'object'  ) {
         Object.entries(oldVal).forEach(([eventName,funcVal]) => {
           if ( eventName !== 'bond' ) {
             let flags = {};
@@ -787,13 +787,17 @@
     }
 
     function getType(val) {
-      const type = T.check(T`Function`, val) ? 'function' :
-        T.check(T`Handlers`, val) ? 'handlers' : 
-        T.check(T`VanillaViewObject`, val) ? 'vanillaviewobject' : 
-        T.check(T`MarkupObject`, val) ? 'markupobject' :
-        T.check(T`MarkupAttrObject`, val) ? 'markupattrobject' :
-        T.check(T`VanillaViewArray`, val) ? 'vanillaviewarray' : 
-        T.check(T`FuncArray`, val) ? 'funcarray' : 
+      const to = typeof val;
+      const type = to === 'function' ? 'function' :
+        val.code === CODE && Array.isArray(val.nodes) ? 'vanillaviewobject' : 
+        val.code === CODE && typeof val.str === 'string' ? 'markupattrobject' :
+        Array.isArray(val) && (val.length === 0 || (
+          val[0].code === CODE && Array.isArray(val[0].nodes) 
+        )) ? 'vanillaviewarray' : 
+        Array.isArray(val) && (val.length === 0 || (
+          typeof val[0] === 'function'
+        )) ? 'funcarray' : 
+        to === 'object' ? 'handlers' : 
         'default'
       ;
       return type;
@@ -859,7 +863,7 @@
       // And even tho it is in the location of a template value replacement
       // Which would normally be the treated as String
       function markup(str) {
-        str = T.check(T`None`, str) ? '' : str; 
+        str = isUnset(str) ? '' : str; 
         const frag = toDOM(str);
         const retVal = {
           type: 'MarkupObject',
@@ -873,7 +877,7 @@
       // Returns an object that VanillaView treats, again, as markup
       // But this time markup that is OKAY to have within a quoted attribute
       function attrmarkup(str) {
-        str = T.check(T`None`, str) ? '' : str; 
+        str = isUnset(str) ? '' : str; 
         str = str.replace(/"/g,'&quot;');
         const retVal = {
           type: 'MarkupAttrObject',
@@ -890,7 +894,7 @@
           } 
           return val;
         } else {
-          if ( T.check(T`None`, val) ) {
+          if ( isUnset(val) ) {
             return NULLFUNC;
           }
         }
@@ -911,7 +915,7 @@
           }
           const key = ('key'+Math.random()).replace('.','').padEnd(KEYLEN,'0').slice(0,KEYLEN);
           let k = key;
-          if ( T.check(T`VanillaViewObject`, val) || T.check(T`MarkupObject`, val) ) {
+          if ( val.code === CODE && Array.isArray(val.nodes) ) {
             k = `<!--${k}-->`;
           }
           vmap[key.trim()] = {vi,val,replacers:[]};
@@ -920,47 +924,25 @@
       }
 
       function toDOM(str) {
-        const templateEl = (new DOMParser).parseFromString(
-          `<template>${str}</template>`,"text/html"
-        ).head.firstElementChild;
-        let f;
-        if ( templateEl instanceof HTMLTemplateElement ) { 
-          f = templateEl.content;
-          f.normalize();
-          return f;
-        } else {
-          throw new TypeError(`Could not find template element after parsing string to DOM:\n=START=\n${str}\n=END=`);
-        }
+        const t = document.createElement('template');
+        t.innerHTML = str;
+        return t.content;
       }
 
       function guardAndTransformVal(v) {
-        const isFunc          = T.check(T`Function`, v);
-        const isUnset         = T.check(T`None`, v);
-        const isObject        = T.check(T`Object`, v);
-        const isVanillaViewArray   = T.check(T`VanillaViewArray`, v);
-        const isFuncArray     = T.check(T`FuncArray`, v);
-        const isMarkupObject    = T.check(T`MarkupObject`, v);
-        const isMarkupAttrObject= T.check(T`MarkupAttrObject`, v);
-        const isVanillaView        = T.check(T`VanillaViewObject`, v);
-        const isForgery       = T.check(T`VanillaViewLikeObject`, v)  && !isVanillaView; 
+        const isVVArray   = Array.isArray(v) && (v.length === 0 || Array.isArray(v[0].nodes));
+        const isNotSet         = isUnset(v);
+        const isForgery = v.code !== CODE && Array.isArray(v.nodes);
+        const isObject        = typeof v === 'object';
 
-        if ( isFunc )             return v;
-        if ( isVanillaView )           return v;
+        if ( isVVArray )      return join(v); 
         if ( isKey(v) )           return v;
-        if ( isHandlers(v) )      return v;
-        if ( isVanillaViewArray )      return join(v); 
-        if ( isFuncArray )        return v;
-        if ( isMarkupObject )     return v;
-        if ( isMarkupAttrObject)  return v;
+        if ( v.code === CODE )    return v;
 
-        if ( isUnset )            die({error: UNSET()});
+        if ( isNotSet )            die({error: UNSET()});
         if ( isForgery )          die({error: XSS()});
 
-        if ( isObject )       {
-          if ( Object.keys(v).join(',') === "key" ) {
-            die({error: KEY(v)});    
-          } else die({error: OBJ()});
-        }
+        if ( isObject ) die({error: OBJ()});
 
         return v+'';
       }
@@ -1059,7 +1041,7 @@
 
     function showNodes(k,v) {
       let out = v;
-      if ( T.check(T`>Node`, v) ) {
+      if ( v instanceof Node ) {
         out = `<${v.nodeName.toLowerCase()} ${
           !v.attributes ? '' : [...v.attributes].map(({name,value}) => `${name}='${value}'`).join(' ')}>${
           v.nodeValue || (v.children && v.children.length <= 1 ? v.innerText : '')}`;

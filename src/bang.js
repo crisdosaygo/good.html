@@ -9,6 +9,7 @@
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
     const MirrorNode = Symbol.for('[[MirroNode]]');
+    const DOM_PARSER = new DOMParser;
     const path = location.pathname;
     const CONFIG = {
       htmlFile: 'markup.html',
@@ -712,12 +713,9 @@
     }
 
     function toDOM(str) {
-      const f = (new DOMParser).parseFromString(
-          `<template>${str}</template>`,
-          "text/html"
-        ).head.firstElementChild.content;
-      f.normalize();
-      return f;
+      const t = document.createElement('template');
+      t.innerHTML = str;
+      return t.content;
     }
 
     async function becomesTrue(check = () => true) {
