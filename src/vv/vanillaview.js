@@ -1,7 +1,6 @@
 // vanillaview.js
   // imports
     import {CODE} from './common.js';
-    import T from './types.js';
 
   // backwards compatible alias
     const skip = markup;
@@ -51,7 +50,7 @@
   // main exports 
     Object.assign(s,{say,attrskip,skip,attrmarkup,markup,guardEmptyHandlers,die});
 
-    Object.assign(globalThis, {vanillaview: {c, s, T}}); 
+    Object.assign(globalThis, {vanillaview: {c, s}}); 
 
     export async function s(p,...v) {
       const that = this;
@@ -910,7 +909,7 @@
       function replaceValWithKeyAndOmitInstanceKey(vmap) {
         return (val,vi) => {
           // omit instance key
-          if ( T.check(T`Key`, val) ) {
+          if ( isKey(val) ) {
             return '';
           }
           const key = ('key'+Math.random()).replace('.','').padEnd(KEYLEN,'0').slice(0,KEYLEN);

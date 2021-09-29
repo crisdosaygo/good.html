@@ -26,6 +26,7 @@
         contextmenu
       `.split(/\s+/g).filter(s => s.length).map(e => `on${e}`),
       delayFirstPaintUntilLoaded: true,
+      capBangRatioAtUnity: false,
       noHandlerPassthrough: false
     };
     const History = [];
@@ -325,12 +326,13 @@
     }
 
     async function loaded(prop = 1.0) {
-      if ( Number.isNaN(prop) ) prop = 1.0;
-      //prop = Math.min(1.0,prop);
+      if ( isUnset(prop) || Number.isNaN(prop) ) prop = 1.0;
+      CONFIG.capBangRatioAtUnity && (prop = Math.min(1.0,prop));
 
       const loadCheck = () => {
-        prop = globalThis.bangRatio;
-        if ( Number.isNaN(prop) ) prop = 1.0;
+        prop = globalThis.bangRatio || prop;
+        if ( isUnset(prop) || Number.isNaN(prop) ) prop = 1.0;
+        CONFIG.capBangRatioAtUnity && (prop = Math.min(1.0,prop));
 
         const nonZeroCount = Counts.started > 0; 
         const finishedWhatWeStarted = Counts.finished >= prop * Counts.started;
