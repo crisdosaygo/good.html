@@ -1,5 +1,5 @@
 :host {
-  display: block;
+  display: flex;
   --gap: 0.5rem;
   width: -moz-fit-content;
   width: fit-content;
@@ -10,6 +10,7 @@
   border: thin solid var(--border-color);
   font-family: system-ui, sans-serif;
   margin: 1.5rem 0.5rem;
+  max-height: 100%;
 }
 
 .frame {
