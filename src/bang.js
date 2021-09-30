@@ -7,8 +7,8 @@
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
-    const MirrorNode = Symbol.for('[[MirroNode]]');
-    const DOM_PARSER = new DOMParser;
+    const MirrorNode = Symbol.for('[[MN]]');
+    const Template = document.createElement('template');
     const path = location.pathname;
     const CONFIG = {
       htmlFile: 'markup.html',
@@ -40,7 +40,6 @@
       finished: 0
     };
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
-    const isProxy = Symbol('[[isStateProxy]]');
     let hindex = 0;
     let observer; // global mutation observer
     let systemKeys = 1;
@@ -652,17 +651,12 @@
     }
 
     function createElement(name, data) {
-      const df = document.createDocumentFragment();
-      const container = document.createElement('div');
-      df.appendChild(container);
-      container.insertAdjacentHTML(`afterbegin`, `<${name} ${data}></${name}>`);
-      return container.firstElementChild;
+      return toDOM(`<${name} ${data}></${name}>`).firstElementChild;
     }
 
     function toDOM(str) {
-      const t = document.createElement('template');
-      t.innerHTML = str;
-      return t.content;
+      Template.innerHTML = str;
+      return Template.content;
     }
 
     async function becomesTrue(check = () => true) {
