@@ -1,0 +1,6 @@
+explore
+
+- each component is invisible until it is loaded. No work.
+- requesting files during use call. No work.
+- changing timeout for becomesTrue. No work.
+-- moving becomesTrue to a subscription push rather than polling model. 

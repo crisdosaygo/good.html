@@ -10,5 +10,8 @@ npx webpack -c webpack.config.js
 rm src/cat.bang.js
 cp .build-temp/bang.js docs/bang.js
 cp .build-temp/bang.js docs/7guis/bang.js
+cp src/err.js docs/
+cp src/err.js docs/7guis/
+
 
 

@@ -2,9 +2,9 @@
   <form class=layout>
     <label class=elapsed>
       Elapsed time: 
-      <meter name=elapsed value=${elapsed} min=0 max=${duration} step=.01></meter>
+      <meter aria-label="elapsed time bar" name=elapsed value=${elapsed} min=0 max=${duration} step=.01></meter>
     </label>
-    <span class=time>${elapsed < duration ? elapsed.toFixed(1) : duration.toFixed(1)}s</span>
+    <span aria-label="elapsed time in seconds" class=time>${elapsed < duration ? elapsed.toFixed(1) : duration.toFixed(1)}s</span>
     <label>
       Duration:
       <input type=range min=0.001 max=60 name=duration value=${duration} oninput=setDuration>

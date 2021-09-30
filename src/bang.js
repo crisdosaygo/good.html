@@ -3,7 +3,6 @@
     const DEBUG = false;
     const OPTIMIZE = true;
     const GET_ONLY = true;
-    const LEGACY = false;
     const MOBILE = isMobile();
     const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
@@ -32,6 +31,7 @@
     const History = [];
     const STATE = new Map();
     const CACHE = new Map();
+    const Waiters = new Map();
     const Started = new Set();
     const TRANSFORMING = new WeakSet();
     const Dependents = new Map();
@@ -78,7 +78,8 @@
           }
           this.lastState = nextState;
         }
-        return this.printShadow(state).then(() => this.alreadyPrinted = true);
+        return this.printShadow(state)
+          .then(() => this.alreadyPrinted = true)
       }
 
       connectedCallback() {
@@ -173,35 +174,19 @@
         return fetchMarkup(this.#name, this).then(async markup => {
           const cooked = await cook.call(this, markup, state);
           DEBUG && console.log(cooked);
-          if ( LEGACY ) {
-            const nodes = toDOM(cooked);
-            // attributes on each node in the shadom DOM that has an even handler or state
-            const listening = nodes.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
-            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-            DEBUG && say('log',nodes, cooked, state);
-            if ( this.shadowRoot ) {
-              this.shadowRoot.replaceChildren(nodes);
-            } else {
-              const shadow = this.attachShadow({mode:'open'});
-              console.log({observer});
-              observer.observe(shadow, OBSERVE_OPTS);
-              shadow.replaceChildren(nodes);
-            }
+          if ( this.shadowRoot ) {
+            //this.shadowRoot.replaceChildren(nodes);
           } else {
-            if ( this.shadowRoot ) {
-              //this.shadowRoot.replaceChildren(nodes);
-            } else {
-              const shadow = this.attachShadow({mode:'open'});
-              //console.log({observer});
-              observer.observe(shadow, OBSERVE_OPTS);
-              cooked.to(shadow, 'insert');
-              const listening = shadow.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
-              listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-            }
+            const shadow = this.attachShadow({mode:'open'});
+            //console.log({observer});
+            observer.observe(shadow, OBSERVE_OPTS);
+            cooked.to(shadow, 'insert');
+            const listening = shadow.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
+            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
           }
         })
         .catch(err => DEBUG && say('warn',err))
-        .finally(() => Counts.finished++);
+        .finally(() => Counts.finished++)
       }
     };
 
@@ -385,21 +370,21 @@
       const key = `markup:${name}`;
 
       if ( Started.has(key) ) {
-        if ( ! CACHE.has(key) ) await becomesTrue(() => CACHE.has(key));
+        if ( ! CACHE.has(key) ) await cacheHasKey(key);
       } else Started.add(key);
 
       const styleKey = `style${name}`;
       const baseUrl = `${CONFIG.componentsPath}/${name}`;
       if ( CACHE.has(key) ) {
         const markup = CACHE.get(key);
-        if ( CACHE.get(styleKey) instanceof Error ) comp.setVisible();
+        if ( CACHE.get(styleKey) instanceof Error ) comp && comp.setVisible();
         
         // if there is an error style and we are still includig that link
         // we generate and cache the markup again to omit such a link element
         if ( CACHE.get(styleKey) instanceof Error && markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {
           // then we need to set the cache for markup again and remove the link to the stylesheet which failed 
         } else {
-          comp.setVisible();
+          comp && comp.setVisible();
           return markup;
         }
       }
@@ -415,7 +400,6 @@
           resp = `<style>
             @import url('${CONFIG.componentsPath}/style.css');
           </style>${text}` 
-          comp.setVisible();
         } else {
           // inlining styles for increase speed */
             // we setVisible (add bang-styled) straight away because the inline styles block the markup
@@ -428,8 +412,8 @@
               return e;
             })}
           </style>${text}`;
-          comp.setVisible();
         }
+        comp && comp.setVisible();
         
         return resp;
       }).finally(async () => CACHE.set(key, await resp));
@@ -440,7 +424,7 @@
       const key = `${file}:${name}`;
 
       if ( Started.has(key) ) {
-        if ( ! CACHE.has(key) ) await becomesTrue(() => CACHE.has(key));
+        if ( ! CACHE.has(key) ) await cacheHasKey(key);
       } else Started.add(key);
 
       if ( CACHE.has(key) ) return CACHE.get(key);
@@ -536,13 +520,14 @@
     }
 
     async function process(x, state) {
-      if ( typeof x === 'string' ) return x;
+      const tox = typeof x;
+      if ( tox === 'string' ) return x;
       else 
 
-      if ( typeof x === 'number' ) return x+'';
+      if ( tox === 'number' ) return x+'';
       else
 
-      if ( typeof x === 'boolean' ) return x+'';
+      if ( tox === 'boolean' ) return x+'';
       else
 
       if ( x instanceof Date ) return x+'';
@@ -588,6 +573,7 @@
           /* to the global state store */
           /* which is two-sides so we can find a key */
           /* given an object. This avoid duplicates */
+        const jx = JSON.stringify(x);
         let stateKey;
 
         // own keys
@@ -597,28 +583,31 @@
 
         if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {
           stateKey = new StateKey(x[CONFIG.bangKey])+'';
+          const jk = stateKey+'.json.last';
           // in that case, replace the previously saved object with the same logical identity
-          const oldX = STATE.get(stateKey);
-          if ( JSON.stringify(oldX) !== JSON.stringify(x) ) {
+          const oldX = STATE.get(jk);
+          if ( oldX !== jx ) {
             STATE.delete(oldX);
+            STATE.delete(STATE.get(stateKey));
 
             STATE.set(stateKey, x);
             STATE.set(x, stateKey);
-            STATE.set(JSON.stringify(x), stateKey+'.json.last');
-            STATE.set(stateKey+'.json.last',JSON.stringify(x));
+            STATE.set(jx, jk);
+            STATE.set(jk,jx);
           }
         } 
 
         else  /* or the system can come up with a state key */
 
         {
-          if ( STATE.has(JSON.stringify(x)) ) stateKey = STATE.get(JSON.stringify(x));
+          if ( STATE.has(jx) ) stateKey = STATE.get(jx);
           else {
             stateKey = new StateKey()+'';
+            const jk = stateKey+'.json.last';
             STATE.set(stateKey, x);
             STATE.set(x, stateKey);
-            STATE.set(JSON.stringify(x), stateKey+'.json.last');
-            STATE.set(stateKey+'.json.last',JSON.stringify(x));
+            STATE.set(js, jk);
+            STATE.set(jk,jx);
           }
         }
 
@@ -658,58 +647,8 @@
 
     async function _FUNC(strings, ...vals) {
       const s = Array.from(strings);
-      //console.log(strings, vals);
       const ret =  await _c$(s, ...vals);
       return ret;
-    }
-
-    async function old_FUNC(strings, ...vals) {
-      const s = Array.from(strings);
-      let SystemCall = false;
-      let state;
-      let str = '';
-
-      DEBUG && say('log',s.join('${}'));
-
-      if ( s[0].length === 0 && vals[0].state ) {
-        // by convention (see how we construct the template that we tag with FUNC)
-        // the first value is the state object when our system calls it
-        SystemCall = true;
-      }
-
-      // resolve all the values now if it's a SystemCall of _FUNC
-      if ( SystemCall ) {
-        const {state} = vals.shift();
-        s.shift();
-        vals = await Promise.all(vals.map(v => process(v, state)));
-        DEBUG && say('log','System _FUNC call: ' + vals.join(', '));
-
-        while(s.length) {
-          str += s.shift();
-          if ( vals.length ) {
-            str += vals.shift();
-          }
-        }
-        return str;
-      } 
-
-      else 
-
-      // otherwise resolve them when we have access to the top-level state
-        // this is effectively just a little bit of magic that lets us "overload"
-        // the method signature of F
-
-      return async state => {
-        vals = await Promise.all(vals.map(v => process(v, state)));
-        DEBUG && say('log','in-template _FUNC call:' + vals.join(', '));
-
-        while(s.length) {
-          str += s.shift();
-          if ( vals.length ) str += vals.shift();
-        }
-
-        return str;
-      };
     }
 
     function createElement(name, data) {
@@ -734,6 +673,32 @@
         }
         res();
       });
+    }
+
+    // this is to optimize using becomesTrue so we don't start a new timer
+    // for every becomesTrue function call (in the case of the cache check, anyway)
+    // we can use this pattern to apply to other becomesTrue calls like loaded
+    async function cacheHasKey(key) {
+      try {
+        const WaitKey = `cache:${key}`;
+        let waiters = Waiters.get(WaitKey);
+        if ( ! waiters ) {
+          const list = [];
+          waiters = {
+            WaitKey,
+            list,
+            event: becomesTrue(() => CACHE.has(key)).then(() => list.reverse().forEach(res => res()))
+          };
+          Waiters.set(WaitKey, waiters);
+          DEBUG && console.log('Setup waiter list', waiters);
+        }
+        let res;
+        const pr = new Promise(resolve => res = resolve);
+        waiters.list.push(res);
+        return pr;
+      } catch(e) {
+        console.warn(e);
+      }
     }
 
     async function sleep(ms) {
