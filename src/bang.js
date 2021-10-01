@@ -35,10 +35,12 @@
     const Started = new Set();
     const TRANSFORMING = new WeakSet();
     const Dependents = new Map();
-    const Counts = {
-      started: 0,
-      finished: 0
-    };
+    class Counters {
+      started = 0;
+      finished = 0;
+    }
+    const Counts = new Counters;
+    self.counts = [];
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
     let hindex = 0;
     let observer; // global mutation observer
@@ -55,7 +57,12 @@
       constructor({task: task = () => void 0} = {}) {
         super();
         DEBUG && say('log',name, 'constructed');
+        this.counts = new Counters;
+        this.prepareVisibility();
         this.print().then(task);
+      }
+
+      connectedCallback() {
       }
 
       get name() {
@@ -64,9 +71,8 @@
 
       // BANG! API methods
       async print() {
-        Counts.started++;
         if ( !this.alreadyPrinted ) {
-          this.prepareVisibility();
+          this.counts.started++;
         }
         const state = this.handleAttrs(this.attributes);
         if ( OPTIMIZE ) {
@@ -83,6 +89,25 @@
 
       connectedCallback() {
         say('log',name, 'connected');
+        // lazy loaders have their own count scope, but not lazy ones 
+        // contributes their counts to the global count scope
+        if ( this.hasAttribute('lazy') ) {
+          DEBUG && console.log('Not sending counts of lazy', this, 'to anyone');
+        } else if ( ! this.includedInLazyParentCounts ) {
+          this.includedInLazyParentCounts = true;
+          const lazyParent = furthest(this, '[lazy]');
+          let target = Counts;
+          if ( lazyParent ) {
+            target = lazyParent.counts; 
+            //console.log('Counting', this, 'in parent', lazyParent);
+          } else {
+            //console.log('Counting', this, 'in global', target);
+            self.counts.push(target);
+          }
+          target.started += this.counts.started;
+          target.finished += this.counts.finished;
+          this.counts = target;
+        }
         // attributes must be assigned on connection so we can search for
         // references to parents
         this.handleAttrs(this.attributes, {originals: true});
@@ -98,7 +123,7 @@
       }
 
       setVisible() {
-        this.classList.add('bang-styled');
+        //this.classList.add('bang-styled');
       }
 
       // Web Components methods
@@ -183,9 +208,28 @@
             const listening = shadow.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
             listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
           }
+            if ( ! this.counts.stop ) {
+              this.counts.finished++;
+            }
+            //await sleep(100);
+            if ( this.counts.finished >= this.counts.started ) {
+              //console.log(this.counts);
+              this.classList.add('bang-styled');
+              this.counts.stop = true;
+            }
         })
         .catch(err => DEBUG && say('warn',err))
-        .finally(() => Counts.finished++)
+        .finally(async () => {
+          if ( ! this.counts.stop ) {
+            this.counts.finished++;
+          } else return;
+          await sleep(100);
+          if ( this.counts.finished >= this.counts.started ) {
+            //console.log(this.counts);
+            this.classList.add('bang-styled');
+            this.counts.stop = true;
+          }
+        });
       }
     };
 
@@ -320,6 +364,7 @@
 
         const nonZeroCount = Counts.started > 0; 
         const finishedWhatWeStarted = Counts.finished >= prop * Counts.started;
+        //console.log(Counts);
         return nonZeroCount && finishedWhatWeStarted;
       };
       return becomesTrue(loadCheck);
@@ -334,6 +379,34 @@
     }
 
   // helpers
+    function closest(node, selector = '*') {
+      while(node) {
+        if ( node && node.nodeType === Node.ELEMENT_NODE ) {
+          if ( node.matches(selector) ) return node;
+        }
+        if ( node.parentNode ) {
+          node = node.parentNode;
+        } else {
+          node = node.host;
+        }
+      }
+    }
+
+    function furthest(node, selector = '*') {
+      const ancestors = [];
+      while(node) {
+        if ( node && node.nodeType === Node.ELEMENT_NODE ) {
+          ancestors.unshift(node);
+        }
+        if ( node.parentNode ) {
+          node = node.parentNode;
+        } else {
+          node = node.host;
+        }
+      }
+      return ancestors.find(element => element.matches(selector));
+    }
+
     async function install() {
       Object.assign(globalThis, {
         use, setState, patchState, cloneState, loaded, 
@@ -468,6 +541,7 @@
       // replace the bang node (comment) with its actual custom element node
       const actualElement = createElement(name, data);
       current.linkedCustomElement = actualElement;
+      DEBUG && console.log(current, actualElement);
       actualElement[MirrorNode] = current;
       current.parentNode.replaceChild(actualElement, current);
     }
