@@ -123,7 +123,7 @@
       }
 
       setVisible() {
-        //this.classList.add('bang-styled');
+        this.classList.add('bang-styled');
       }
 
       // Web Components methods
@@ -208,15 +208,6 @@
             const listening = shadow.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
             listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
           }
-            if ( ! this.counts.stop ) {
-              this.counts.finished++;
-            }
-            //await sleep(100);
-            if ( this.counts.finished >= this.counts.started ) {
-              //console.log(this.counts);
-              this.classList.add('bang-styled');
-              this.counts.stop = true;
-            }
         })
         .catch(err => DEBUG && say('warn',err))
         .finally(async () => {
@@ -429,7 +420,8 @@
       observer = new MutationObserver(transformBangs);
       /* we are interested in bang nodes (which start as comments) */
       observer.observe(document, OBSERVE_OPTS);
-      findBangs(transformBang); 
+      const descendentsCount = findBangs(transformBang); 
+      console.log({topLevel:{descendentsCount}});
       
       loaded(globalThis.bangRatio).then(() => document.body.classList.add('bang-styled'));
     }
@@ -529,7 +521,15 @@
         DEBUG && say('log',record);
         const {addedNodes} = record;
         if ( !addedNodes ) return;
-        addedNodes.forEach(node => findBangs(transformBang, node));
+        Array.from(addedNodes).map(node => {
+          const descendents = findBangs(transformBang, node);
+          const furthestLazy = furthest(node, '[lazy]');
+          if ( furthestLazy ) {
+            furthestLazy.counts.started += descendents;
+            console.log('lazy', furthestLazy, 'adding', descendents, 'descendents');
+          }
+          return descendents;
+        });
       });
     }
 
@@ -549,14 +549,25 @@
     function findBangs(callback, root = document.documentElement) {
       const Acceptor = {
         acceptNode(node) {
-          if ( node.nodeType !== Node.COMMENT_NODE ) return NodeFilter.FILTER_SKIP;
-          const [name] = getBangDetails(node); 
-          if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
-          else return NodeFilter.FILTER_REJECT;
+          switch ( node.nodeType ) {
+            case Node.COMMENT_NODE:
+              const [name] = getBangDetails(node); 
+              if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
+              break;
+            case Node.ELEMENT_NODE:
+              if ( node.nodeName.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
+              else return NodeFilter.FILTER_SKIP;
+          } 
+          return NodeFilter.FILTER_REJECT;
         }
       };
-      const iterator = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT, Acceptor);
+      const iterator = document.createTreeWalker(
+        root, 
+        NodeFilter.SHOW_COMMENT || NodeFilter.SHOW_ELEMENT, 
+        Acceptor
+      );
       const replacements = [];
+      let descendentsCount = 0;
 
       // handle root node
         // it's a special case because it will be present in the iteration even if
@@ -564,10 +575,12 @@
       let current = iterator.currentNode;
 
       if ( Acceptor.acceptNode(current) === NodeFilter.FILTER_ACCEPT ) {
-        if ( !TRANSFORMING.has(current) ) {
-          TRANSFORMING.add(current);
-          const target = current;
-          replacements.push(() => transformBang(target));
+        if ( current.nodeType === Node.COMMENT_NODE ) {
+          if ( !TRANSFORMING.has(current) ) {
+            TRANSFORMING.add(current);
+            const target = current;
+            replacements.push(() => transformBang(target));
+          }
         }
       }
 
@@ -576,14 +589,19 @@
           current = iterator.nextNode();
           if ( ! current ) break;
 
-          if ( !TRANSFORMING.has(current) ) {
-            TRANSFORMING.add(current);
-            const target = current;
-            replacements.push(() => transformBang(target));
+          descendentsCount++;
+          if ( current.nodeType === Node.COMMENT_NODE ) {
+            if ( !TRANSFORMING.has(current) ) {
+              TRANSFORMING.add(current);
+              const target = current;
+              replacements.push(() => transformBang(target));
+            }
           }
         }
 
       while(replacements.length) replacements.pop()();
+      
+      return descendentsCount;
     }
 
     function getBangDetails(node) {
