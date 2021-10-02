@@ -23,7 +23,7 @@
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
         input change compositionstart compositionend text paste beforepast select cut copy
         contextmenu
-      `.split(/\s+/g).filter(s => s.length).map(e => `on${e}`),
+      `.split(/\s+/g).filter(s => s.length).map(e => `[on${e}]`).join(','),
       delayFirstPaintUntilLoaded: true,
       capBangRatioAtUnity: false,
       noHandlerPassthrough: false
@@ -206,7 +206,7 @@
             //console.log({observer});
             observer.observe(shadow, OBSERVE_OPTS);
             cooked.to(shadow, 'insert');
-            const listening = shadow.querySelectorAll(CONFIG.EVENTS.map(e => `[${e}]`).join(', '));
+            const listening = shadow.querySelectorAll(CONFIG.EVENTS);
             listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
           }
         })
