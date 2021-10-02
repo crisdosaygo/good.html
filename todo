@@ -1,0 +1,2 @@
+- insert base stylesheet (that prevents FOUC) in document, and change bangLoaded to be existing condition plus the load of that stylesheet
+- experiment with webpacking an app including all html script and css
