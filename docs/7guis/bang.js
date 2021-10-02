@@ -214,12 +214,14 @@
           if ( ! this.counts.stop ) {
             this.counts.finished++;
           } else return;
-          await sleep(100);
-          if ( this.counts.finished >= this.counts.started ) {
-            //console.log(this.counts);
-            this.classList.add('bang-styled');
-            this.counts.stop = true;
-          }
+          /*
+            await sleep(100);
+            if ( this.counts.finished >= this.counts.started ) {
+              //console.log(this.counts);
+              this.classList.add('bang-styled');
+              this.counts.stop = true;
+            }
+          */
         });
       }
     };
@@ -250,7 +252,7 @@
         });
       
       self.customElements.define(name, component);
-      DEBUG && self.customElements.whenDefined(name).then(obj => say('log',name, 'defined', obj));
+      DEBUG && self.customElements.whenDefined(name).then(obj => say('log',name, component, 'defined', obj));
     }
 
     function undoState(key, transform = x => x) {
@@ -370,6 +372,8 @@
     }
 
   // helpers
+    // closest node in ancestors that matches selector (including starting node)
+    // same behaviour as Element.closest but works through shadow DOM
     function closest(node, selector = '*') {
       while(node) {
         if ( node && node.nodeType === Node.ELEMENT_NODE ) {
@@ -383,7 +387,9 @@
       }
     }
 
+    // furthest node in ancestors that matches selector (not including starting node)
     function furthest(node, selector = '*') {
+      const oNode = node;
       const ancestors = [];
       while(node) {
         if ( node && node.nodeType === Node.ELEMENT_NODE ) {
@@ -395,7 +401,7 @@
           node = node.host;
         }
       }
-      return ancestors.find(element => element.matches(selector));
+      return ancestors.find(element => element.matches(selector) && element !== oNode);
     }
 
     async function install() {
@@ -474,7 +480,7 @@
             ${await fetchStyle(name).then(e => {
               if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
               return e;
-            })}
+            }).catch(e => `/* no ${name}/style.css defined */`)}
           </style>${text}`;
         }
         comp && comp.setVisible();
@@ -522,13 +528,15 @@
         const {addedNodes} = record;
         if ( !addedNodes ) return;
         Array.from(addedNodes).map(node => {
-          const descendents = findBangs(transformBang, node);
+          const descendentsCount = findBangs(transformBang, node);
           const furthestLazy = furthest(node, '[lazy]');
           if ( furthestLazy ) {
-            furthestLazy.counts.started += descendents;
-            console.log('lazy', furthestLazy, 'adding', descendents, 'descendents');
+            if ( furthestLazy.counts ) {
+              furthestLazy.counts.started += descendentsCount;
+              //console.log('lazy', furthestLazy, 'adding', descendentsCount, 'descendents');
+            } else console.log(furthestLazy, node);
           }
-          return descendents;
+          return descendentsCount;
         });
       });
     }
