@@ -1,0 +1,9 @@
+:host {
+  max-height: 500px;
+  max-width: 400px;
+}
+
+sg-frame {
+  max-height: 500px;
+}
+

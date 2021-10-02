@@ -6,7 +6,7 @@
 
 # 🌱 *BANG!* *A zero-dependency, no build-step, no transpilation, JSX-free, good old fashioned HTML and JavaScript Custom Element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) 
 
-***BANG!*** makes your UI work easy, and your syntax beautiful, by pairing **Web Components** with smooth template syntax, minimal DOM updates (*and without VDOM*), async values and **[empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** (*a.k.a void elements / self-closing tags*).
+***BANG!*** makes your UI work easy, and your syntax beautiful, by pairing **Web Components** with smooth template syntax, minimal DOM updates (*and without VDOM*), lazy loading, async values and **[empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** (*a.k.a void elements / self-closing tags*).
 
 ## Introducing: self-closing tags for Web Components
 
@@ -43,6 +43,14 @@ Normally using web components you need to use the `<slot></slot>` tag to pull in
 Minimal diffing is all the rage these days. It ensures that you don't do more work than you need to do to reflect the changes in your state into the DOM. Other frameworks use concepts like VDOM, which has a large overhead, as well as a large amount of code. ***BANG!*** uses the high-tech granular, linear-time updating technology from [vanillaview](https://github.com/i5ik/vanillaview), but builds on it and adds improvements to make the updates even more minimal in the case of lists (only items inserted or delete are the ones that change). In all other cases, only the text, attribute names or values, that contain templated state values that have changed, are the things that change. 
 
 It really is optimally minimal. 
+
+## Lazy loading
+
+Just add a `lazy` attribute to your component to make its parent components not depend on it being loaded, in order for them to load. The component will load when its ready, a `lazy` component will not hold up it's ancestor components.
+
+```js
+<!hot-button lazy state=buy onclick=Purchase />
+```
 
 ## More Goodies
 

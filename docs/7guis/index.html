@@ -7,7 +7,6 @@
 <link rel=stylesheet href=./style.css>
 <script src=err.js></script>
 <script type=application/javascript src=./bang.js?1.618></script>
-<!--
 <script>
   bangLoaded().then(() => {
     use('sg-look-book');
@@ -24,11 +23,6 @@
     use('sg-frame');
 
     const State = {
-      counter: {
-        title: 'Counter',
-        sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-counter',
-        count: 42
-      },
       temperatureConverter: {
         title: 'Temperature Converter',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-temp-converter',
@@ -98,25 +92,16 @@
       selected: '',
       circles: []
     }, {save:true});
-  });
-</script>
--->
-<script>
-  bangFig({delayFirstPaintUntilLoaded:false});
-  bangLoaded().then(() => {
-    use('sg-counter');
-    use('sg-frame');
-
-    const State = {
+    const ctr = {
       title: 'Counter',
       sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-counter',
       count: 42
     };
-    setState('data', State, {save:true});
+    setState('ctr', ctr, {save:true});
   });
 </script>
-<body>
-<!sg-counter state=data />
+<h1>7GUIs in <em>BANG!</em></h1>
+<!sg-look-book state=data />
 <hr>
 <a target=_blank rel=noreferrer href=https://github.com/eugenkiss/7guis>What is 7GUIs?</a>
 <br>

@@ -4,7 +4,7 @@
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const MOBILE = isMobile();
-    const DOUBLE_BARREL = /\w+-\w*/; // note that this matches triple- and higher barrels, too
+    const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
     const MirrorNode = Symbol.for('[[MN]]');
@@ -24,7 +24,7 @@
         input change compositionstart compositionend text paste beforepast select cut copy
         contextmenu
       `.split(/\s+/g).filter(s => s.length).map(e => `[on${e}]`).join(','),
-      delayFirstPaintUntilLoaded: true,
+      delayFirstPaintUntilLoaded: false,
       capBangRatioAtUnity: false,
       noHandlerPassthrough: false
     };
@@ -80,7 +80,6 @@
           this.lastState = nextState;
         }
         return this.printShadow(state)
-          .then(() => this.alreadyPrinted = true)
       }
 
       connectedCallback() {
@@ -91,6 +90,7 @@
       }
 
       prepareVisibility() {
+        this.alreadyPrinted = true;
         this.classList.add('bang-el');
         this.counts.started++;
         this.classList.remove('bang-styled');
@@ -98,13 +98,14 @@
           // we do this because we want to display elements if they have no stylesheet defined
           // becuase it's reasonabgle to want to not include a stylesheet with your custom element
         fetchStyle(name).catch(err => {
-          // this.setVisible();
+          
         });
       }
 
       async untilLoaded() {
-        const myContentLoaded = this.counts.started > 0 && this.counts.finished >= this.counts.started;
         const myDependentsLoaded = (await Promise.all(this.#dependents)).every(loaded => loaded);
+        const myContentLoaded = await becomesTrue(() => this.counts.started > 0 && this.counts.finished >= this.counts.started);
+        //console.log(this, this.#dependents, myContentLoaded, myDependentsLoaded);
         return myContentLoaded && myDependentsLoaded;
       }
 
@@ -216,13 +217,22 @@
             const listening = shadow.querySelectorAll(CONFIG.EVENTS);
             listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
             // add dependents
+            const deps = findBangs(transformBang, shadow, {allDependents: true});
+            //console.log(this, {deps});
+            this.#dependents = deps.map(node => node.untilLoaded());
           }
         })
         .catch(err => DEBUG && say('warn',err))
         .finally(async () => {
           this.counts.finished++;
-          await this.untilLoaded();
-          this.setVisible();
+          const loaded = await this.untilLoaded();
+          if ( loaded ) {
+            //console.log(this, 'loaded');
+            this.setVisible();
+          } else {
+            // right now this never happens
+            //console.log('not loaded', this);
+          }
         });
       }
     };
@@ -443,9 +453,6 @@
           </style>${text}` 
         } else {
           // inlining styles for increase speed */
-            // we setVisible (add bang-styled) straight away because the inline styles block the markup
-            // so no FOUC while stylesheet link is loading, like previously: resp = `
-            // <link rel=stylesheet href=${baseUrl}/${CONFIG.styleFile} onload=setVisible>${text}`;
           resp = `<style>
             @import url('${CONFIG.componentsPath}/style.css');
             ${await fetchStyle(name).then(e => {
@@ -454,7 +461,6 @@
             })}
           </style>${text}`;
         }
-        /* comp && comp.setVisible(); */
         
         return resp;
       }).finally(async () => CACHE.set(key, await resp));
@@ -505,6 +511,7 @@
     function transformBang(current) {
       DEBUG && say('log',{transformBang},{current});
       const [name, data] = getBangDetails(current);
+      //console.log(name, current);
       DEBUG && say('log',{name, data});
 
       // replace the bang node (comment) with its actual custom element node
@@ -514,36 +521,54 @@
       current.parentNode.replaceChild(actualElement, current);
     }
 
-    function findBangs(callback, root = document.documentElement) {
+    function findBangs(callback, root = document.documentElement, {
+          allDependents: allDependents = false
+        } = {}) {
+      const found = allDependents ? 
+        node => node.nodeType === Node.COMMENT_NODE || 
+          node.nodeType === Node.ELEMENT_NODE 
+        :
+        node => node.nodeType === Node.COMMENT_NODE
+      ;
+      const Filter = allDependents ? 
+        NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_ELEMENT
+        :
+        NodeFilter.SHOW_COMMENT
+      ;
+      const Details = allDependents ? 
+        getNodeDetails  
+        :
+        getBangDetails
+      ;
+      const Return = allDependents ? NodeFilter.FILTER_SKIP : NodeFilter.FILTER_REJECT;
       const Acceptor = {
         acceptNode(node) {
-          if ( node.nodeType !== Node.COMMENT_NODE ) return NodeFilter.FILTER_SKIP;
-          const [name] = getBangDetails(node); 
-          if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
-          else return NodeFilter.FILTER_REJECT;
+          if ( found(node) ) {
+            const [name] = Details(node); 
+            if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
+            else return Return; 
+          } else if ( isDocument(node) ) {
+            return NodeFilter.FILTER_ACCEPT;
+          } else return NodeFilter.FILTER_SKIP;
         }
       };
-      const iterator = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT, Acceptor);
+      const iterator = document.createTreeWalker(root, Filter, Acceptor);
       const replacements = [];
+      const dependents = [];
+
+      DEBUG && console.log('root', root, {allDependents});
 
       // handle root node
-        // it's a special case because it will be present in the iteration even if
-        // the NodeFilter would filter it out if it were not the root
-      let current = iterator.currentNode;
+        // Note:
+          // it's a special case because it will be present in the iteration even if
+          // the NodeFilter would filter it out if it were not the root
+        let current = iterator.currentNode;
 
-      if ( Acceptor.acceptNode(current) === NodeFilter.FILTER_ACCEPT ) {
-        if ( !TRANSFORMING.has(current) ) {
-          TRANSFORMING.add(current);
-          const target = current;
-          replacements.push(() => transformBang(target));
-        }
-      }
-
-      // handle any descendents
-        while (true) {
-          current = iterator.nextNode();
-          if ( ! current ) break;
-
+        // Note:
+          // we need isBangTag here because a node that doesn't pass 
+          // Acceptor.accept will stop show up as the first currentNode
+          // in a tree iterator
+        if ( isBangTag(current) ) {
           if ( !TRANSFORMING.has(current) ) {
             TRANSFORMING.add(current);
             const target = current;
@@ -551,13 +576,58 @@
           }
         }
 
+      // handle any descendents
+        while (true) {
+          current = iterator.nextNode();
+          if ( ! current ) break;
+
+          // Note:
+            // a small optimization is replace isBangTag by the following check
+            // we don't need isBangTag here because it's already passed the 
+            // equivalent check in Acceptor.acceptNode
+          if ( current.nodeType === Node.COMMENT_NODE ) {
+            if ( !TRANSFORMING.has(current) ) {
+              TRANSFORMING.add(current);
+              const target = current;
+              replacements.push(() => transformBang(target));
+            }
+          }
+          dependents.push(current);
+        }
+
       while(replacements.length) replacements.pop()();
+
+      return dependents.map(node => 
+        node.nodeType === Node.COMMENT_NODE ? 
+          node.linkedCustomElement 
+          : 
+          node 
+      ).filter(el => !el.hasAttribute('lazy'));
+    }
+
+    function isBangTag(node) {
+      return node.nodeType === Node.COMMENT_NODE && getBangDetails(node)[0].match(DOUBLE_BARREL);
+    }
+
+    function isDocument(node) {
+      return node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||
+        node.nodeType === Node.DOCUMENT_NODE
+      ;
     }
 
     function getBangDetails(node) {
       const text = node.textContent.trim();
       const [name, ...data] = text.split(/[\s\t]/g);
-      return [name, data.join(' ')];
+      return [name.trim(), data.join(' ')];
+    }
+
+    function getNodeDetails(node) {
+      switch(node.nodeType) {
+        case Node.COMMENT_NODE:
+          return getBangDetails(node);
+        case Node.ELEMENT_NODE:
+          return [node.localName.trim(), node.attributes];
+      }
     }
 
     async function process(x, state) {
@@ -707,7 +777,7 @@
           await sleep(47);
           if ( check() ) break;
         }
-        res();
+        res(true);
       });
     }
 

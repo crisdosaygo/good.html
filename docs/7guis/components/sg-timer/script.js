@@ -2,8 +2,8 @@ class Component extends Base {
   constructor() {
     super();
     const state = cloneState('data');
-    loaded().then(() => {
-      //console.log('time keep');
+    this.untilLoaded().then(async () => {
+      await sleep(500);
       this.startKeepingTime(state);
     });
     setState('data', state);

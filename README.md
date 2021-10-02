@@ -5,40 +5,53 @@
   >
 </p>
 
-This is ***BANG!***:
+This is ***BANG!***, making a component:
 
-`my-el/markup.html`
+[`components/sg-counter/markup.html`](https://github.com/i5ik/_____/blob/main/docs/7guis/components/sg-counter/markup.html)
 ```jsx
-  <i-am-a-custom-element state=thisIsAStateKey
-    onclick=functionNameOnCustomElementClass>
-  >
-    <!im-another-custom-element
-      ontouchstart=funcOnMyClassOrMyParents
-      oncompositionend=anotherHandlerFunc
-      ondrag=noteTheShortSyntax
-      state=${aStateObject}
-    />
-    <p>${paragraphTextInScope}</p>
-  </i-am-a-custom-element>
+<sg-frame state=${_self}> 
+  <button id=counter onclick=Increment>Count</button>
+  <label for=counter>${count}</label>
+</sg-frame>
 ```
+
+[`components/sg-counter/script.js`](https://github.com/i5ik/_____/blob/main/docs/7guis/components/sg-counter/script.js):
+```jsx
+class Counter extends Base {
+  Increment() {
+    const {state} = this;
+    state.count++;
+    this.state = state;
+  }
+}
+```
+
+[`components/sg-counter/style.css`](https://github.com/i5ik/_____/blob/main/docs/7guis/components/sg-counter/style.css):
+```css
+label {
+  min-width: 4.5ch;
+  display: inline-block;
+  text-align: right;
+}
+```
+
+This is ***BANG!***, using a component:
 
 `index.html`:
 ```html
+<link rel=stylesheet href=components/style.css>
 <script src=//unpkg.com/bang.html></script>
 <script>
-  use('my-el');
-  use('i-am-a-custom-element');
-  use('im-another-custom-element');
-
-  setState('thisIsAStateKey', {
-    aStateObject: {},
-    paragraphTextInScope: `Lorem ipsum, just kidding. I speak English, not Latin. Har har har.`
-  });
+	use('sg-frame');
+	use('sg-counter');
 </script>
-<!my-el state=thisIsAStateKey />
+<!sg-counter lazy state=ctr />
 ```
 
-That is all. 
+You need to fill out the `sg-frame` component. But that is all.
+
+
+This is ***BANG!***
 
 For more, [read the intro](INTRO.md).
 ------------------------------------------------------------------

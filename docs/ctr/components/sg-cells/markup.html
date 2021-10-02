@@ -1,0 +1,24 @@
+<sg-frame state=${_self}>
+  <table>
+    <thead>
+      <tr>
+        <th class=top-left></th>
+        ${columnNames.map(name => F`${{key:`col${name}`}}
+        <th class="label column">${name}</th>
+        `)}
+      </tr>
+    </thead>
+    <tbody>${rowNames.map((name,y) => F`${{key:`row${name}`}}
+      <tr>
+        <td class="label row">${name}</td>
+        ${columnNames.map((_, x) => {
+          const key = `${x},${y}`;
+          return F`${{key}}
+        <td>
+          <!sg-cell state=${{key, formula:formulae[key], value: values[key]}} />
+        </td>
+        `})}
+      </tr>
+    `)}</tbody>
+  </table>
+</sg-frame>
