@@ -1,11 +1,9 @@
 <link rel=stylesheet href=components/style.css>
 <script src=bang.js></script>
 <script>
-  bangLoaded().then(() => {
-    use('sg-frame');
-    use('sg-counter');
-    setState('ctr', {title: 'Counter', sourceUrl: '#', count:0});
-  });
+  use('sg-frame');
+  use('sg-counter');
+  setState('ctr', {title: 'Counter', sourceUrl: '#', count:0});
 </script>
 <body>
   <!sg-counter lazy state=ctr />

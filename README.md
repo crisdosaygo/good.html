@@ -42,8 +42,8 @@ This is ***BANG!***, using a component:
 <link rel=stylesheet href=components/style.css>
 <script src=//unpkg.com/bang.html></script>
 <script>
-	use('sg-frame');
-	use('sg-counter');
+  use('sg-frame');
+  use('sg-counter');
 </script>
 <!sg-counter lazy state=ctr />
 ```
