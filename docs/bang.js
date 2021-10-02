@@ -52,6 +52,7 @@
         return Array.from(Base.#activeAttrs);
       }
       #name = name;
+      #dependents = [];
 
       constructor({task: task = () => void 0} = {}) {
         super();
@@ -96,13 +97,19 @@
         // this is like an onerror event for stylesheet's 
           // we do this because we want to display elements if they have no stylesheet defined
           // becuase it's reasonabgle to want to not include a stylesheet with your custom element
-        fetchStyle(name).catch(err => this.setVisible());
+        fetchStyle(name).catch(err => {
+          // this.setVisible();
+        });
+      }
+
+      async untilLoaded() {
+        const myContentLoaded = this.counts.started > 0 && this.counts.finished >= this.counts.started;
+        const myDependentsLoaded = (await Promise.all(this.#dependents)).every(loaded => loaded);
+        return myContentLoaded && myDependentsLoaded;
       }
 
       setVisible() {
-        if ( this.counts.started > 0 && this.counts.finished >= this.counts.started ) {
-          this.classList.add('bang-styled');
-        }
+        this.classList.add('bang-styled');
       }
 
       get state() {
@@ -208,11 +215,13 @@
             cooked.to(shadow, 'insert');
             const listening = shadow.querySelectorAll(CONFIG.EVENTS);
             listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            // add dependents
           }
         })
         .catch(err => DEBUG && say('warn',err))
-        .finally(() => {
+        .finally(async () => {
           this.counts.finished++;
+          await this.untilLoaded();
           this.setVisible();
         });
       }
@@ -407,14 +416,16 @@
       const baseUrl = `${CONFIG.componentsPath}/${name}`;
       if ( CACHE.has(key) ) {
         const markup = CACHE.get(key);
-        if ( CACHE.get(styleKey) instanceof Error ) comp && comp.setVisible();
+        if ( CACHE.get(styleKey) instanceof Error ) { 
+          /*comp && comp.setVisible(); */
+        }
         
         // if there is an error style and we are still includig that link
         // we generate and cache the markup again to omit such a link element
         if ( CACHE.get(styleKey) instanceof Error && markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {
           // then we need to set the cache for markup again and remove the link to the stylesheet which failed 
         } else {
-          comp && comp.setVisible();
+          /* comp && comp.setVisible(); */
           return markup;
         }
       }
@@ -443,7 +454,7 @@
             })}
           </style>${text}`;
         }
-        comp && comp.setVisible();
+        /* comp && comp.setVisible(); */
         
         return resp;
       }).finally(async () => CACHE.set(key, await resp));
