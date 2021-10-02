@@ -35,10 +35,11 @@
     const Started = new Set();
     const TRANSFORMING = new WeakSet();
     const Dependents = new Map();
-    const Counts = {
-      started: 0,
-      finished: 0
+    class Counter {
+      started = 0;
+      finished = 0;
     };
+    const Counts = new Counter;
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
     let hindex = 0;
     let observer; // global mutation observer
@@ -55,6 +56,7 @@
       constructor({task: task = () => void 0} = {}) {
         super();
         DEBUG && say('log',name, 'constructed');
+        this.counts = new Counter;
         this.print().then(task);
       }
 
@@ -64,7 +66,6 @@
 
       // BANG! API methods
       async print() {
-        Counts.started++;
         if ( !this.alreadyPrinted ) {
           this.prepareVisibility();
         }
@@ -90,6 +91,7 @@
 
       prepareVisibility() {
         this.classList.add('bang-el');
+        this.counts.started++;
         this.classList.remove('bang-styled');
         // this is like an onerror event for stylesheet's 
           // we do this because we want to display elements if they have no stylesheet defined
@@ -98,7 +100,31 @@
       }
 
       setVisible() {
-        this.classList.add('bang-styled');
+        if ( this.counts.started > 0 && this.counts.finished >= this.counts.started ) {
+          this.classList.add('bang-styled');
+        }
+      }
+
+      get state() {
+        const key = this.getAttribute('state');
+        if ( key.startsWith('system-key:') ) {
+          throw new TypeError(`Cannot use cloneState built-in when component has an implicit key. 
+            Instead use the global cloneState(key) method with an appropriate string key 
+            from an ancestor component that sets a string key.
+          `);
+        }
+        return cloneState(key);
+      }
+
+      set state(newValue) {
+        const key = this.getAttribute('state');
+        if ( key.startsWith('system-key:') ) {
+          throw new TypeError(`Cannot use setState built-in when component has an implicit key. 
+            Instead use the global setState(key, data) method with an appropriate string key 
+            from an ancestor component that sets a string key.
+          `);
+        }
+        return setState(key, newValue);
       }
 
       // Web Components methods
@@ -185,7 +211,10 @@
           }
         })
         .catch(err => DEBUG && say('warn',err))
-        .finally(() => Counts.finished++)
+        .finally(() => {
+          this.counts.finished++;
+          this.setVisible();
+        });
       }
     };
 
@@ -295,6 +324,8 @@
         DEBUG && console.log({acquirers, Dependents});
         if ( acquirers ) acquirers.forEach(host => host.print());
       }
+      
+      return true;
     }
 
     function patchState(key, state) {

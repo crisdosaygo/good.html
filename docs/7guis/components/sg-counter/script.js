@@ -1,7 +1,7 @@
 class Counter extends Base {
   Increment() {
-    const state = cloneState('data'); 
-    state.counter.count++;
-    setState('data', state);
+    const {state} = this;
+    state.count++;
+    this.state = state;
   }
 }
