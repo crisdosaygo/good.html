@@ -69,7 +69,7 @@
           this.isLazy = true;
           if ( this.hasAttribute('super') ) {
             this.superLazy = true;
-            loaded().then(() => this.print().then(task));
+            loaded().then(() => sleep(405*Math.random()).then(() => this.print().then(task)));
           } else {
             if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
               sleep(162*Math.random()).then(() => this.print().then(task));

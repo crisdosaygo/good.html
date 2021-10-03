@@ -5,6 +5,7 @@
 <meta name=viewport content="width=device-width,initial-scale=1">
 <meta name=description content="7GUIs implemented in BANG!, a framework that uses Web Components, Shadow DOM, scoped styles, template syntax, async templating, minimal DOM diffing with granular updates and no VDOM, and custom void tags!">
 <link rel=stylesheet href=./style.css>
+<link rel=stylesheet href=./rainbow.css>
 <script src=err.js></script>
 <script type=application/javascript src=./bang.js?1.618></script>
 <script>
@@ -102,7 +103,9 @@
     //loaded().then(() => alert('loaded'));
   });
 </script>
-<h1>7GUIs in <em>BANG!</em></h1>
+<div id=shadowBox>
+  <h1 class="rainbow rainbow_text_animated">7GUIs in <em>BANG!</em></h1>
+</div>
 <!sg-look-book state=data />
 <hr>
 <a target=_blank rel=noreferrer href=https://github.com/eugenkiss/7guis>What is 7GUIs?</a>
