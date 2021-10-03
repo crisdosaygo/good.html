@@ -1,6 +1,5 @@
 explore
 
-- each component is invisible until it is loaded. No work.
-- requesting files during use call. No work.
-- changing timeout for becomesTrue. No work.
--- moving becomesTrue to a subscription push rather than polling model. 
+- each component is invisible until it is loaded. Works with lazy as long as we don't pipleine the fetch.
+- moving becomesTrue to a subscription push rather than polling model. Improves perf.
+- pipeLining fetches (max concurrent requests) does not improve load performance. I want each component to load separately, when it's ready, but this does not happen. I think because the work is CPU and DOM bound. So holding back network requests doesn't work. I need to split and batch or pipeline the DOM rendering.

@@ -1,6 +1,7 @@
 (function () {
   // constants, classes, config and state
     const DEBUG = false;
+    const PIPELINE_REQUESTS = false;
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const MOBILE = isMobile();
@@ -35,12 +36,16 @@
     const Started = new Set();
     const TRANSFORMING = new WeakSet();
     const Dependents = new Map();
+    const MAX_CONCURRENT_REQUESTS = 5;
+    const RequestPipeLine = new Map();
+    const RequestWaiting = [];
     class Counter {
       started = 0;
       finished = 0;
     };
     const Counts = new Counter;
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
+    let RequestId = 0;
     let hindex = 0;
     let observer; // global mutation observer
     let systemKeys = 1;
@@ -58,7 +63,11 @@
         super();
         DEBUG && say('log',name, 'constructed');
         this.counts = new Counter;
-        this.print().then(task);
+        if ( this.hasAttribute('lazy') ) {
+          sleep(162*Math.random()).then(() => this.print().then(task));
+        } else {
+          this.print().then(task);
+        }
       }
 
       get name() {
@@ -98,11 +107,13 @@
           // we do this because we want to display elements if they have no stylesheet defined
           // becuase it's reasonabgle to want to not include a stylesheet with your custom element
         fetchStyle(name).catch(err => {
-          
+          say('warn!', err);
         });
       }
 
       async untilLoaded() {
+        // we evaluate the dependents as lazily and as late as possible
+        this.#dependents = this.#dependents
         const myDependentsLoaded = (await Promise.all(this.#dependents)).every(loaded => loaded);
         const myContentLoaded = await becomesTrue(() => this.counts.started > 0 && this.counts.finished >= this.counts.started);
         //console.log(this, this.#dependents, myContentLoaded, myDependentsLoaded);
@@ -222,16 +233,19 @@
             this.#dependents = deps.map(node => node.untilLoaded());
           }
         })
-        .catch(err => DEBUG && say('warn',err))
+        .catch(err => DEBUG && say('warn!',err))
         .finally(async () => {
-          this.counts.finished++;
-          const loaded = await this.untilLoaded();
-          if ( loaded ) {
-            //console.log(this, 'loaded');
-            this.setVisible();
-          } else {
-            // right now this never happens
-            //console.log('not loaded', this);
+          if ( ! this.loaded ) {
+            this.counts.finished++;
+            const loaded = await this.untilLoaded();
+            if ( loaded ) {
+              this.loaded = loaded;
+              //console.log(this, 'loaded');
+              this.setVisible();
+            } else {
+              // right now this never happens
+              //console.log('not loaded', this);
+            }
           }
         });
       }
@@ -256,9 +270,10 @@
           try {
             component = eval(Compose);
           } catch(e) {
-            DEBUG && say('warn',e, Compose, component)
+            say('warn!',e, Compose, component)
           }
-        }).catch(() => {  // otherwise if there is no such extension script, just use the Base class
+        }).catch(err => {  // otherwise if there is no such extension script, just use the Base class
+          DEBUG && say('log!', err);
           component = BangBase(name);
         });
       
@@ -383,6 +398,47 @@
       return becomesTrue(loadCheck);
     }
 
+  // network pipelining (for performance)
+    async function pipeLinedFetch(...args) {
+      if ( !PIPELINE_REQUESTS ) return fetch(...args);
+      const key = nextRequestId();
+      const result = {args, started: new Date};
+      let pr;
+      if ( RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
+        pr = fetch(...args);
+        result.pr = pr;
+        RequestPipeLine.set(key, result);
+        DEBUG && console.log(`${RequestPipeLine.size} concurrent running requests. Request just started and added at ${result.started}`);
+        const complete = r => {
+          const result = RequestPipeLine.get(key);
+          result.finished = new Date;
+          result.duration = result.finished - result.started;
+          RequestPipeLine.delete(key); 
+          DEBUG && console.log(`${RequestPipeLine.size} concurrent running requests. Request just resolved and removed after ${(result.duration/1000).toFixed(1)} seconds.`);
+          if ( RequestWaiting.length && RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
+            const result = RequestWaiting.shift();
+            const req = fetch(...result.args);
+            req.then(complete).then(r => (result.resolve(r), r)).catch(e => (result.reject(e), e));
+            RequestPipeLine.set(key, result);
+            DEBUG && console.log(`${RequestPipeLine.size} concurrent running requests. Request just started and added at ${result.started}`);
+          }
+          return r;
+        };
+        pr.then(complete);
+      } else {
+        let resolve, reject;
+        pr = new Promise((res,rej) => (resolve = res, reject = rej));
+        result.resolve = resolve;
+        result.reject = reject;
+        RequestWaiting.push(result);
+      }
+      return pr;
+    }
+
+    function nextRequestId() {
+      return `${RequestId++}${Math.random().toString(36)}`;
+    }
+
   // helpers
     async function install() {
       Object.assign(globalThis, {
@@ -442,19 +498,25 @@
       
       const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;
       let resp;
-      const markupText = await fetch(markupUrl).then(async r => { 
+      const markupText = await pipeLinedFetch(markupUrl).then(async r => { 
         let text = '';
         if ( r.ok ) text = await r.text();
         else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
       
         if ( CACHE.get(styleKey) instanceof Error ) { 
           resp = `<style>
-            @import url('${CONFIG.componentsPath}/style.css');
+            ${await fetchFile('', 'style.css').then(e => {
+              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
+              return e;
+            })}
           </style>${text}` 
         } else {
           // inlining styles for increase speed */
           resp = `<style>
-            @import url('${CONFIG.componentsPath}/style.css');
+            ${await fetchFile('', 'style.css').then(e => {
+              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
+              return e;
+            })}
             ${await fetchStyle(name).then(e => {
               if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
               return e;
@@ -476,16 +538,17 @@
 
       if ( CACHE.has(key) ) return CACHE.get(key);
 
-      const url = `${CONFIG.componentsPath}/${name}/${file}`;
+      const url = `${CONFIG.componentsPath}/${name ? name + '/' : ''}${file}`;
       let resp;
-      const fileText = await fetch(url).then(r => { 
+      const fileText = await pipeLinedFetch(url).then(r => { 
         if ( r.ok ) {
           resp = r.text();
           return resp;
         } 
         resp = new TypeError(`Fetch error: ${url}, ${r.statusText}`);
         throw resp;
-      }).finally(async () => CACHE.set(key, await resp));
+      })
+      .finally(async () => CACHE.set(key, await resp));
       
       return fileText;
     }
@@ -652,7 +715,7 @@
       }
       else
 
-      if ( x instanceof Promise ) return await x.catch(err => err+'');
+      if ( x instanceof Promise ) return await x.catch(err => (say('warn!', err), err+''));
       else
 
       if ( x instanceof Element ) return x.outerHTML;
@@ -666,7 +729,7 @@
         // its values are recursively processed via this same function
         return (await Promise.all(
           (
-            await Promise.all(Array.from(x)).catch(e => err+'')
+            await Promise.all(Array.from(x)).catch(e => (say('warn!', err), err+''))
           ).map(v => process(v, state))
         )).join(' ');
       }
@@ -739,7 +802,7 @@
         }
         DEBUG && say('log','_self', state._self);
       } catch(e) {
-        DEBUG && say('warn',
+        say('warn!',
           `Cannot add '_self' self-reference property to state. 
             This enables a component to inspect the top-level state object it is passed.`
         );
@@ -751,7 +814,7 @@
         DEBUG && console.log({cooked});
         return cooked;
       } catch(error) {
-        say('error', 'Template error', {markup, state, error});
+        say('error!', 'Template error', {markup, state, error});
         throw error;
       }
     }
@@ -803,7 +866,7 @@
         waiters.list.push(res);
         return pr;
       } catch(e) {
-        console.warn(e);
+        //say('warn!', e);
       }
     }
 
