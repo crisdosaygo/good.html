@@ -1,10 +1,12 @@
 (function () {
   // constants, classes, config and state
     const DEBUG = false;
-    const PIPELINE_REQUESTS = false;
+    const PIPELINE_REQUESTS = true;
+    const RANDOM_SLEEP_ON_FIRST_PRINT = true;
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const MOBILE = isMobile();
+    const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
@@ -64,7 +66,11 @@
         DEBUG && say('log',name, 'constructed');
         this.counts = new Counter;
         if ( this.hasAttribute('lazy') ) {
-          sleep(162*Math.random()).then(() => this.print().then(task));
+          if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
+            sleep(162*Math.random()).then(() => this.print().then(task));
+          } else {
+            this.print().then(task);
+          }
         } else {
           this.print().then(task);
         }
@@ -170,7 +176,7 @@
             const stateObject = cloneState(stateKey);
             
             if ( isUnset(stateObject) ) {
-              throw new TypeError(`
+              throw new ReferenceError(`
                 <${name}> constructor passed state key ${stateKey} which is unset. It must be set.
               `);
             }
@@ -370,7 +376,7 @@
       if ( getOnly ) return STATE.get(key);
       if ( STATE.has(key) ) return clone(STATE.get(key));
       else {
-        throw new TypeError(`State store does not have the key ${key}`);
+        throw new ReferenceError(`State store does not have the key ${key}`);
       }
     }
 
@@ -405,7 +411,7 @@
       const result = {args, started: new Date};
       let pr;
       if ( RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
-        pr = fetch(...args);
+        pr = fetch(...args).catch(err => (say('log', err), err));
         result.pr = pr;
         RequestPipeLine.set(key, result);
         DEBUG && console.log(`${RequestPipeLine.size} concurrent running requests. Request just started and added at ${result.started}`);
@@ -505,7 +511,7 @@
       
         if ( CACHE.get(styleKey) instanceof Error ) { 
           resp = `<style>
-            ${await fetchFile('', 'style.css').then(e => {
+            ${await fetchFile('', 'style.css').catch(err => `/* ${err+''} */`).then(e => {
               if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
               return e;
             })}
@@ -513,7 +519,7 @@
         } else {
           // inlining styles for increase speed */
           resp = `<style>
-            ${await fetchFile('', 'style.css').then(e => {
+            ${await fetchFile('', 'style.css').catch(err => `/* ${err+''} */`).then(e => {
               if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
               return e;
             })}
@@ -545,7 +551,7 @@
           resp = r.text();
           return resp;
         } 
-        resp = new TypeError(`Fetch error: ${url}, ${r.statusText}`);
+        resp = new ReferenceError(`Fetch error: ${url}, ${r.statusText}`);
         throw resp;
       })
       .finally(async () => CACHE.set(key, await resp));
@@ -710,7 +716,7 @@
       if ( isUnset(x) ) {
         if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || '';
         else {
-          throw new TypeError(`Value cannot be unset, was: ${x}`);
+          throw new ReferenceError(`Value cannot be unset, was: ${x}`);
         }
       }
       else
@@ -884,7 +890,7 @@
     }
 
     function say(mode, ...stuff) {
-      (DEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && alert(`${mode}: ${stuff.join('\n')}`);
+      (DEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && !LIGHTHOUSE && alert(`${mode}: ${stuff.join('\n')}`);
       (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!','')](...stuff);
     }
 
