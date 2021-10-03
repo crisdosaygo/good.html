@@ -66,10 +66,16 @@
         DEBUG && say('log',name, 'constructed');
         this.counts = new Counter;
         if ( this.hasAttribute('lazy') ) {
-          if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
-            sleep(162*Math.random()).then(() => this.print().then(task));
+          this.isLazy = true;
+          if ( this.hasAttribute('super') ) {
+            this.superLazy = true;
+            loaded().then(() => this.print().then(task));
           } else {
-            this.print().then(task);
+            if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
+              sleep(162*Math.random()).then(() => this.print().then(task));
+            } else {
+              this.print().then(task);
+            }
           }
         } else {
           this.print().then(task);
@@ -108,6 +114,9 @@
         this.alreadyPrinted = true;
         this.classList.add('bang-el');
         this.counts.started++;
+        if ( !this.isLazy ) {
+          Counts.started++;
+        }
         this.classList.remove('bang-styled');
         // this is like an onerror event for stylesheet's 
           // we do this because we want to display elements if they have no stylesheet defined
@@ -248,6 +257,9 @@
               this.loaded = loaded;
               //console.log(this, 'loaded');
               this.setVisible();
+              if ( ! this.isLazy ) {
+                setTimeout(() => Counts.finished++, 0);
+              }
             } else {
               // right now this never happens
               //console.log('not loaded', this);
