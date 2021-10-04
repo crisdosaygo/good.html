@@ -1,5 +1,15 @@
 :not(:defined), .bang-el:not(.bang-styled) {
-  display: none;
+  visibility: hidden;
+}
+
+[lazy].bang-el:not(.bang-styled)::after {
+  display: inline-block;
+  content: "Loading...";
+  background-image: url(https://user-images.githubusercontent.com/22254235/135793966-edd05c8e-777e-41f1-b228-b3c2c1a7949b.gif);
+  background-size: contain;
+  background-repeat: no-repeat;
+  color: transparent;
+  visibility: visible;
 }
 
 :host {
