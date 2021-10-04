@@ -3,7 +3,6 @@ class Component extends Base {
     super();
     const state = cloneState('data');
     this.untilLoaded().then(async () => {
-      await sleep(2500);
       this.startKeepingTime(state);
     });
     setState('data', state);

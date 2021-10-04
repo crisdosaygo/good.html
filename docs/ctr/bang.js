@@ -298,6 +298,40 @@
       self.customElements.define(name, component);
       DEBUG && self.customElements.whenDefined(name).then(obj => say('log',name, 'defined', obj));
     }
+    
+    // run a map of a list of work with configurable breaks in between
+    // to let the main thread breathe at the same time 
+    async function schedule(list, func, {
+          batchSize: batchSize = 1,
+          yieldTime: yieldTime = 25,
+          strictSerial: strictSerial = false,
+          useFrame: useFrame = false
+        } = {}) {
+      // note list can be async iterable
+      const results = [];
+      let i = 0;
+      let currentBatch = 0;
+      for await ( const item of list ) {
+        let result;
+        if ( strictSerial ) {
+          result = await func(item, i);
+        } else {
+          result = func(item, i);
+        }
+        results.push(result);
+        i++;
+        currentBatch++;
+        if ( currentBatch < batchSize ) continue;
+        currentBatch = 0;
+
+        if ( useFrame ) {
+          await nextFrame();
+        } else if ( yieldTime > -1 ) {
+          await sleep(yieldTime);
+        }
+      }
+      return results;
+    }
 
     function undoState(key, transform = x => x) {
       while( hindex > 0 ) {
@@ -890,6 +924,10 @@
 
     async function sleep(ms) {
       return new Promise(res => setTimeout(res, ms));
+    }
+    
+    async function nextFrame() {
+      return new Promise(res => requestAnimationFrame(res));
     }
 
     function isIterable(y) {

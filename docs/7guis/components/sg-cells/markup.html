@@ -8,10 +8,10 @@
         `)}
       </tr>
     </thead>
-    <tbody>${rowNames.map((name,y) => F`${{key:`row${name}`}}
+    <tbody>${schedule(rowNames, (name,y) => F`${{key:`row${name}`}}
       <tr>
         <td class="label row">${name}</td>
-        ${columnNames.map((_, x) => {
+        ${schedule(columnNames, (_, x) => {
           const key = `${x},${y}`;
           return F`${{key}}
         <td>
