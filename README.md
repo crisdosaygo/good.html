@@ -2,6 +2,9 @@
   <img width=80% 
     src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
+  <img width=80% 
+    src=https://user-images.githubusercontent.com/22254235/135863650-a0a44bbd-414e-4606-aaf4-64e43f5abcc9.PNG
+  >
 </p>
 
 ***BANG!*** is a view library that prints custom elements, so you get style encapsulation, and component-powered reusability baked-in. It also has minimal DOM diffing, JavaScript templating syntax, zero dependences and needs to transpiler. Built with the power of the web, in 
