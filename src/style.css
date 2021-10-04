@@ -1,3 +1,22 @@
 :not(:defined), .bang-el:not(.bang-styled) {
   visibility: hidden;
 }
+body > .bang-el:not(.bang-styled)::before,
+[lazy].bang-el:not(.bang-styled)::before {
+  position: relative;
+  top: 0;
+  margin: 1.5rem 0.5rem;
+  display: inline-block;
+  width: fit-content;
+  max-width: 20px;
+  content: "Loading...";
+  background-image: url(https://user-images.githubusercontent.com/22254235/135793966-edd05c8e-777e-41f1-b228-b3c2c1a7949b.gif);
+  background-size: contain;
+  background-repeat: no-repeat;
+  /*
+  background-color: red;
+  color: blue;
+  */
+  color: transparent;
+  visibility: visible;
+}
