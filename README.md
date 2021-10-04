@@ -64,6 +64,7 @@ For more, [read the intro](INTRO.md). But here's a quick overview of features:
 - Simple, low learning curve. Uses the HTML, JavaScript and CSS you already know, just provides some enhancements. No DSLs or transpilers required.
 - `lazy` and `super lazy` loading options, initiated by those attributes on your component. Lazy components do not delay the load of any ancestor components, and super lazy components only begin loading after the rest of the page has finished loading first.
 - Async value resolution in templates. You can plop async values right into your templates, even lists of async values, arbitrarily nested, and ***BANG!*** will resolve them all.
-- 
+
+
 ------------------------------------------------------------------
 
