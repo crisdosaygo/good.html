@@ -12,14 +12,14 @@
     <tbody>${schedule(rowNames, async (name,y) => await F`${{key:`row${name}`}}
       <tr>
         <td class="label row">${name}</td>
-        ${schedule(columnNames, async (_, x) => {
+        ${schedule(columnNames, (_, x) => {
           const key = `${x},${y}`;
-          return await F`${{key}}
+          return F`${{key}}
         <td>
           <!sg-cell state=${{key, formula:formulae[key], value: values[key]}} />
         </td>
         `}, {batchSize: 3, useFrame: true})}
       </tr>
-    `, {yieldTime: 150, batchSize: 1})}</tbody>
+    `, {yieldTime: 100, batchSize: 1, strictSerial: true})}</tbody>
   </table>
 </sg-frame>
