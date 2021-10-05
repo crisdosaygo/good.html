@@ -8,17 +8,18 @@
         `)}
       </tr>
     </thead>
-    <tbody>${schedule(rowNames, (name,y) => F`${{key:`row${name}`}}
+    <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
+    <tbody>${schedule(rowNames, async (name,y) => await F`${{key:`row${name}`}}
       <tr>
         <td class="label row">${name}</td>
-        ${schedule(columnNames, (_, x) => {
+        ${schedule(columnNames, async (_, x) => {
           const key = `${x},${y}`;
-          return F`${{key}}
+          return await F`${{key}}
         <td>
           <!sg-cell state=${{key, formula:formulae[key], value: values[key]}} />
         </td>
-        `})}
+        `}, {batchSize: 3, useFrame: true})}
       </tr>
-    `)}</tbody>
+    `, {yieldTime: 150, batchSize: 1})}</tbody>
   </table>
 </sg-frame>

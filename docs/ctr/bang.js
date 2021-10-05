@@ -46,7 +46,11 @@
       finished = 0;
     };
     const Counts = new Counter;
+    const Finished = () => Counts.finished++;
+    const SHADOW_OPTS = {mode:'open'};
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
+    const INSERT = 'insert';
+    const ALL_DEPS = {allDependents: true};
     let RequestId = 0;
     let hindex = 0;
     let observer; // global mutation observer
@@ -64,6 +68,39 @@
       constructor({task: task = () => void 0} = {}) {
         super();
         DEBUG && say('log',name, 'constructed');
+        this.cookMarkup = async (markup, state) => {
+          const cooked = await cook.call(this, markup, state);
+          DEBUG && console.log(cooked);
+          if ( !this.shadowRoot ) {
+            const shadow = this.attachShadow(SHADOW_OPTS);
+            //console.log({observer});
+            observer.observe(shadow, OBSERVE_OPTS);
+            cooked.to(shadow, INSERT);
+            const listening = shadow.querySelectorAll(CONFIG.EVENTS);
+            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            // add dependents
+            const deps = findBangs(transformBang, shadow, ALL_DEPS);
+            //console.log(this, {deps});
+            this.#dependents = deps.map(node => node.untilLoaded());
+          }
+        }
+        this.markLoaded = async () => {
+          if ( ! this.loaded ) {
+            this.counts.finished++;
+            const loaded = await this.untilLoaded();
+            if ( loaded ) {
+              this.loaded = loaded;
+              //console.log(this, 'loaded');
+              this.setVisible();
+              if ( ! this.isLazy ) {
+                setTimeout(Finished, 0);
+              }
+            } else {
+              // right now this never happens
+              //console.log('not loaded', this);
+            }
+          }
+        }
         this.counts = new Counter;
         if ( this.hasAttribute('lazy') ) {
           this.isLazy = true;
@@ -230,42 +267,9 @@
       }
 
       printShadow(state) {
-        return fetchMarkup(this.#name, this).then(async markup => {
-          const cooked = await cook.call(this, markup, state);
-          DEBUG && console.log(cooked);
-          if ( this.shadowRoot ) {
-            //this.shadowRoot.replaceChildren(nodes);
-          } else {
-            const shadow = this.attachShadow({mode:'open'});
-            //console.log({observer});
-            observer.observe(shadow, OBSERVE_OPTS);
-            cooked.to(shadow, 'insert');
-            const listening = shadow.querySelectorAll(CONFIG.EVENTS);
-            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-            // add dependents
-            const deps = findBangs(transformBang, shadow, {allDependents: true});
-            //console.log(this, {deps});
-            this.#dependents = deps.map(node => node.untilLoaded());
-          }
-        })
+        return fetchMarkup(this.#name, this).then(markup => this.cookMarkup(markup, state))
         .catch(err => DEBUG && say('warn!',err))
-        .finally(async () => {
-          if ( ! this.loaded ) {
-            this.counts.finished++;
-            const loaded = await this.untilLoaded();
-            if ( loaded ) {
-              this.loaded = loaded;
-              //console.log(this, 'loaded');
-              this.setVisible();
-              if ( ! this.isLazy ) {
-                setTimeout(() => Counts.finished++, 0);
-              }
-            } else {
-              // right now this never happens
-              //console.log('not loaded', this);
-            }
-          }
-        });
+        .finally(this.markLoaded);
       }
     };
 
@@ -303,8 +307,8 @@
     // to let the main thread breathe at the same time 
     async function schedule(list, func, {
           batchSize: batchSize = 1,
-          yieldTime: yieldTime = 25,
-          strictSerial: strictSerial = false,
+          yieldTime: yieldTime = 50,
+          strictSerial: strictSerial = true,
           useFrame: useFrame = false
         } = {}) {
       // note list can be async iterable
@@ -741,7 +745,7 @@
         case Node.COMMENT_NODE:
           return getBangDetails(node);
         case Node.ELEMENT_NODE:
-          return [node.localName.trim(), node.attributes];
+          return [node.localName];
       }
     }
 

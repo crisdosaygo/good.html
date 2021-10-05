@@ -13,6 +13,7 @@
     const KEYMATCH          = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
     /* eslint-enable no-useless-escape */
     const ATTRMATCH         = /\w+=/;
+    const JOINER            = '<link rel=join>';
     const KEYLEN            = 20;
     const DOM_PARSER        = new DOMParser;
     const XSS               = () => `Possible XSS / object forgery attack detected. ` +
@@ -97,7 +98,7 @@
 
       if ( useCache ) {
         (instance = (v.find(isKey) || {}));
-        cacheKey = p.join('<link rel=join>');
+        cacheKey = p.join(JOINER);
         const {cached,firstCall} = isCached(cacheKey,v,instance);
        
         if ( ! firstCall ) {
