@@ -307,8 +307,8 @@
     // to let the main thread breathe at the same time 
     async function schedule(list, func, {
           batchSize: batchSize = 1,
-          yieldTime: yieldTime = 50,
-          strictSerial: strictSerial = true,
+          yieldTime: yieldTime = 25,
+          strictSerial: strictSerial = false,
           useFrame: useFrame = false
         } = {}) {
       // note list can be async iterable

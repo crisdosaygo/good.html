@@ -137,7 +137,7 @@
         to,
         update,
         code:CODE,
-        nodes:[...frag.childNodes]
+        nodes:Array.from(frag.childNodes)
       });
 
       if ( useCache ) {
@@ -868,7 +868,7 @@
         const retVal = {
           type: 'MarkupObject',
           code:CODE,
-          nodes:[...frag.childNodes],
+          nodes:Array.from(frag.childNodes),
           externals: []
         };
         return retVal;
