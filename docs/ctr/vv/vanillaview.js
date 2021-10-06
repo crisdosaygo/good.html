@@ -32,10 +32,13 @@
       afterend    (frag,elem) { elem.parentNode.insertBefore(frag,elem.nextSibling) }
       replace     (frag,elem) { elem.parentNode.replaceChild(frag,elem) }
       afterbegin  (frag,elem) { elem.insertBefore(frag,elem.firstChild) }
-      innerhtml   (frag,elem) { elem.innerHTML = ''; elem.appendChild(frag) }
+      innerhtml   (frag,elem) { elem.replaceChildren(); elem.appendChild(frag) }
       insert      (frag,node) { node.replaceChildren(frag) }
     };
-    const REMOVE_MAP = new Map();
+    const REMOVE_MAP        = new Map();
+    const Template          = document.createElement('template');
+    const DIV               = document.createElement('div');
+    const POS               = 'beforeend';
 
   // logging
     globalThis.onerror = (...v) => (console.log(v, v[0]+'', v[4] && v[4].message, v[4] && v[4].stack), true);
@@ -147,7 +150,7 @@
           cache[cacheKey] = retVal;
         }
         retVal.nodes.forEach(node => {
-          REMOVE_MAP.set(node, JSON.stringify({cacheKey, instanceKey: instance.key+''}));
+          REMOVE_MAP.set(node, {ck:cacheKey, ik: instance.key+''});
           DEBUG && console.log('rm set', node);
         });
       }
@@ -415,10 +418,10 @@
             if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\d+/) ) return;
             const kill = REMOVE_MAP.get(n);
             DEBUG && console.log('rm get node', n);
-            killSet.add(kill);
+            killSet.add(JSON.stringify(kill));
           });
           killSet.forEach(kill => {
-            const {cacheKey, instanceKey} = JSON.parse(kill);
+            const {ck: cacheKey, ik: instanceKey} = JSON.parse(kill);
             if ( cacheKey && instanceKey ) {
               cache[cacheKey].instances[instanceKey] = null;
             } else if ( cacheKey ) {
@@ -924,9 +927,14 @@
       }
 
       function toDOM(str) {
-        const t = document.createElement('template');
-        t.innerHTML = str;
-        return t.content;
+        DIV.replaceChildren();
+        DIV.insertAdjacentHTML(POS, `<template>${str}</template>`);
+        return DIV.firstElementChild.content;
+      }
+
+      function toDOM_(str) {
+        Template.innerHTML = str;
+        return Template.content;
       }
 
       function guardAndTransformVal(v) {
@@ -952,12 +960,12 @@
         const bigNodes = [];
         const v = [];
         const oldVals = [];
-        os.forEach(o => {
+        for( const o of os ) {
           //v.push(...o.v); 
           //oldVals.push(...o.oldVals);
           externals.push(...o.externals);
           bigNodes.push(...o.nodes);
-        });
+        }
         DEBUG && console.log({oldVals,v});
         const retVal = {v,code:CODE,oldVals,nodes:bigNodes,to,update,externals};
         return retVal;

@@ -8,10 +8,12 @@
     const MOBILE = isMobile();
     const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
+    const POS = 'beforeend';
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
     const MirrorNode = Symbol.for('[[MN]]');
     const Template = document.createElement('template');
+    const DIV = document.createElement('div');
     const path = location.pathname;
     const CONFIG = {
       htmlFile: 'markup.html',
@@ -79,7 +81,7 @@
             const listening = shadow.querySelectorAll(CONFIG.EVENTS);
             listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
             // add dependents
-            const deps = findBangs(transformBang, shadow, ALL_DEPS);
+            const deps = await findBangs(transformBang, shadow, ALL_DEPS);
             //console.log(this, {deps});
             this.#dependents = deps.map(node => node.untilLoaded());
           }
@@ -518,7 +520,7 @@
       observer = new MutationObserver(transformBangs);
       /* we are interested in bang nodes (which start as comments) */
       observer.observe(document, OBSERVE_OPTS);
-      findBangs(transformBang); 
+      await findBangs(transformBang); 
       
       loaded(globalThis.bangRatio).then(() => document.body.classList.add('bang-styled'));
     }
@@ -618,13 +620,15 @@
     }
 
     // search and transform each added subtree
-    function transformBangs(records) {
-      records.forEach(record => {
+    async function transformBangs(records) {
+      for( const record of records ) {
         DEBUG && say('log',record);
         const {addedNodes} = record;
         if ( !addedNodes ) return;
-        addedNodes.forEach(node => findBangs(transformBang, node));
-      });
+        for( const node of addedNodes ) {
+          await findBangs(transformBang, node);
+        }
+      }
     }
 
     function transformBang(current) {
@@ -635,14 +639,19 @@
 
       // replace the bang node (comment) with its actual custom element node
       const actualElement = createElement(name, data);
+      say('log',{current,actualElement});
       current.linkedCustomElement = actualElement;
       actualElement[MirrorNode] = current;
       current.parentNode.replaceChild(actualElement, current);
     }
 
-    function findBangs(callback, root = document.documentElement, {
-          allDependents: allDependents = false
+    async function findBangs(callback, root = document.documentElement, {
+          allDependents: allDependents = false,
+          batchSize: batchSize = 10,
+          yieldTime: yieldTime = 15,
+          useFrame: useFrame = false
         } = {}) {
+      if ( root.noFindBang ) return allDependents ? [] : void 0;
       const found = allDependents ? 
         node => node.nodeType === Node.COMMENT_NODE || 
           node.nodeType === Node.ELEMENT_NODE 
@@ -714,14 +723,34 @@
           dependents.push(current);
         }
 
-      while(replacements.length) replacements.pop()();
+      let i = 0;
+      while(replacements.length) {
+        replacements.pop()();
+        i++;
+        if ( i < batchSize ) continue;
+        i = 0;
+        if ( useFrame ) {
+          await nextFrame();
+        } else {
+          await sleep(yieldTime);
+        }
+      }
 
-      return dependents.map(node => 
-        node.nodeType === Node.COMMENT_NODE ? 
-          node.linkedCustomElement 
-          : 
-          node 
-      ).filter(el => !el.hasAttribute('lazy'));
+      if ( allDependents ) {
+        return dependents
+          .map(actualElement)
+          .filter(el => el && !el.hasAttribute('lazy'));
+      } else return;
+    }
+
+    function actualElement(node) {
+      const el = node.nodeType === Node.COMMENT_NODE ? 
+        node.linkedCustomElement 
+        : 
+        node 
+      ;
+      //console.log(node, el);
+      return el;
     }
 
     function isBangTag(node) {
@@ -851,10 +880,8 @@
       const that = this;
       let cooked = '';
       try {
-        if ( !Object.prototype.hasOwnProperty.call(state, '_self') ) {
-          Object.defineProperty(state, '_self', {
-            get: () => state
-          });
+        if ( !state._self ) {
+          Object.defineProperty(state, '_self', {value: state});
         }
         DEBUG && say('log','_self', state._self);
       } catch(e) {
@@ -886,6 +913,12 @@
     }
 
     function toDOM(str) {
+      DIV.replaceChildren();
+      DIV.insertAdjacentHTML(POS, `<template>${str}</template>`);
+      return DIV.firstElementChild.content;
+    }
+
+    function toDOM_(str) {
       Template.innerHTML = str;
       return Template.content;
     }
@@ -893,7 +926,7 @@
     async function becomesTrue(check = () => true) {
       return new Promise(async res => {
         while(true) {
-          await sleep(47);
+          await nextFrame();
           if ( check() ) break;
         }
         res(true);
