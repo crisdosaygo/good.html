@@ -309,7 +309,7 @@
     // to let the main thread breathe at the same time 
     async function schedule(list, func, {
           batchSize: batchSize = 1,
-          yieldTime: yieldTime = 25,
+          yieldTime: yieldTime = 0,
           strictSerial: strictSerial = false,
           useFrame: useFrame = false
         } = {}) {
@@ -621,6 +621,7 @@
 
     // search and transform each added subtree
     async function transformBangs(records) {
+      //console.log('records', records);
       for( const record of records ) {
         DEBUG && say('log',record);
         const {addedNodes} = record;
@@ -648,7 +649,7 @@
     async function findBangs(callback, root = document.documentElement, {
           allDependents: allDependents = false,
           batchSize: batchSize = 10,
-          yieldTime: yieldTime = 15,
+          yieldTime: yieldTime = 0,
           useFrame: useFrame = false
         } = {}) {
       if ( root.noFindBang ) return allDependents ? [] : void 0;
