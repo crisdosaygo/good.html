@@ -9,10 +9,10 @@
       </tr>
     </thead>
     <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
-    <tbody>${rowNames.map(rowName =>  F`${{key:`row${rowName}`}}
+    <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`row${rowName}`}}
       <tr>
         <td class="label row">${rowName}</td>
-        ${columnNames.map(colName => {
+        ${schedule(columnNames, async colName => {
           const key = `${colName}${rowName}`;
           /** DON'T do this
             /* setting state within a render will cause
@@ -21,12 +21,13 @@
               cell[key] = {key, formula: '', value: ''};
             }
           **/
-          return F`${{key}}
+          return await F`${{key}}
         <td>
           <!sg-cell data-key=${key} state=${cell[key]} />
         </td>
-        `})}
+        `}, {batchSize: 5, useFrame: true, strictSerial: true})}
       </tr>
-    `)}</tbody>
+    `, {batchSize: 1, strictSerial: true})
+    }</tbody>
   </table>
 </sg-frame>
