@@ -311,7 +311,7 @@
           batchSize: batchSize = 1,
           yieldTime: yieldTime = 0,
           strictSerial: strictSerial = false,
-          useFrame: useFrame = false
+          useFrame: useFrame = true
         } = {}) {
       // note list can be async iterable
       const results = [];
@@ -650,7 +650,7 @@
           allDependents: allDependents = false,
           batchSize: batchSize = 10,
           yieldTime: yieldTime = 0,
-          useFrame: useFrame = false
+          useFrame: useFrame = true
         } = {}) {
       if ( root.noFindBang ) return allDependents ? [] : void 0;
       const found = allDependents ? 
