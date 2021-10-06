@@ -16,6 +16,7 @@
       const KEYMATCH          = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
       /* eslint-enable no-useless-escape */
       const ATTRMATCH         = /\w+=/;
+      const JOINER            = '<link rel=join>';
       const KEYLEN            = 20;
       new DOMParser;
       const XSS               = () => `Possible XSS / object forgery attack detected. ` +
@@ -33,10 +34,13 @@
         afterend    (frag,elem) { elem.parentNode.insertBefore(frag,elem.nextSibling); }
         replace     (frag,elem) { elem.parentNode.replaceChild(frag,elem); }
         afterbegin  (frag,elem) { elem.insertBefore(frag,elem.firstChild); }
-        innerhtml   (frag,elem) { elem.innerHTML = ''; elem.appendChild(frag); }
+        innerhtml   (frag,elem) { elem.replaceChildren(); elem.appendChild(frag); }
         insert      (frag,node) { node.replaceChildren(frag); }
       };
-      const REMOVE_MAP = new Map();
+      const REMOVE_MAP        = new Map();
+      document.createElement('template');
+      const DIV               = document.createElement('div');
+      const POS               = 'beforeend';
 
     // logging
       globalThis.onerror = (...v) => (console.log(v, v[0]+'', v[4] && v[4].message, v[4] && v[4].stack), true);
@@ -95,7 +99,7 @@
 
         if ( useCache ) {
           (instance = (v.find(isKey) || {}));
-          cacheKey = p.join('<link rel=join>');
+          cacheKey = p.join(JOINER);
           const {cached,firstCall} = isCached(cacheKey,v,instance);
          
           if ( ! firstCall ) {
@@ -134,7 +138,7 @@
           to,
           update,
           code:CODE,
-          nodes:[...frag.childNodes]
+          nodes:Array.from(frag.childNodes)
         });
 
         if ( useCache ) {
@@ -144,7 +148,7 @@
             cache[cacheKey] = retVal;
           }
           retVal.nodes.forEach(node => {
-            REMOVE_MAP.set(node, JSON.stringify({cacheKey, instanceKey: instance.key+''}));
+            REMOVE_MAP.set(node, {ck:cacheKey, ik: instance.key+''});
           });
         }
 
@@ -383,10 +387,10 @@
               }
               if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\d+/) ) return;
               const kill = REMOVE_MAP.get(n);
-              killSet.add(kill);
+              killSet.add(JSON.stringify(kill));
             });
             killSet.forEach(kill => {
-              const {cacheKey, instanceKey} = JSON.parse(kill);
+              const {ck: cacheKey, ik: instanceKey} = JSON.parse(kill);
               if ( cacheKey && instanceKey ) {
                 cache[cacheKey].instances[instanceKey] = null;
               } else if ( cacheKey ) {
@@ -815,7 +819,7 @@
           const retVal = {
             type: 'MarkupObject',
             code:CODE,
-            nodes:[...frag.childNodes],
+            nodes:Array.from(frag.childNodes),
             externals: []
           };
           return retVal;
@@ -871,9 +875,9 @@
         }
 
         function toDOM(str) {
-          const t = document.createElement('template');
-          t.innerHTML = str;
-          return t.content;
+          DIV.replaceChildren();
+          DIV.insertAdjacentHTML(POS, `<template>${str}</template>`);
+          return DIV.firstElementChild.content;
         }
 
         function guardAndTransformVal(v) {
@@ -899,12 +903,12 @@
           const bigNodes = [];
           const v = [];
           const oldVals = [];
-          os.forEach(o => {
+          for( const o of os ) {
             //v.push(...o.v); 
             //oldVals.push(...o.oldVals);
             externals.push(...o.externals);
             bigNodes.push(...o.nodes);
-          });
+          }
           const retVal = {v,code:CODE,oldVals,nodes:bigNodes,to,update,externals};
           return retVal;
         }
@@ -992,19 +996,26 @@
     const MOBILE = isMobile();
     const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
+    const POS = 'beforeend';
+    const LOCAL_PATH = 'this.';
+    const PARENT_PATH = 'this.getRootNode().host.';
+    const ONE_HIGHER = 'getRootNode().host.';
+    const EMPTY = '';
+    const CALL_WITH_EVENT = '(event)';
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
     const MirrorNode = Symbol.for('[[MN]]');
     const Template = document.createElement('template');
+    const DIV = document.createElement('div');
     const path = location.pathname;
     const CONFIG = {
       htmlFile: 'markup.html',
       scriptFile: 'script.js',
       styleFile: 'style.css',
       bangKey: '_bang_key',
-      componentsPath: `${path}${path.endsWith('/') ? '' : '/'}components`,
+      componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}components`,
       allowUnset: false,
-      unsetPlaceholder: '',
+      unsetPlaceholder: EMPTY,
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
@@ -1030,7 +1041,11 @@
       finished = 0;
     };
     const Counts = new Counter;
+    const Finished = () => Counts.finished++;
+    const SHADOW_OPTS = {mode:'open'};
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
+    const INSERT = 'insert';
+    const ALL_DEPS = {allDependents: true};
     let RequestId = 0;
     let hindex = 0;
     let observer; // global mutation observer
@@ -1048,12 +1063,52 @@
       constructor({task: task = () => void 0} = {}) {
         super();
         DEBUG && say('log',name, 'constructed');
+        this.cookMarkup = async (markup, state) => {
+          const cooked = await cook.call(this, markup, state);
+          DEBUG && console.log(cooked);
+          if ( !this.shadowRoot ) {
+            const shadow = this.attachShadow(SHADOW_OPTS);
+            //console.log({observer});
+            observer.observe(shadow, OBSERVE_OPTS);
+            cooked.to(shadow, INSERT);
+            const listening = shadow.querySelectorAll(CONFIG.EVENTS);
+            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            
+            // add dependents
+            const deps = await findBangs(transformBang, shadow, ALL_DEPS);
+            //console.log(this, {deps});
+            this.#dependents = deps.map(node => node.untilLoaded());
+          }
+        }
+        this.markLoaded = async () => {
+          if ( ! this.loaded ) {
+            this.counts.finished++;
+            const loaded = await this.untilLoaded();
+            if ( loaded ) {
+              this.loaded = loaded;
+              //console.log(this, 'loaded');
+              this.setVisible();
+              if ( ! this.isLazy ) {
+                setTimeout(Finished, 0);
+              }
+            } else {
+              // right now this never happens
+              //console.log('not loaded', this);
+            }
+          }
+        }
         this.counts = new Counter;
         if ( this.hasAttribute('lazy') ) {
-          if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
-            sleep(162*Math.random()).then(() => this.print().then(task));
+          this.isLazy = true;
+          if ( this.hasAttribute('super') ) {
+            this.superLazy = true;
+            loaded().then(() => sleep(405*Math.random()).then(() => this.print().then(task)));
           } else {
-            this.print().then(task);
+            if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
+              sleep(162*Math.random()).then(() => this.print().then(task));
+            } else {
+              this.print().then(task);
+            }
           }
         } else {
           this.print().then(task);
@@ -1092,6 +1147,9 @@
         this.alreadyPrinted = true;
         this.classList.add('bang-el');
         this.counts.started++;
+        if ( !this.isLazy ) {
+          Counts.started++;
+        }
         this.classList.remove('bang-styled');
         // this is like an onerror event for stylesheet's 
           // we do this because we want to display elements if they have no stylesheet defined
@@ -1153,6 +1211,9 @@
 
         if ( ! node ) node = this;
 
+        // we can optimize this method more, we only get attrs if originals == true
+        // otherwise we just get and process the single 'state' attr 
+        // this is a lot more performant
         for( let {name,value} of attrs ) {
           if ( isUnset(value) ) continue;
           if ( name === 'state' ) {
@@ -1166,7 +1227,7 @@
             }
             
             state = stateObject;
-            
+
             if ( originals ) {
               let acquirers = Dependents.get(stateKey);
               if ( ! acquirers ) {
@@ -1175,28 +1236,29 @@
               }
               acquirers.add(node);
               DEBUG && console.log({acquirers, Dependents});
-            }
+            } else break;
           } else if ( originals ) { // set event handlers to custom element class instance methods
             if ( ! name.startsWith('on') ) continue;
             value = value.trim();
             if ( ! value ) continue;
 
-            const Local = () => node[value];
-            const Parent = () => node.getRootNode().host[value];
-            const path = Local() ? 'this.' 
-              : Parent() ? 'this.getRootNode().host.' 
-              : null;
-            if ( ! path ) continue;
+            // Perf note:
+              // Local and Parent are just optimizations to avoid if we can the
+              // getAncestor function call, which saves us a couple seconds in large documents
+            const Local = node[value] instanceof Function;
+            const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+            const path = Local ? LOCAL_PATH :
+              Parent ? PARENT_PATH : 
+              getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
+            ;
 
-            if ( value.startsWith(path) ) continue;
+            if ( !path || value.startsWith(path) ) continue;
+
             // Conditional logic explained:
               // don't add a function call bracket if
               // 1. it already has one
               // 2. the reference is not a function
-            const ender = ( 
-              value.match(FUNC_CALL) || 
-              !(typeof Local() === "function" || typeof Parent() === "function")
-            ) ? '' : '(event)';
+            const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
             node.setAttribute(name, `${path}${value}${ender}`);
           }
         }
@@ -1205,39 +1267,9 @@
       }
 
       printShadow(state) {
-        return fetchMarkup(this.#name, this).then(async markup => {
-          const cooked = await cook.call(this, markup, state);
-          DEBUG && console.log(cooked);
-          if ( this.shadowRoot ) {
-            //this.shadowRoot.replaceChildren(nodes);
-          } else {
-            const shadow = this.attachShadow({mode:'open'});
-            //console.log({observer});
-            observer.observe(shadow, OBSERVE_OPTS);
-            cooked.to(shadow, 'insert');
-            const listening = shadow.querySelectorAll(CONFIG.EVENTS);
-            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-            // add dependents
-            const deps = findBangs(transformBang, shadow, {allDependents: true});
-            //console.log(this, {deps});
-            this.#dependents = deps.map(node => node.untilLoaded());
-          }
-        })
+        return fetchMarkup(this.#name, this).then(markup => this.cookMarkup(markup, state))
         .catch(err => DEBUG && say('warn!',err))
-        .finally(async () => {
-          if ( ! this.loaded ) {
-            this.counts.finished++;
-            const loaded = await this.untilLoaded();
-            if ( loaded ) {
-              this.loaded = loaded;
-              //console.log(this, 'loaded');
-              this.setVisible();
-            } else {
-              // right now this never happens
-              //console.log('not loaded', this);
-            }
-          }
-        });
+        .finally(this.markLoaded);
       }
     };
 
@@ -1269,6 +1301,40 @@
       
       self.customElements.define(name, component);
       DEBUG && self.customElements.whenDefined(name).then(obj => say('log',name, 'defined', obj));
+    }
+    
+    // run a map of a list of work with configurable breaks in between
+    // to let the main thread breathe at the same time 
+    async function schedule(list, func, {
+          batchSize: batchSize = 1,
+          yieldTime: yieldTime = 0,
+          strictSerial: strictSerial = false,
+          useFrame: useFrame = true
+        } = {}) {
+      // note list can be async iterable
+      const results = [];
+      let i = 0;
+      let currentBatch = 0;
+      for await ( const item of list ) {
+        let result;
+        if ( strictSerial ) {
+          result = await func(item, i);
+        } else {
+          result = func(item, i);
+        }
+        results.push(result);
+        i++;
+        currentBatch++;
+        if ( currentBatch < batchSize ) continue;
+        currentBatch = 0;
+
+        if ( useFrame ) {
+          await nextFrame();
+        } else if ( yieldTime > -1 ) {
+          await sleep(yieldTime);
+        }
+      }
+      return results;
     }
 
     function undoState(key, transform = x => x) {
@@ -1452,7 +1518,7 @@
       observer = new MutationObserver(transformBangs);
       /* we are interested in bang nodes (which start as comments) */
       observer.observe(document, OBSERVE_OPTS);
-      findBangs(transformBang); 
+      await findBangs(transformBang); 
       
       loaded(globalThis.bangRatio).then(() => document.body.classList.add('bang-styled'));
     }
@@ -1489,26 +1555,26 @@
       const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;
       let resp;
       const markupText = await pipeLinedFetch(markupUrl).then(async r => { 
-        let text = '';
+        let text = EMPTY;
         if ( r.ok ) text = await r.text();
         else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
       
         if ( CACHE.get(styleKey) instanceof Error ) { 
           resp = `<style>
-            ${await fetchFile('', 'style.css').catch(err => `/* ${err+''} */`).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`).then(e => {
+              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
               return e;
             })}
           </style>${text}` 
         } else {
           // inlining styles for increase speed */
           resp = `<style>
-            ${await fetchFile('', 'style.css').catch(err => `/* ${err+''} */`).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`).then(e => {
+              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
               return e;
             })}
             ${await fetchStyle(name).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
+              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
               return e;
             })}
           </style>${text}`;
@@ -1528,7 +1594,7 @@
 
       if ( CACHE.has(key) ) return CACHE.get(key);
 
-      const url = `${CONFIG.componentsPath}/${name ? name + '/' : ''}${file}`;
+      const url = `${CONFIG.componentsPath}/${name ? name + '/' : EMPTY}${file}`;
       let resp;
       const fileText = await pipeLinedFetch(url).then(r => { 
         if ( r.ok ) {
@@ -1552,13 +1618,16 @@
     }
 
     // search and transform each added subtree
-    function transformBangs(records) {
-      records.forEach(record => {
+    async function transformBangs(records) {
+      //console.log('records', records);
+      for( const record of records ) {
         DEBUG && say('log',record);
         const {addedNodes} = record;
         if ( !addedNodes ) return;
-        addedNodes.forEach(node => findBangs(transformBang, node));
-      });
+        for( const node of addedNodes ) {
+          await findBangs(transformBang, node);
+        }
+      }
     }
 
     function transformBang(current) {
@@ -1569,14 +1638,19 @@
 
       // replace the bang node (comment) with its actual custom element node
       const actualElement = createElement(name, data);
+      say('log',{current,actualElement});
       current.linkedCustomElement = actualElement;
       actualElement[MirrorNode] = current;
       current.parentNode.replaceChild(actualElement, current);
     }
 
-    function findBangs(callback, root = document.documentElement, {
-          allDependents: allDependents = false
+    async function findBangs(callback, root = document.documentElement, {
+          allDependents: allDependents = false,
+          batchSize: batchSize = 10,
+          yieldTime: yieldTime = 0,
+          useFrame: useFrame = true
         } = {}) {
+      if ( root.noFindBang ) return allDependents ? [] : void 0;
       const found = allDependents ? 
         node => node.nodeType === Node.COMMENT_NODE || 
           node.nodeType === Node.ELEMENT_NODE 
@@ -1648,14 +1722,46 @@
           dependents.push(current);
         }
 
-      while(replacements.length) replacements.pop()();
+      let i = 0;
+      while(replacements.length) {
+        replacements.pop()();
+        i++;
+        if ( i < batchSize ) continue;
+        i = 0;
+        if ( useFrame ) {
+          await nextFrame();
+        } else {
+          await sleep(yieldTime);
+        }
+      }
 
-      return dependents.map(node => 
-        node.nodeType === Node.COMMENT_NODE ? 
-          node.linkedCustomElement 
-          : 
-          node 
-      ).filter(el => !el.hasAttribute('lazy'));
+      if ( allDependents ) {
+        return dependents
+          .map(actualElement)
+          .filter(el => el && !el.hasAttribute('lazy'));
+      } else return;
+    }
+
+    function actualElement(node) {
+      const el = node.nodeType === Node.COMMENT_NODE ? 
+        node.linkedCustomElement 
+        : 
+        node 
+      ;
+      //console.log(node, el);
+      return el;
+    }
+
+    function getAncestor(node, value) {
+      if ( node ) {
+        const currentPath = [PARENT_PATH + ONE_HIGHER];
+        while( node ) {
+          if ( node[value] instanceof Function ) return currentPath.join(EMPTY);
+          node = node.getRootNode().host;
+          currentPath.push( 'getRootNode().host.' );
+        }
+      }
+      return null;
     }
 
     function isBangTag(node) {
@@ -1679,7 +1785,7 @@
         case Node.COMMENT_NODE:
           return getBangDetails(node);
         case Node.ELEMENT_NODE:
-          return [node.localName.trim(), node.attributes];
+          return [node.localName];
       }
     }
 
@@ -1688,24 +1794,24 @@
       if ( tox === 'string' ) return x;
       else 
 
-      if ( tox === 'number' ) return x+'';
+      if ( tox === 'number' ) return x+EMPTY;
       else
 
-      if ( tox === 'boolean' ) return x+'';
+      if ( tox === 'boolean' ) return x+EMPTY;
       else
 
-      if ( x instanceof Date ) return x+'';
+      if ( x instanceof Date ) return x+EMPTY;
       else
 
       if ( isUnset(x) ) {
-        if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || '';
+        if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || EMPTY;
         else {
           throw new ReferenceError(`Value cannot be unset, was: ${x}`);
         }
       }
       else
 
-      if ( x instanceof Promise ) return await x.catch(err => (say('warn!', err), err+''));
+      if ( x instanceof Promise ) return await x.catch(err => (say('warn!', err), err+EMPTY));
       else
 
       if ( x instanceof Element ) return x.outerHTML;
@@ -1719,7 +1825,7 @@
         // its values are recursively processed via this same function
         return (await Promise.all(
           (
-            await Promise.all(Array.from(x)).catch(e => (say('warn!', err), err+''))
+            await Promise.all(Array.from(x)).catch(e => (say('warn!', err), err+EMPTY))
           ).map(v => process(v, state))
         )).join(' ');
       }
@@ -1746,7 +1852,7 @@
           // be represented by many objects
 
         if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {
-          stateKey = new StateKey(x[CONFIG.bangKey])+'';
+          stateKey = new StateKey(x[CONFIG.bangKey])+EMPTY;
           const jk = stateKey+'.json.last';
           // in that case, replace the previously saved object with the same logical identity
           const oldX = STATE.get(jk);
@@ -1766,7 +1872,7 @@
         {
           if ( STATE.has(jx) ) stateKey = STATE.get(jx);
           else {
-            stateKey = new StateKey()+'';
+            stateKey = new StateKey()+EMPTY;
             const jk = stateKey+'.json.last';
             STATE.set(stateKey, x);
             STATE.set(x, stateKey);
@@ -1775,7 +1881,7 @@
           }
         }
 
-        stateKey += '';
+        stateKey += EMPTY;
         DEBUG && say('log',{stateKey});
         return stateKey;
       }
@@ -1783,12 +1889,10 @@
 
     async function cook(markup, state) {
       const that = this;
-      let cooked = '';
+      let cooked = EMPTY;
       try {
-        if ( !Object.prototype.hasOwnProperty.call(state, '_self') ) {
-          Object.defineProperty(state, '_self', {
-            get: () => state
-          });
+        if ( !state._self ) {
+          Object.defineProperty(state, '_self', {value: state});
         }
         DEBUG && say('log','_self', state._self);
       } catch(e) {
@@ -1820,6 +1924,12 @@
     }
 
     function toDOM(str) {
+      DIV.replaceChildren();
+      DIV.insertAdjacentHTML(POS, `<template>${str}</template>`);
+      return DIV.firstElementChild.content;
+    }
+
+    function toDOM_(str) {
       Template.innerHTML = str;
       return Template.content;
     }
@@ -1827,7 +1937,7 @@
     async function becomesTrue(check = () => true) {
       return new Promise(async res => {
         while(true) {
-          await sleep(47);
+          await nextFrame();
           if ( check() ) break;
         }
         res(true);
@@ -1863,6 +1973,10 @@
     async function sleep(ms) {
       return new Promise(res => setTimeout(res, ms));
     }
+    
+    async function nextFrame() {
+      return new Promise(res => requestAnimationFrame(res));
+    }
 
     function isIterable(y) {
       if ( y === null ) return false;
@@ -1875,7 +1989,7 @@
 
     function say(mode, ...stuff) {
       (DEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && !LIGHTHOUSE && alert(`${mode}: ${stuff.join('\n')}`);
-      (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!','')](...stuff);
+      (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!',EMPTY)](...stuff);
     }
 
     function isMobile() {
@@ -1894,7 +2008,7 @@
       });
     }
   
-    function trace(msg = '') {
+    function trace(msg = EMPTY) {
       const tracer = new Error('Trace');
       console.log(msg, 'Call stack', tracer.stack);
     }

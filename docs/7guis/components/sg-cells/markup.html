@@ -11,12 +11,16 @@
     <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
     <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`row${rowName}`}}
       <tr>
-        <td class="label row">${name}</td>
+        <td class="label row">${rowName}</td>
         ${schedule(columnNames, async colName => {
           const key = `${colName}${rowName}`;
-          if ( ! cell[key] ) {
-            cell[key] = {key, formula: '', value: ''};
-          }
+          /** DON'T do this
+            /* setting state within a render will cause
+            /* unnecessary re-renders as well as race-condition errors
+            if ( ! cell[key] ) {
+              cell[key] = {key, formula: '', value: ''};
+            }
+          **/
           return await F`${{key}}
         <td>
           <!sg-cell data-key=${key} state=${cell[key]} />

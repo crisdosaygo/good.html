@@ -378,6 +378,12 @@
       Object.assign(CONFIG, newConfig);
     }
 
+    function runCode(context, str) {
+      with(context) {
+        return eval(str); 
+      }
+    }
+
     function setState(key, state, {
       rerender: rerender = true, 
       save: save = false
@@ -515,6 +521,7 @@
         sleep, bangFig, bangLoaded, isMobile, trace,
         undoState, redoState,
         dateString,
+        runCode,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
 
