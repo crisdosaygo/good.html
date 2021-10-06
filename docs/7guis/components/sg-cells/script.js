@@ -10,6 +10,18 @@ class Cells extends Base {
   }
 
   async Recalculate(event) {
-    console.log('Recalculating', await this.calculator.run()); 
+    const state = cloneState('data'); 
+    const {target} = event;
+    const host = target.getRootNode().host;
+    const entry = target.value.trim();
+    
+    if ( entry.startsWith('=') ) {
+      state.cells.cell[host.dataset.key].formula = entry;
+    } else {
+      state.cells.cell[host.dataset.key].value = entry;
+    }
+
+    await this.calculator.run(state.cells);
+    setState('data', state);
   }
 }

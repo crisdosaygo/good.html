@@ -9,14 +9,17 @@
       </tr>
     </thead>
     <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
-    <tbody>${schedule(rowNames, async (name,y) =>  await F`${{key:`row${name}`}}
+    <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`row${rowName}`}}
       <tr>
         <td class="label row">${name}</td>
-        ${schedule(columnNames, async (_, x) => {
-          const key = `${x},${y}`;
+        ${schedule(columnNames, async colName => {
+          const key = `${colName}${rowName}`;
+          if ( ! cell[key] ) {
+            cell[key] = {key, formula: '', value: ''};
+          }
           return await F`${{key}}
         <td>
-          <!sg-cell state=${{key, formula:formulae[key], value: values[key]}} />
+          <!sg-cell data-key=${key} state=${cell[key]} />
         </td>
         `}, {batchSize: 5, useFrame: true, strictSerial: true})}
       </tr>

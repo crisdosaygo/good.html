@@ -8,22 +8,13 @@
     setupErrorCatchers();
 
     function setupErrorCatchers() {
-      (DEBUG.dev || DEBUG.err) && (self.onerror = (...v) => (alert(v), true));
-      (DEBUG.dev || DEBUG.err) && (self.onunhandledrejection = (e) => (e.promise.catch(err => alert(err+' '+err.stack)), true));
+      (DEBUG.dev || DEBUG.err) && (self.onerror = (...v) => (func(v), true));
+      (DEBUG.dev || DEBUG.err) && (self.onunhandledrejection = (e) => (e.promise.catch(err => func(err+' '+err.stack)), true));
     }
 
     function func() {
       if ( isMobile() ) {
-        return (...x) => {
-          for( const m of x ) {
-            try {
-              alert(m);
-              alert(JSON.stringify(m));
-            } catch(e) {
-              alert('err'+e);
-            }
-          }
-        };
+        return (...x) => alert(x[0]);
       } else {
         return (...x) => console.log(...x)
       }

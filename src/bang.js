@@ -229,12 +229,13 @@
         for( let {name,value} of attrs ) {
           if ( isUnset(value) ) continue;
           if ( name === 'state' ) {
-            const stateKey = value; 
+            const stateKey = value.trim(); 
             const stateObject = cloneState(stateKey);
             
             if ( isUnset(stateObject) ) {
+              console.log(node);
               throw new ReferenceError(`
-                <${name}> constructor passed state key ${stateKey} which is unset. It must be set.
+                <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.
               `);
             }
             
