@@ -9,6 +9,11 @@
     const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
     const POS = 'beforeend';
+    const LOCAL_PATH = 'this.';
+    const PARENT_PATH = 'this.getRootNode().host.';
+    const ONE_HIGHER = 'getRootNode().host.';
+    const EMPTY = '';
+    const CALL_WITH_EVENT = '(event)';
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
     const MirrorNode = Symbol.for('[[MN]]');
@@ -20,9 +25,9 @@
       scriptFile: 'script.js',
       styleFile: 'style.css',
       bangKey: '_bang_key',
-      componentsPath: `${path}${path.endsWith('/') ? '' : '/'}components`,
+      componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}components`,
       allowUnset: false,
-      unsetPlaceholder: '',
+      unsetPlaceholder: EMPTY,
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
@@ -80,6 +85,7 @@
             cooked.to(shadow, INSERT);
             const listening = shadow.querySelectorAll(CONFIG.EVENTS);
             listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            
             // add dependents
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
             //console.log(this, {deps});
@@ -217,6 +223,9 @@
 
         if ( ! node ) node = this;
 
+        // we can optimize this method more, we only get attrs if originals == true
+        // otherwise we just get and process the single 'state' attr 
+        // this is a lot more performant
         for( let {name,value} of attrs ) {
           if ( isUnset(value) ) continue;
           if ( name === 'state' ) {
@@ -230,7 +239,7 @@
             }
             
             state = stateObject;
-            
+
             if ( originals ) {
               let acquirers = Dependents.get(stateKey);
               if ( ! acquirers ) {
@@ -239,28 +248,29 @@
               }
               acquirers.add(node);
               DEBUG && console.log({acquirers, Dependents});
-            }
+            } else break;
           } else if ( originals ) { // set event handlers to custom element class instance methods
             if ( ! name.startsWith('on') ) continue;
             value = value.trim();
             if ( ! value ) continue;
 
-            const Local = () => node[value];
-            const Parent = () => node.getRootNode().host[value];
-            const path = Local() ? 'this.' 
-              : Parent() ? 'this.getRootNode().host.' 
-              : null;
-            if ( ! path ) continue;
+            // Perf note:
+              // Local and Parent are just optimizations to avoid if we can the
+              // getAncestor function call, which saves us a couple seconds in large documents
+            const Local = node[value] instanceof Function;
+            const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+            const path = Local ? LOCAL_PATH :
+              Parent ? PARENT_PATH : 
+              getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
+            ;
 
-            if ( value.startsWith(path) ) continue;
+            if ( !path || value.startsWith(path) ) continue;
+
             // Conditional logic explained:
               // don't add a function call bracket if
               // 1. it already has one
               // 2. the reference is not a function
-            const ender = ( 
-              value.match(FUNC_CALL) || 
-              !(typeof Local() === "function" || typeof Parent() === "function")
-            ) ? '' : '(event)';
+            const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
             node.setAttribute(name, `${path}${value}${ender}`);
           }
         }
@@ -557,26 +567,26 @@
       const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;
       let resp;
       const markupText = await pipeLinedFetch(markupUrl).then(async r => { 
-        let text = '';
+        let text = EMPTY;
         if ( r.ok ) text = await r.text();
         else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
       
         if ( CACHE.get(styleKey) instanceof Error ) { 
           resp = `<style>
-            ${await fetchFile('', 'style.css').catch(err => `/* ${err+''} */`).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`).then(e => {
+              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
               return e;
             })}
           </style>${text}` 
         } else {
           // inlining styles for increase speed */
           resp = `<style>
-            ${await fetchFile('', 'style.css').catch(err => `/* ${err+''} */`).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`).then(e => {
+              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
               return e;
             })}
             ${await fetchStyle(name).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/style.css defined */`;
+              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
               return e;
             })}
           </style>${text}`;
@@ -596,7 +606,7 @@
 
       if ( CACHE.has(key) ) return CACHE.get(key);
 
-      const url = `${CONFIG.componentsPath}/${name ? name + '/' : ''}${file}`;
+      const url = `${CONFIG.componentsPath}/${name ? name + '/' : EMPTY}${file}`;
       let resp;
       const fileText = await pipeLinedFetch(url).then(r => { 
         if ( r.ok ) {
@@ -754,6 +764,18 @@
       return el;
     }
 
+    function getAncestor(node, value) {
+      if ( node ) {
+        const currentPath = [PARENT_PATH + ONE_HIGHER];
+        while( node ) {
+          if ( node[value] instanceof Function ) return currentPath.join(EMPTY);
+          node = node.getRootNode().host;
+          currentPath.push( 'getRootNode().host.' );
+        }
+      }
+      return null;
+    }
+
     function isBangTag(node) {
       return node.nodeType === Node.COMMENT_NODE && getBangDetails(node)[0].match(DOUBLE_BARREL);
     }
@@ -784,24 +806,24 @@
       if ( tox === 'string' ) return x;
       else 
 
-      if ( tox === 'number' ) return x+'';
+      if ( tox === 'number' ) return x+EMPTY;
       else
 
-      if ( tox === 'boolean' ) return x+'';
+      if ( tox === 'boolean' ) return x+EMPTY;
       else
 
-      if ( x instanceof Date ) return x+'';
+      if ( x instanceof Date ) return x+EMPTY;
       else
 
       if ( isUnset(x) ) {
-        if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || '';
+        if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || EMPTY;
         else {
           throw new ReferenceError(`Value cannot be unset, was: ${x}`);
         }
       }
       else
 
-      if ( x instanceof Promise ) return await x.catch(err => (say('warn!', err), err+''));
+      if ( x instanceof Promise ) return await x.catch(err => (say('warn!', err), err+EMPTY));
       else
 
       if ( x instanceof Element ) return x.outerHTML;
@@ -815,7 +837,7 @@
         // its values are recursively processed via this same function
         return (await Promise.all(
           (
-            await Promise.all(Array.from(x)).catch(e => (say('warn!', err), err+''))
+            await Promise.all(Array.from(x)).catch(e => (say('warn!', err), err+EMPTY))
           ).map(v => process(v, state))
         )).join(' ');
       }
@@ -842,7 +864,7 @@
           // be represented by many objects
 
         if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {
-          stateKey = new StateKey(x[CONFIG.bangKey])+'';
+          stateKey = new StateKey(x[CONFIG.bangKey])+EMPTY;
           const jk = stateKey+'.json.last';
           // in that case, replace the previously saved object with the same logical identity
           const oldX = STATE.get(jk);
@@ -862,7 +884,7 @@
         {
           if ( STATE.has(jx) ) stateKey = STATE.get(jx);
           else {
-            stateKey = new StateKey()+'';
+            stateKey = new StateKey()+EMPTY;
             const jk = stateKey+'.json.last';
             STATE.set(stateKey, x);
             STATE.set(x, stateKey);
@@ -871,7 +893,7 @@
           }
         }
 
-        stateKey += '';
+        stateKey += EMPTY;
         DEBUG && say('log',{stateKey});
         return stateKey;
       }
@@ -879,7 +901,7 @@
 
     async function cook(markup, state) {
       const that = this;
-      let cooked = '';
+      let cooked = EMPTY;
       try {
         if ( !state._self ) {
           Object.defineProperty(state, '_self', {value: state});
@@ -979,7 +1001,7 @@
 
     function say(mode, ...stuff) {
       (DEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && !LIGHTHOUSE && alert(`${mode}: ${stuff.join('\n')}`);
-      (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!','')](...stuff);
+      (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!',EMPTY)](...stuff);
     }
 
     function isMobile() {
@@ -998,7 +1020,7 @@
       });
     }
   
-    function trace(msg = '') {
+    function trace(msg = EMPTY) {
       const tracer = new Error('Trace');
       console.log(msg, 'Call stack', tracer.stack);
     }
