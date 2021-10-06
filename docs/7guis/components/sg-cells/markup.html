@@ -1,17 +1,17 @@
 <sg-frame state=${_self}>
   <table>
     <thead>
-      <tr>
+      <tr class="label column">
         <th class=top-left></th>
         ${columnNames.map(name => F`${{key:`col${name}`}}
-        <th class="label column">${name}</th>
+        <th scope=col>${name}</th>
         `)}
       </tr>
     </thead>
     <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
     <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`row${rowName}`}}
       <tr>
-        <td class="label row">${rowName}</td>
+        <th scope=row class="label row">${rowName}</th>
         ${schedule(columnNames, async colName => {
           const key = `${colName}${rowName}`;
           /** DON'T do this
