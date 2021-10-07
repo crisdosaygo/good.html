@@ -1,6 +1,6 @@
 ${{key}}
 <input type=text name=cell 
-  value="${editFormula ? formula : !isUnset(value) ? value : EMPTY}" 
+  value="${editFormula ? (formula||value) : !isUnset(value) ? value : EMPTY}" 
   onchange=Recalculate 
   ondblclick=ShowFormula
   oncontextmenu=ShowFormula
