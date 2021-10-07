@@ -1,7 +1,8 @@
 class Cells extends Base {
   static EMPTY = '';
   static MAX_ITERATIONS = 10;
-  DEBUG = false;
+  static CHANGED = 1e12+1;
+  static DEBUG = false;
 
   constructor() {
     super();
@@ -14,7 +15,7 @@ class Cells extends Base {
   }
 
   async run({cell}) {
-    this.DEBUG && console.log('running');
+    Cells.DEBUG && console.log('running');
     const Formulas = [];
     const CellProxy = {};
     for( let [coord, {formula,value}] of Object.entries(cell) ) {
@@ -31,7 +32,7 @@ class Cells extends Base {
                 return e;
               }
             }())`);
-            this.DEBUG && console.log({newValue});
+            Cells.DEBUG && console.log({newValue});
           } catch(e) {
             console.info('cell error', coord, formula, e);
             newValue = 'error'; 
@@ -42,7 +43,7 @@ class Cells extends Base {
             }
           }
           CellProxy[coord] = newValue;
-          if ( newValue != cell[coord].value ) {
+          if ( newValue !== cell[coord].value ) {
             cell[coord].value = newValue;
             return Cells.CHANGED;
           }

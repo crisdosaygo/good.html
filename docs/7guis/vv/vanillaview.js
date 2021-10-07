@@ -716,7 +716,7 @@
 
       let newAttrValue;
 
-      if ( false && oldAttrVal === oldVal ) {
+      if ( oldAttrVal === oldVal ) {
         // if we are setting old val to be the whole attribute value
         // then we can just splice it in by setting it easily
         newAttrValue = newVal;
@@ -796,7 +796,7 @@
       }
 
       // if you set style like this is fucks it up
-      if ( name !== 'style' ) {
+      if ( name in node && name !== 'style' ) {
         try {
           node[name] = isUnset(value) ? true : value;
         } catch(e) {

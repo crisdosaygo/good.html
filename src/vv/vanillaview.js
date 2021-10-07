@@ -796,7 +796,7 @@
       }
 
       // if you set style like this is fucks it up
-      if ( name !== 'style' ) {
+      if ( name in node && name !== 'style' ) {
         try {
           node[name] = isUnset(value) ? true : value;
         } catch(e) {

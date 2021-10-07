@@ -140,7 +140,7 @@
           this.prepareVisibility();
         }
         const state = this.handleAttrs(this.attributes);
-        if ( OPTIMIZE && state ) {
+        if ( OPTIMIZE ) {
           const nextState = JS(state);
           if ( this.alreadyPrinted && this.lastState === nextState ) {
             if ( DEBUG ) {
@@ -246,7 +246,7 @@
 
       // private methods
       handleAttrs(attrs, {node, originals} = {}) {
-        let state;
+        let state = {};
 
         if ( ! node ) node = this;
 
@@ -309,7 +309,6 @@
       }
 
       printShadow(state) {
-        if ( ! state ) return;
         return fetchMarkup(this.#name, this).then(markup => this.cookMarkup(markup, state))
         .catch(err => DEBUG && say('warn!',err))
         .finally(this.markLoaded);
@@ -580,6 +579,7 @@
         use, setState, patchState, cloneState, loaded, 
         sleep, bangFig, bangLoaded, isMobile, trace,
         undoState, redoState, stateChanged, getViews, updateState,
+        isUnset,  EMPTY,
         dateString,
         runCode,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
