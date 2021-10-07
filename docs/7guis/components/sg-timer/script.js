@@ -23,7 +23,7 @@ class Component extends Base {
     const {state} = this;
     state.elapsed = (Date.now() - state.start)/1000;
     this.state = state;
-    if ( state.timer.elapsed >= state.timer.duration ) {
+    if ( state.elapsed >= state.duration ) {
       this.stopKeepingTime();
     }
   }
