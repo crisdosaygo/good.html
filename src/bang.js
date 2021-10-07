@@ -6,13 +6,15 @@
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const MOBILE = isMobile();
+    const EMPTY = '';
+    const {stringify:_STR} = JSON;
+    const JS = o => _STR(o, null, EMPTY);
     const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
     const POS = 'beforeend';
     const LOCAL_PATH = 'this.';
     const PARENT_PATH = 'this.getRootNode().host.';
     const ONE_HIGHER = 'getRootNode().host.';
-    const EMPTY = '';
     const CALL_WITH_EVENT = '(event)';
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
@@ -139,7 +141,7 @@
         }
         const state = this.handleAttrs(this.attributes);
         if ( OPTIMIZE ) {
-          const nextState = JSON.stringify(state);
+          const nextState = JS(state);
           if ( this.alreadyPrinted && this.lastState === nextState ) {
             if ( DEBUG ) {
               if ( globalThis.exposeState ) {
@@ -189,14 +191,14 @@
 
       updateIfChanged(state) {
         const {key, didChange} = stateChanged(state);
-			 	if ( didChange ) {
-					DEBUG && console.log(`State changed`, key, state);
-					const views = getViews(state);
-					DEBUG && console.log(`State views`, views);
-					const newKey = updateState(state);
-					DEBUG && console.log(`New key`, newKey);
-					views.forEach(view => view.setAttribute('state', newKey));
-				}
+        if ( didChange ) {
+          DEBUG && console.log(`State changed`, key, state);
+          const views = getViews(state);
+          DEBUG && console.log(`State views`, views);
+          const newKey = updateState(state);
+          DEBUG && console.log(`New key`, newKey);
+          views.forEach(view => view.setAttribute('state', newKey));
+        }
       }
 
       setVisible() {
@@ -226,7 +228,7 @@
               Dependents.set(value, Dependents.get(oldValue));
             }
             Dependents.delete(oldValue);
-            if ( STATE.get(oldValue+'.json.last') !== JSON.stringify(STATE.get(value)) ) {
+            if ( STATE.get(oldValue+'.json.last') !== JS(STATE.get(value)) ) {
               DEBUG && say('log',`Changing state, so calling print.`, oldValue, value, this);
               this.update();
             }
@@ -412,8 +414,8 @@
     function stateChanged(obj) {
       const key = STATE.get(obj);
       const oStateJSON = STATE.get(key+'.json.last');
-      const stateJSON = JSON.stringify(obj);
-      return {key, didChange: oStateJSON !== stateJSON};
+      const stateJSON = JS(obj);
+      return {key, didChange: oStateJSON !== stateJSON, stateJSON, oStateJSON};
     }
 
     function updateState(state, key) {
@@ -426,7 +428,7 @@
       const oKey = key;
       const oStateJSON = STATE.get(key+'.json.last');
       DEBUG && console.log('last state', oStateJSON);
-      const stateJSON = JSON.stringify(state);
+      const stateJSON = JS(state);
       STATE.delete(oStateJSON);
       STATE.set(key, state);
       if ( key.startsWith('system-key:') ) {
@@ -440,21 +442,6 @@
       STATE.set(stateJSON, key+'.json.last');
       const views = Dependents.get(oKey);
       Dependents.set(key, views);
-      /*
-            const oStateJSON = STATE.get(key+'.json.last');
-            Object.assign(oState, state);
-            STATE.delete(oStateJSON);
-            if ( key.startsWith('system-key:') ) {
-              STATE.delete(key);
-              STATE.delete(key+'.json.last');
-              key = new StateKey();
-              STATE.set(key, oState);
-              STATE.set(oState, key);
-            }
-            const stateJSONLast = JSON.stringify(oState);
-            STATE.set(key+'.json.last', stateJSONLast);
-            STATE.set(stateJSONLast, key+'.json.last');
-      */
       return key;
     }
 
@@ -473,18 +460,20 @@
       rerender: rerender = true, 
       save: save = false
     } = {}) {
+      const jss = JS(state);
+      let lk = key+'.json.last';
       if ( GET_ONLY ) {
         if ( !STATE.has(key) ) {
           STATE.set(key, state);
           STATE.set(state, key);
           DEBUG && console.log('Setting stringified state', state, key);
-          STATE.set(JSON.stringify(state), key+'.json.last');
-          STATE.set(key+'.json.last',JSON.stringify(state));
+          STATE.set(jss,lk);
+          STATE.set(lk,jss);
         } else {
           DEBUG && console.log('Updating state', key);
-          const oStateJSON = STATE.get(key+'.json.last');
-					/*if ( stateChanged(oState).didChange ) {*/
-					if ( oStateJSON !== JSON.stringify(state) ) {
+          const oStateJSON = STATE.get(lk);
+          /*if ( stateChanged(oState).didChange ) {*/
+          if ( oStateJSON !== jss ) {
             DEBUG && console.log('State really changed. Will update', key);
             key = updateState(state, key);
           }
@@ -492,8 +481,8 @@
       } else {
         STATE.set(key, state);
         STATE.set(state, key);
-        STATE.set(JSON.stringify(state), key+'.json.last');
-        STATE.set(key+'.json.last',JSON.stringify(state));
+        STATE.set(jss,lk);
+        STATE.set(lk,jss);
       }
 
       if ( save ) {
@@ -601,7 +590,7 @@
 
       const module = globalThis.vanillaview || (await import('./vv/vanillaview.js'));
       const {s} = module;
-      const That = {STATE,CONFIG,StateKey}; 
+      const That = {STATE,CONFIG,StateKey,JS}; 
       _c$ = s.bind(That);
       That._c$ = _c$;
 
@@ -937,7 +926,7 @@
           /* to the global state store */
           /* which is two-sides so we can find a key */
           /* given an object. This avoid duplicates */
-        const jx = JSON.stringify(x);
+        const jx = JS(x);
         let stateKey;
 
         // own keys
@@ -1114,7 +1103,7 @@
     }
 
     function clone(o) {
-      return JSON.parse(JSON.stringify(o));
+      return JSON.parse(JS(o));
     }
 }());
 

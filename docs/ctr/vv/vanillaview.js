@@ -39,9 +39,12 @@
     const Template          = document.createElement('template');
     const DIV               = document.createElement('div');
     const POS               = 'beforeend';
+    const EMPTY = '';
+    const {stringify:_STR} = JSON;
+    const JS = o => _STR(o, null, EMPTY);
 
   // logging
-    globalThis.onerror = (...v) => (console.log(v, v[0]+'', v[4] && v[4].message, v[4] && v[4].stack), true);
+    globalThis.onerror = (...v) => (console.log(v, v[0]+EMPTY, v[4] && v[4].message, v[4] && v[4].stack), true);
 
   // type functions
     const isKey             = v => !!v && (typeof v.key === 'string' || typeof v.key === 'number') && Object.getOwnPropertyNames(v).length <= 2;
@@ -120,7 +123,7 @@
       const vmap = {};
       const V = v.map(replaceValWithKeyAndOmitInstanceKey(vmap));
       const externals = [];
-      let str = '';
+      let str = EMPTY;
 
       while( p.length > 1 ) str += p.shift() + V.shift();
       str += p.shift();
@@ -150,7 +153,7 @@
           cache[cacheKey] = retVal;
         }
         retVal.nodes.forEach(node => {
-          REMOVE_MAP.set(node, {ck:cacheKey, ik: instance.key+''});
+          REMOVE_MAP.set(node, {ck:cacheKey, ik: instance.key+EMPTY});
           DEBUG && console.log('rm set', node);
         });
       }
@@ -163,24 +166,24 @@
       if ( typeof x === 'string' ) return x;
       else 
 
-      if ( typeof x === 'number' ) return x+'';
+      if ( typeof x === 'number' ) return x+EMPTY;
       else
 
-      if ( typeof x === 'boolean' ) return x+'';
+      if ( typeof x === 'boolean' ) return x+EMPTY;
       else
 
-      if ( x instanceof Date ) return x+'';
+      if ( x instanceof Date ) return x+EMPTY;
       else
 
       if ( isUnset(x) ) {
-        if ( that.CONFIG.allowUnset ) return that.CONFIG.unsetPlaceholder || '';
+        if ( that.CONFIG.allowUnset ) return that.CONFIG.unsetPlaceholder || EMPTY;
         else {
           throw new TypeError(`Value cannot be unset, was: ${x}`);
         }
       }
       else
 
-      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+''), state);
+      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state);
       else
 
       if ( x instanceof Element ) return x.outerHTML;
@@ -195,7 +198,7 @@
         // its values are recursively processed via this same function
         return process(that, (await Promise.all(
           (
-            await Promise.all(Array.from(x)).catch(e => err+'')
+            await Promise.all(Array.from(x)).catch(e => err+EMPTY)
           ).map(v => process(that, v, state))
         )), state);
       }
@@ -234,7 +237,7 @@
           // be represented by many objects
 
         if ( Object.prototype.hasOwnProperty.call(x, that.CONFIG.bangKey) ) {
-          stateKey = new that.StateKey(x[that.CONFIG.bangKey])+'';
+          stateKey = new that.StateKey(x[that.CONFIG.bangKey])+EMPTY;
           // in that case, replace the previously saved object with the same logical identity
           const oldX = that.STATE.get(stateKey);
           that.STATE.delete(oldX);
@@ -246,28 +249,29 @@
         else  /* or the system can come up with a state key */
 
         {
+          const jsx = JS(x)
           if ( that.STATE.has(x) ) {
             stateKey = that.STATE.get(x);
             const lastXJSON = that.STATE.get(stateKey+'.json.last');
-            if ( JSON.stringify(x) !== lastXJSON ) {
+            if ( jsx !== lastXJSON ) {
               that.STATE.delete(lastXJSON); 
               if ( stateKey.startsWith('system-key') ) {
                 that.STATE.delete(stateKey);
-                stateKey = new that.StateKey()+'';
+                stateKey = new that.StateKey()+EMPTY;
               }
               that.STATE.set(stateKey, x);
               that.STATE.set(x, stateKey);
             }
           } else {
-            stateKey = new that.StateKey()+'';
+            stateKey = new that.StateKey()+EMPTY;
             that.STATE.set(stateKey, x);
             that.STATE.set(x, stateKey);
           }
-          that.STATE.set(JSON.stringify(x), stateKey+'.json.last');
-          that.STATE.set(stateKey+'.json.last', JSON.stringify(x));
+          that.STATE.set(jsx, stateKey+'.json.last');
+          that.STATE.set(stateKey+'.json.last', jsx);
         }
 
-        stateKey += '';
+        stateKey += EMPTY;
         DEBUG && say('log',{stateKey});
         return stateKey;
       }
@@ -418,7 +422,7 @@
             if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\d+/) ) return;
             const kill = REMOVE_MAP.get(n);
             DEBUG && console.log('rm get node', n);
-            killSet.add(JSON.stringify(kill));
+            killSet.add(JS(kill));
           });
           killSet.forEach(kill => {
             const {ck: cacheKey, ik: instanceKey} = JSON.parse(kill);
@@ -470,41 +474,41 @@
 
     // element attribute functions
       function updateLinkedCustomElement(node) {
-				const lce = node.linkedCustomElement;
-				const span = toDOM(`<span ${node.textContent}></span>`).firstChild;
+        const lce = node.linkedCustomElement;
+        const span = toDOM(`<span ${node.textContent}></span>`).firstChild;
         const toRemove = new Set(
           getAttributes(lce)
             .filter(({name}) => !name.startsWith('on'))
             .map(({name}) => name)
         );
-				getAttributes(span).forEach(({name, value}) => {
-					if ( name === lce.localName ) return; // i.e., it's the bang tag name
+        getAttributes(span).forEach(({name, value}) => {
+          if ( name === lce.localName ) return; // i.e., it's the bang tag name
           if ( name.startsWith('on') ) return; // we don't handle event handlers here, that's in bang
           DEBUG && console.log(`setting ${name}=${value} on`, lce, node);
-					lce.setAttribute(name, value);
+          lce.setAttribute(name, value);
           toRemove.delete(name);
-				});
+        });
         toRemove.forEach(name => lce.removeAttribute(name));
       }
 
-			function handleElement({node,vmap,externals}) {
-				getAttributes(node).forEach(({name,value} = {}) => {
-					const attrState = {node, vmap, externals, name, lengths: []};
+      function handleElement({node,vmap,externals}) {
+        getAttributes(node).forEach(({name,value} = {}) => {
+          const attrState = {node, vmap, externals, name, lengths: []};
 
-					KEYMATCH.lastIndex = 0;
-					let result = KEYMATCH.exec(name);
-					while( result ) {
-						prepareAttributeUpdater(result, attrState, {updateName:true});
-						result = KEYMATCH.exec(name);
-					}
+          KEYMATCH.lastIndex = 0;
+          let result = KEYMATCH.exec(name);
+          while( result ) {
+            prepareAttributeUpdater(result, attrState, {updateName:true});
+            result = KEYMATCH.exec(name);
+          }
 
-					KEYMATCH.lastIndex = 0;
-					result = KEYMATCH.exec(value);
-					while( result ) {
-						prepareAttributeUpdater(result, attrState, {updateName:false});
-						result = KEYMATCH.exec(value);
-					}
-				});
+          KEYMATCH.lastIndex = 0;
+          result = KEYMATCH.exec(value);
+          while( result ) {
+            prepareAttributeUpdater(result, attrState, {updateName:false});
+            result = KEYMATCH.exec(value);
+          }
+        });
       }
 
       function prepareAttributeUpdater(result, attrState, {updateName}) {
@@ -535,7 +539,7 @@
         return (newVal) => {
           if ( oldName == newVal ) return;
           val.val = newVal;
-          const attr = node.hasAttribute(oldName) ? oldName : ''
+          const attr = node.hasAttribute(oldName) ? oldName : EMPTY
           if ( attr !== newVal ) {
             if ( attr ) {
               node.removeAttribute(oldName);
@@ -619,7 +623,7 @@
           node.removeEventListener(name, oldVal, flags);
         }
         node.addEventListener(name, newVal, flags); 
-        reliablySetAttribute(node, name, '');
+        reliablySetAttribute(node, name, EMPTY);
       } else {
         if ( oldVal ) {
           const index = externals.indexOf(oldVal);
@@ -740,7 +744,7 @@
       let newAttrValue;
       
       if ( name == "class" ) {
-        const spacer = oldVal.length == 0 ? ' ' : '';
+        const spacer = oldVal.length == 0 ? ' ' : EMPTY;
         newAttrValue = before + spacer + newVal + spacer + after;
       } else {
         newAttrValue = before + newVal + after;
@@ -750,7 +754,7 @@
         console.log('style attribute', {newAttrValue, before, newVal, after});
       }
 
-      DEBUG && console.log(JSON.stringify({
+      DEBUG && console.log(JS({
         newVal,
         valIndex,
         lengths,
@@ -866,7 +870,7 @@
       // And even tho it is in the location of a template value replacement
       // Which would normally be the treated as String
       function markup(str) {
-        str = isUnset(str) ? '' : str; 
+        str = isUnset(str) ? EMPTY : str; 
         const frag = toDOM(str);
         const retVal = {
           type: 'MarkupObject',
@@ -880,7 +884,7 @@
       // Returns an object that VanillaView treats, again, as markup
       // But this time markup that is OKAY to have within a quoted attribute
       function attrmarkup(str) {
-        str = isUnset(str) ? '' : str; 
+        str = isUnset(str) ? EMPTY : str; 
         str = str.replace(/"/g,'&quot;');
         const retVal = {
           type: 'MarkupAttrObject',
@@ -914,9 +918,9 @@
         return (val,vi) => {
           // omit instance key
           if ( isKey(val) ) {
-            return '';
+            return EMPTY;
           }
-          const key = ('key'+Math.random()).replace('.','').padEnd(KEYLEN,'0').slice(0,KEYLEN);
+          const key = ('key'+Math.random()).replace('.',EMPTY).padEnd(KEYLEN,'0').slice(0,KEYLEN);
           let k = key;
           if ( val.code === CODE && Array.isArray(val.nodes) ) {
             k = `<!--${k}-->`;
@@ -952,7 +956,7 @@
 
         if ( isObject ) die({error: OBJ()});
 
-        return v+'';
+        return v+EMPTY;
       }
 
       function join(os) {
@@ -1023,7 +1027,7 @@
               ret = true;
               break;
             default:
-              ret = JSON.stringify(oldVal) !== JSON.stringify(newVal);
+              ret = JS(oldVal) !== JS(newVal);
               break;
             /* eslint-enable no-fallthrough */
           }
@@ -1037,12 +1041,12 @@
     function die(msg,err) {
       if (DEBUG && err) console.warn(err);
       msg.stack = ((DEBUG && err) || new Error()).stack.split(/\s*\n\s*/g);
-      throw JSON.stringify(msg,null,2);
+      throw JS(msg,null,2);
     }
 
     function say(msg) {
       if ( DEBUG ) {
-        console.log(JSON.stringify(msg,showNodes,2));
+        console.log(JS(msg,showNodes,2));
         console.info('.');
       }
     }
@@ -1051,8 +1055,8 @@
       let out = v;
       if ( v instanceof Node ) {
         out = `<${v.nodeName.toLowerCase()} ${
-          !v.attributes ? '' : [...v.attributes].map(({name,value}) => `${name}='${value}'`).join(' ')}>${
-          v.nodeValue || (v.children && v.children.length <= 1 ? v.innerText : '')}`;
+          !v.attributes ? EMPTY : [...v.attributes].map(({name,value}) => `${name}='${value}'`).join(' ')}>${
+          v.nodeValue || (v.children && v.children.length <= 1 ? v.innerText : EMPTY)}`;
       } else if ( typeof v === "function" ) {
         return `${v.name || 'anon'}() { ... }`
       }
