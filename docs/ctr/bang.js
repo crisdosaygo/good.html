@@ -379,8 +379,8 @@
       while( hindex > 0 ) {
         hindex -= 1;
         if ( History[hindex].name === key ) {
-          setState(key, transform(History[hindex].value));
           DEBUG && console.log('Undo state to', History[hindex], hindex, History);
+          setState(key, transform(History[hindex].value));
           return true;
         }
       }
@@ -391,8 +391,8 @@
       while( hindex < History.length - 1 ) {
         hindex += 1;
         if ( History[hindex].name === key ) {
-          setState(key, transform(History[hindex].value));
           DEBUG && console.log('Redo state to', History[hindex], hindex, History);
+          setState(key, transform(History[hindex].value));
           return true;
         }
       }
@@ -416,14 +416,19 @@
       return {key, didChange: oStateJSON !== stateJSON};
     }
 
-    function updateState(state) {
-      let key = STATE.get(state);
-      console.log('update state', key, state, STATE);
+    function updateState(state, key) {
+      key = key || STATE.get(state);
+      if ( ! key ) {
+        console.warn('no key for state', state);
+        throw new ReferenceError(`Key must exist to update state.`);
+      }
+      DEBUG && console.log('update state', key, state, STATE);
       const oKey = key;
       const oStateJSON = STATE.get(key+'.json.last');
-      console.log('last state', oStateJSON);
+      DEBUG && console.log('last state', oStateJSON);
       const stateJSON = JSON.stringify(state);
       STATE.delete(oStateJSON);
+      STATE.set(key, state);
       if ( key.startsWith('system-key:') ) {
         STATE.delete(key);
         STATE.delete(key+'.json.last');
@@ -481,7 +486,7 @@
 					/*if ( stateChanged(oState).didChange ) {*/
 					if ( oStateJSON !== JSON.stringify(state) ) {
             DEBUG && console.log('State really changed. Will update', key);
-            key = updateState(state);
+            key = updateState(state, key);
           }
         }
       } else {

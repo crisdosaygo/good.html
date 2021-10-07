@@ -5,6 +5,12 @@ class Cells extends Base {
 
   constructor() {
     super();
+    this.untilLoaded().then(async () => {
+      await sleep(3000);
+      const cells = this.state;
+      await this.run(cells);
+      this.state = cells;
+    });
   }
 
   async run({cell}) {

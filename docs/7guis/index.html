@@ -76,10 +76,8 @@
       cells: {
         title: 'Cells (works!)',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
-        /*columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),*/
-        columnNames: 'ABC'.split(''),
-        /*rowNames: Array(100).join('.').split('').map((_,i) => i+1),*/
-        rowNames: Array(10).join('.').split('').map((_,i) => i+1),
+        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+        rowNames: Array(100).join('.').split('').map((_,i) => i+1),
       }
     };
     State.cells.cell = Object.fromEntries((function () {
@@ -93,6 +91,9 @@
       });
       return entries;
     }()));
+    State.cells.cell.A1.value = 123;
+    State.cells.cell.B1.value = 456;
+    State.cells.cell.A2.formula = '= A1 * B1'
     setState('data', State, {save:true});
     setState('circleDrawer', {
       title: 'Cricle Drawer',
@@ -106,8 +107,6 @@
       count: 42
     };
     setState('ctr', ctr, {save:true});
-
-    //loaded().then(() => alert('loaded'));
   });
 </script>
 <style>
