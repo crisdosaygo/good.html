@@ -1,6 +1,6 @@
 (function () {
   // constants, classes, config and state
-    const DEBUG = false;
+    const DEBUG = true;
     const PIPELINE_REQUESTS = true;
     const RANDOM_SLEEP_ON_FIRST_PRINT = true;
     const OPTIMIZE = true;
@@ -134,12 +134,18 @@
       // BANG! API methods
       async print() {
         if ( !this.alreadyPrinted ) {
+          DEBUG && loaded().then(() => globalThis.exposeState = true);
           this.prepareVisibility();
         }
         const state = this.handleAttrs(this.attributes);
         if ( OPTIMIZE ) {
           const nextState = JSON.stringify(state);
           if ( this.alreadyPrinted && this.lastState === nextState ) {
+            if ( DEBUG ) {
+              if ( globalThis.exposeState ) {
+                console.log(JSON.parse(this.lastState), state); 
+              }
+            }
             DEBUG && console.log(this, 'state no change, returning');
             return;
           }
@@ -428,18 +434,19 @@
       const views = Dependents.get(oKey);
       Dependents.set(key, views);
       /*
-        Object.assign(oState, state);
-        STATE.delete(oStateJSON);
-        if ( key.startsWith('system-key:') ) {
-          STATE.delete(key);
-          STATE.delete(key+'.json.last');
-          key = new StateKey();
-          STATE.set(key, oState);
-          STATE.set(oState, key);
-        }
-        const stateJSONLast = JSON.stringify(oState);
-        STATE.set(key+'.json.last', stateJSONLast);
-        STATE.set(stateJSONLast, key+'.json.last');
+            const oStateJSON = STATE.get(key+'.json.last');
+            Object.assign(oState, state);
+            STATE.delete(oStateJSON);
+            if ( key.startsWith('system-key:') ) {
+              STATE.delete(key);
+              STATE.delete(key+'.json.last');
+              key = new StateKey();
+              STATE.set(key, oState);
+              STATE.set(oState, key);
+            }
+            const stateJSONLast = JSON.stringify(oState);
+            STATE.set(key+'.json.last', stateJSONLast);
+            STATE.set(stateJSONLast, key+'.json.last');
       */
       return key;
     }
@@ -469,7 +476,9 @@
         } else {
           DEBUG && console.log('Updating state', key);
           const oState = STATE.get(key);
-					if ( stateChanged(oState).didChange ) {
+          const oStateJSON = STATE.get(key+'.json.last');
+					/*if ( stateChanged(oState).didChange ) {*/
+					if ( oStateJSON !== JSON.stringify(oState) ) {
             DEBUG && console.log('State really changed. Will update', key);
             key = updateState(state);
           }

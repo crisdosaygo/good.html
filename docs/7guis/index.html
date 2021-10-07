@@ -76,8 +76,10 @@
       cells: {
         title: 'Cells (works!)',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
-        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-        rowNames: Array(100).join('.').split('').map((_,i) => i+1),
+        /*columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),*/
+        columnNames: 'ABC'.split(''),
+        /*rowNames: Array(100).join('.').split('').map((_,i) => i+1),*/
+        rowNames: Array(10).join('.').split('').map((_,i) => i+1),
       }
     };
     State.cells.cell = Object.fromEntries((function () {
@@ -108,10 +110,22 @@
     //loaded().then(() => alert('loaded'));
   });
 </script>
-<div id=shadowBox>
-  <h1 class="rainbow rainbow_text_animated">7GUIs in <em>BANG!</em></h1>
-</div>
-<!sg-look-book state=data />
+<style>
+  main {
+    max-width: 888px;
+    margin: 0 auto;
+  }
+
+  main #shadowBox a {
+    color: transparent;
+  }
+</style>
+<main>
+  <div id=shadowBox>
+    <h1 class="rainbow rainbow_text_animated">7GUIs in <em><a href=https://github.com/i5ik/____>BANG!</a></em></h1>
+  </div>
+  <!sg-look-book state=data />
+</main>
 <hr>
 <a target=_blank rel=noreferrer href=https://github.com/eugenkiss/7guis>What is 7GUIs?</a>
 <br>
