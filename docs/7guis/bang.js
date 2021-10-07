@@ -1,6 +1,6 @@
 (function () {
   // constants, classes, config and state
-    const DEBUG = true;
+    const DEBUG = false;
     const PIPELINE_REQUESTS = true;
     const RANDOM_SLEEP_ON_FIRST_PRINT = true;
     const OPTIMIZE = true;
@@ -418,8 +418,10 @@
 
     function updateState(state) {
       let key = STATE.get(state);
+      console.log('update state', key, state, STATE);
       const oKey = key;
       const oStateJSON = STATE.get(key+'.json.last');
+      console.log('last state', oStateJSON);
       const stateJSON = JSON.stringify(state);
       STATE.delete(oStateJSON);
       if ( key.startsWith('system-key:') ) {
@@ -475,10 +477,9 @@
           STATE.set(key+'.json.last',JSON.stringify(state));
         } else {
           DEBUG && console.log('Updating state', key);
-          const oState = STATE.get(key);
           const oStateJSON = STATE.get(key+'.json.last');
 					/*if ( stateChanged(oState).didChange ) {*/
-					if ( oStateJSON !== JSON.stringify(oState) ) {
+					if ( oStateJSON !== JSON.stringify(state) ) {
             DEBUG && console.log('State really changed. Will update', key);
             key = updateState(state);
           }
