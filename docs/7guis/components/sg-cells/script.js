@@ -50,8 +50,10 @@ class Cells extends Base {
       }
       if ( value === Cells.EMPTY ) {
         CellProxy[coord] = Cells.EMPTY; 
+        CellProxy[coord.toLowerCase()] = Cells.EMPTY; 
       } else {
         CellProxy[coord] = !Number.isNaN(Number(value)) ? Number(value) : value;
+        CellProxy[coord.toLowerCase()] = !Number.isNaN(Number(value)) ? Number(value) : value;
       }
     }
     let iter = Cells.MAX_ITERATIONS;
