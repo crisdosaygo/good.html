@@ -23,7 +23,7 @@
           **/
           return await F`${{key}}
         <td>
-          <!sg-cell data-key=${key} state=${cell[key]} />
+          <sg-cell data-key=${key} state=${cell[key]}></sg-cell>
         </td>
         `}, {batchSize: 5, useFrame: true, strictSerial: true})}
       </tr>
