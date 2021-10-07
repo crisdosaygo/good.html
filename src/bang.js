@@ -512,20 +512,14 @@
       }
     }
 
-    async function loaded(prop = 1.0) {
-      if ( isUnset(prop) || Number.isNaN(prop) ) prop = 1.0;
-      CONFIG.capBangRatioAtUnity && (prop = Math.min(1.0,prop));
-
-      const loadCheck = () => {
-        prop = globalThis.bangRatio || prop;
-        if ( isUnset(prop) || Number.isNaN(prop) ) prop = 1.0;
-        CONFIG.capBangRatioAtUnity && (prop = Math.min(1.0,prop));
-
-        const nonZeroCount = Counts.started > 0; 
-        const finishedWhatWeStarted = Counts.finished >= prop * Counts.started;
-        return nonZeroCount && finishedWhatWeStarted;
-      };
+    async function loaded() {
       return becomesTrue(loadCheck);
+    }
+
+    function loadCheck() {
+      const nonZeroCount = Counts.started > 0; 
+      const finishedWhatWeStarted = Counts.finished >= Counts.started;
+      return nonZeroCount && finishedWhatWeStarted;
     }
 
     async function bangLoaded() {

@@ -1,16 +1,16 @@
 class Component extends Base {
   constructor() {
     super();
-    const state = cloneState('data');
+    const {state} = this;
     this.untilLoaded().then(async () => {
       this.startKeepingTime(state);
+      this.state = state;
     });
-    setState('data', state);
   }
 
   startKeepingTime(state) {
     if ( this.timeKeeper ) return;
-    state.timer.start = Date.now() - state.timer.elapsed*1000;
+    state.start = Date.now() - state.elapsed*1000;
     this.timeKeeper = setInterval(() => this.keepTime(), 40);
   }
 
@@ -20,35 +20,34 @@ class Component extends Base {
   }
 
   keepTime() {
-    const state = cloneState('data');
-    state.timer.elapsed = (Date.now() - state.timer.start)/1000;
-    setState('data', state);
-
+    const {state} = this;
+    state.elapsed = (Date.now() - state.start)/1000;
+    this.state = state;
     if ( state.timer.elapsed >= state.timer.duration ) {
       this.stopKeepingTime();
     }
   }
 
   setDuration(inputEvent) {
-    const state = cloneState('data');
-    state.timer.duration = inputEvent.target.valueAsNumber;
+    const {state} = this;
+    state.duration = inputEvent.target.valueAsNumber;
 
-    if ( state.timer.duration < state.timer.elapsed ) {
-      state.timer.elapsed = state.timer.duration;
+    if ( state.duration < state.elapsed ) {
+      state.elapsed = state.duration;
       this.stopKeepingTime();
     }
-    if ( state.timer.duration > state.timer.elapsed ) {
+    if ( state.duration > state.elapsed ) {
       this.startKeepingTime(state);
     }
 
-    setState('data', state);
+    this.state = state;
   }
 
   Reset() {
-    const state = cloneState('data');
-    state.timer.elapsed = 0;
+    const {state} = this;
+    state.elapsed = 0;
     this.stopKeepingTime(state);
     this.startKeepingTime(state);
-    setState('data', state);
+    this.state = state;
   }
 }
