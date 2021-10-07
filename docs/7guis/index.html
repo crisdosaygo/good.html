@@ -93,7 +93,9 @@
     }()));
     State.cells.cell.A1.value = 123;
     State.cells.cell.B1.value = 456;
-    State.cells.cell.A2.formula = '= A1 * B1'
+    State.cells.cell.A2.formula = '= A1 * B1';
+    State.cells.cell.A2.editFormula = true;
+
     setState('data', State, {save:true});
     setState('circleDrawer', {
       title: 'Cricle Drawer',

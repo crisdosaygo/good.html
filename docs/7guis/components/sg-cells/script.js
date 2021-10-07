@@ -10,6 +10,7 @@ class Cells extends Base {
       await sleep(3000);
       const cells = this.state;
       await this.run(cells);
+      cells.cell.A2.editFormula = false;
       this.state = cells;
     });
   }
