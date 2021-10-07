@@ -1,8 +1,8 @@
 class Component extends Base {
   constructor() {
     super();
-    const {state} = this;
     this.untilLoaded().then(async () => {
+      const {state} = this;
       this.startKeepingTime(state);
       this.state = state;
     });

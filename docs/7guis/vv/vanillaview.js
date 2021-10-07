@@ -710,66 +710,78 @@
     }
 
     function updateAttrWithTextValue(newVal, scope) {
-      let {oldVal,node,index,name,val,lengths} = scope;
-      let zeroWidthCorrection = 0;
-      const valIndex = val.vi;
-      const originalLengthBefore = Object.keys(lengths.slice(0,valIndex)).length*KEYLEN;
-        
-      // we need to trim newVal to have parity with classlist add
-        // the reason we have zeroWidthCorrection = -1
-        // is because the classList is a set of non-zero width tokens
-        // separated by spaces
-        // when we have a zero width token, we have two adjacent spaces
-        // which, by virtue of our other requirement, gets replaced by a single space
-        // effectively elliding out our replacement location
-        // in order to keep our replacement location in tact
-        // we need to compensate for the loss of a token slot (effectively a token + a space)
-        // and having a -1 correction effectively does this.
-      if ( name == "class" ) {
-        newVal = newVal.trim();
-        if ( newVal.length == 0 ) {
-          zeroWidthCorrection = -1;
-        }
-        scope.val.val = newVal;
-      }
-      lengths[valIndex] = newVal.length + zeroWidthCorrection;
+      let {oldVal,node,index,name,val,lengths,oldAttrVal} = scope;
+
       let attr = node.getAttribute(name);
 
-      const lengthBefore = lengths.slice(0,valIndex).reduce((sum,x) => sum + x, 0);
-
-      const correction = lengthBefore-originalLengthBefore;
-      const before = attr.slice(0,index+correction);
-      const after = attr.slice(index+correction+oldVal.length);
-
       let newAttrValue;
-      
-      if ( name == "class" ) {
-        const spacer = oldVal.length == 0 ? ' ' : EMPTY;
-        newAttrValue = before + spacer + newVal + spacer + after;
+
+      if ( false && oldAttrVal === oldVal ) {
+        // if we are setting old val to be the whole attribute value
+        // then we can just splice it in by setting it easily
+        newAttrValue = newVal;
       } else {
-        newAttrValue = before + newVal + after;
+        // otherwise we need to carefully calculate everything
+        let zeroWidthCorrection = 0;
+        const valIndex = val.vi;
+        const originalLengthBefore = Object.keys(lengths.slice(0,valIndex)).length*KEYLEN;
+          
+        // we need to trim newVal to have parity with classlist add
+          // the reason we have zeroWidthCorrection = -1
+          // is because the classList is a set of non-zero width tokens
+          // separated by spaces
+          // when we have a zero width token, we have two adjacent spaces
+          // which, by virtue of our other requirement, gets replaced by a single space
+          // effectively elliding out our replacement location
+          // in order to keep our replacement location in tact
+          // we need to compensate for the loss of a token slot (effectively a token + a space)
+          // and having a -1 correction effectively does this.
+        if ( name == "class" ) {
+          newVal = newVal.trim();
+          if ( newVal.length == 0 ) {
+            zeroWidthCorrection = -1;
+          }
+          scope.val.val = newVal;
+        }
+        lengths[valIndex] = newVal.length + zeroWidthCorrection;
+        const lengthBefore = lengths.slice(0,valIndex).reduce((sum,x) => sum + x, 0);
+
+        const correction = lengthBefore-originalLengthBefore;
+        const before = attr.slice(0,index+correction);
+        const after = attr.slice(index+correction+oldVal.length);
+        
+        if ( name == "class" ) {
+          const spacer = oldVal.length == 0 ? ' ' : EMPTY;
+          newAttrValue = before + spacer + newVal + spacer + after;
+        } else {
+          newAttrValue = before + newVal + after;
+        }
+
+        if ( DEBUG && name === 'style' ) {
+          console.log('style attribute', {newAttrValue, before, newVal, after});
+        }
+
+        DEBUG && console.log(JS({
+          newVal,
+          valIndex,
+          lengths,
+          attr,
+          lengthBefore,
+          index,
+          correction,
+          before,
+          after,
+          oldVal,
+          newAttrValue
+        }, null, 2));
       }
 
-      if ( DEBUG && name === 'style' ) {
-        console.log('style attribute', {newAttrValue, before, newVal, after});
+      if ( attr !== newAttrValue ) {
+        reliablySetAttribute(node, name, newAttrValue);
       }
-
-      DEBUG && console.log(JS({
-        newVal,
-        valIndex,
-        lengths,
-        attr,
-        lengthBefore,
-        originalLengthBefore,
-        correction,
-        before,
-        after,
-        newAttrValue
-      }, null, 2));
-
-      reliablySetAttribute(node, name, newAttrValue);
 
       scope.oldVal = newVal;
+      scope.oldAttrVal = newAttrValue;
     }
 
     function reliablySetAttribute(node, name, value ) {

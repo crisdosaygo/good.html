@@ -140,7 +140,7 @@
           this.prepareVisibility();
         }
         const state = this.handleAttrs(this.attributes);
-        if ( OPTIMIZE ) {
+        if ( OPTIMIZE && state ) {
           const nextState = JS(state);
           if ( this.alreadyPrinted && this.lastState === nextState ) {
             if ( DEBUG ) {
@@ -246,7 +246,7 @@
 
       // private methods
       handleAttrs(attrs, {node, originals} = {}) {
-        let state = {};
+        let state;
 
         if ( ! node ) node = this;
 
@@ -261,9 +261,11 @@
             
             if ( isUnset(stateObject) ) {
               console.warn(node);
-              throw new ReferenceError(`
+              self.STATE = STATE;
+              console.warn(new ReferenceError(`
                 <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.
-              `);
+              `));
+              break;
             }
             
             state = stateObject;
@@ -307,6 +309,7 @@
       }
 
       printShadow(state) {
+        if ( ! state ) return;
         return fetchMarkup(this.#name, this).then(markup => this.cookMarkup(markup, state))
         .catch(err => DEBUG && say('warn!',err))
         .finally(this.markLoaded);
@@ -315,7 +318,7 @@
 
     class StateKey extends String {
       constructor (keyNumber) {
-        if ( keyNumber == undefined ) super(`system-key:${systemKeys++}`); 
+        if ( keyNumber == undefined ) super(`system-key:${systemKeys+=2}`); 
         else super(`client-key:${keyNumber}`);
       }
     }
