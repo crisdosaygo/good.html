@@ -148,11 +148,12 @@
         return this.printShadow(state)
       }
 
-      connectedCallback() {
-        say('log',name, 'connected');
-        // attributes must be assigned on connection so we can search for
-        // references to parents
-        this.handleAttrs(this.attributes, {originals: true});
+      update() {
+        if ( this.fastUpdate ) {
+          return this.fastUpdate();
+        } else {
+          return this.print();
+        }
       }
 
       prepareVisibility() {
@@ -180,28 +181,31 @@
         return myContentLoaded && myDependentsLoaded;
       }
 
+      updateIfChanged(state) {
+        const {key, didChange} = stateChanged(state);
+			 	if ( didChange ) {
+					DEBUG && console.log(`State changed`, key, state);
+					const views = getViews(state);
+					DEBUG && console.log(`State views`, views);
+					const newKey = updateState(state);
+					DEBUG && console.log(`New key`, newKey);
+					views.forEach(view => view.setAttribute('state', newKey));
+				}
+      }
+
       setVisible() {
         this.classList.add('bang-styled');
       }
 
       get state() {
         const key = this.getAttribute('state');
-        if ( key.startsWith('system-key:') ) {
-          throw new TypeError(`Cannot use cloneState built-in when component has an implicit key. 
-            Instead use the global cloneState(key) method with an appropriate string key 
-            from an ancestor component that sets a string key.
-          `);
-        }
         return cloneState(key);
       }
 
       set state(newValue) {
         const key = this.getAttribute('state');
         if ( key.startsWith('system-key:') ) {
-          throw new TypeError(`Cannot use setState built-in when component has an implicit key. 
-            Instead use the global setState(key, data) method with an appropriate string key 
-            from an ancestor component that sets a string key.
-          `);
+          return this.updateIfChanged(this.state);
         }
         return setState(key, newValue);
       }
@@ -210,12 +214,27 @@
       attributeChangedCallback(name, oldValue, value) {
         // setting the state attribute casues the custom element to re-render
         if ( name === 'state' && !isUnset(oldValue) ) {
-          if ( STATE.get(oldValue+'.json.last') !== JSON.stringify(STATE.get(value)) ) {
-            DEBUG && say('log',`Changing state, so calling print.`, oldValue, value, this);
-            this.print();
-          }
+          this.update();
+          /*
+            if ( ! Dependents.has(value) ) {
+              Dependents.set(value, Dependents.get(oldValue));
+            }
+            Dependents.delete(oldValue);
+            if ( STATE.get(oldValue+'.json.last') !== JSON.stringify(STATE.get(value)) ) {
+              DEBUG && say('log',`Changing state, so calling print.`, oldValue, value, this);
+              this.update();
+            }
+          */
         }
       }
+
+      connectedCallback() {
+        say('log',name, 'connected');
+        // attributes must be assigned on connection so we can search for
+        // references to parents
+        this.handleAttrs(this.attributes, {originals: true});
+      }
+
 
       // private methods
       handleAttrs(attrs, {node, originals} = {}) {
@@ -233,7 +252,7 @@
             const stateObject = cloneState(stateKey);
             
             if ( isUnset(stateObject) ) {
-              console.log(node);
+              console.warn(node);
               throw new ReferenceError(`
                 <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.
               `);
@@ -384,6 +403,58 @@
       }
     }
 
+    function stateChanged(obj) {
+      const key = STATE.get(obj);
+      const oStateJSON = STATE.get(key+'.json.last');
+      const stateJSON = JSON.stringify(obj);
+      return {key, didChange: oStateJSON !== stateJSON};
+    }
+
+    function updateState(state) {
+      let key = STATE.get(state);
+      const oKey = key;
+      const oStateJSON = STATE.get(key+'.json.last');
+      const stateJSON = JSON.stringify(state);
+      STATE.delete(oStateJSON);
+      if ( key.startsWith('system-key:') ) {
+        STATE.delete(key);
+        STATE.delete(key+'.json.last');
+        key = new StateKey()+'';
+        STATE.set(key, state);
+        STATE.set(state, key);
+      }
+      STATE.set(key+'.json.last', stateJSON);
+      STATE.set(stateJSON, key+'.json.last');
+      const views = Dependents.get(oKey);
+      Dependents.set(key, views);
+      /*
+        Object.assign(oState, state);
+        STATE.delete(oStateJSON);
+        if ( key.startsWith('system-key:') ) {
+          STATE.delete(key);
+          STATE.delete(key+'.json.last');
+          key = new StateKey();
+          STATE.set(key, oState);
+          STATE.set(oState, key);
+        }
+        const stateJSONLast = JSON.stringify(oState);
+        STATE.set(key+'.json.last', stateJSONLast);
+        STATE.set(stateJSONLast, key+'.json.last');
+      */
+      return key;
+    }
+
+    function getViews(obj) {
+      const key = STATE.get(obj);
+      const acquirers = Dependents.get(key);
+      if ( acquirers ) {
+        return Array.from(acquirers);
+      } else {
+        console.warn('No acquirers for key');
+        return [];
+      }
+    }
+
     function setState(key, state, {
       rerender: rerender = true, 
       save: save = false
@@ -398,21 +469,9 @@
         } else {
           DEBUG && console.log('Updating state', key);
           const oState = STATE.get(key);
-          const oStateJSON = STATE.get(key+'.json.last');
-          if ( JSON.stringify(state) !== oStateJSON ) {
+					if ( stateChanged(oState).didChange ) {
             DEBUG && console.log('State really changed. Will update', key);
-            Object.assign(oState, state);
-            STATE.delete(oStateJSON);
-            if ( key.startsWith('system-key:') ) {
-              STATE.delete(key);
-              STATE.delete(key+'.json.last');
-              key = new StateKey();
-              STATE.set(key, oState);
-              STATE.set(oState, key);
-            }
-            const stateJSONLast = JSON.stringify(oState);
-            STATE.set(key+'.json.last', stateJSONLast);
-            STATE.set(stateJSONLast, key+'.json.last');
+            key = updateState(state);
           }
         }
       } else {
@@ -519,7 +578,7 @@
       Object.assign(globalThis, {
         use, setState, patchState, cloneState, loaded, 
         sleep, bangFig, bangLoaded, isMobile, trace,
-        undoState, redoState,
+        undoState, redoState, stateChanged, getViews, updateState,
         dateString,
         runCode,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
@@ -871,7 +930,7 @@
           // to provide a single logical identity for a piece of state that may
           // be represented by many objects
 
-        if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {
+        if ( !isUnset(x[CONFIG.bangKey]) ) {
           stateKey = new StateKey(x[CONFIG.bangKey])+EMPTY;
           const jk = stateKey+'.json.last';
           // in that case, replace the previously saved object with the same logical identity

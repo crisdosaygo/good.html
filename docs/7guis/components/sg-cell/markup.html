@@ -1,2 +1,8 @@
 ${{key}}
-<input type=text name=cell value="${value||formula||''}" onchange=Recalculate>
+<input type=text name=cell 
+  value="${(editFormula ? formula||value : value||formula)||''}" 
+  onchange=Recalculate 
+  ondblclick=ShowFormula
+  oncontextmenu=ShowFormula
+  onfocusout=ShowValue
+>

@@ -1,31 +1,62 @@
 class Cells extends Base {
+  static EMPTY = '';
+  static MAX_ITERATIONS = 10;
+  DEBUG = false;
+
   constructor() {
     super();
   }
 
   async run({cell}) {
-    console.log('running');
+    this.DEBUG && console.log('running');
     const Formulas = [];
     const CellProxy = {};
     for( let [coord, {formula,value}] of Object.entries(cell) ) {
       if ( formula ) {
         Formulas.push(() => {
+          let newValue = Cells.EMPTY;
           try {
-            value = runCode(CellProxy, `(function(){ 
-              const result ${formula}; 
-              return result;
+            newValue = runCode(CellProxy, `(function(){ 
+              try {
+                const result ${formula}; 
+                return result;
+              } catch(e) {
+                console.warn(e);
+                return e;
+              }
             }())`);
-            console.log({value});
+            this.DEBUG && console.log({newValue});
           } catch(e) {
             console.info('cell error', coord, formula, e);
-            value = 'error'; 
+            newValue = 'error'; 
+          } finally {
+            if ( Number.isNaN(value) ) {
+              newValue = 'not a number';
+              console.info('cell error nan');
+            }
           }
-          cell[coord].value = value;
+          CellProxy[coord] = newValue;
+          if ( newValue != cell[coord].value ) {
+            cell[coord].value = newValue;
+            return Cells.CHANGED;
+          }
         });
       }
-      CellProxy[coord] = value;
+      if ( value === Cells.EMPTY ) {
+        CellProxy[coord] = Cells.EMPTY; 
+      } else {
+        CellProxy[coord] = !Number.isNaN(Number(value)) ? Number(value) : value;
+      }
     }
-    Formulas.forEach(f => f());
+    let iter = Cells.MAX_ITERATIONS;
+    while( iter-- && Formulas.map(f => f()).some(status => status === Cells.CHANGED) );
+  }
+
+  fastUpdate() {
+    const state = cloneState('data'); 
+    const {cells} = state;
+
+    Object.entries(cells.cell).forEach(([key, cellState]) => this.updateIfChanged(cellState));
   }
 
   async loadCalculator() {
@@ -34,8 +65,7 @@ class Cells extends Base {
   }
 
   async Recalculate(event) {
-    const state = cloneState('data'); 
-    const {cells} = state;
+    const cells = this.state;
     const {target} = event;
     const host = target.getRootNode().host;
     const entry = target.value.trim();
@@ -49,9 +79,12 @@ class Cells extends Base {
       cells.cell[key].formula = entry;
     } else {
       cells.cell[key].value = entry;
+      cells.cell[key].formula = '';
     }
 
+    cells.cell[key].editFormula = false;
+
     await this.run(cells);
-    setState('data', state);
+    this.state = cells;
   }
 }

@@ -74,7 +74,7 @@
         selected: '',
       },
       cells: {
-        title: 'Cells (not yet scripted)',
+        title: 'Cells (works!)',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
         columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
         rowNames: Array(100).join('.').split('').map((_,i) => i+1),
@@ -85,7 +85,7 @@
       State.cells.columnNames.forEach(col => {
         State.cells.rowNames.forEach(row => {
           const key = `${col}${row}`;
-          const value = {key, value: '', formula: ''};
+          const value = {key, value: '', formula: '', editFormula: false};
           entries.push([key, value]);
         });
       });
