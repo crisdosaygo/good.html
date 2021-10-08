@@ -1,6 +1,8 @@
+// eslint directives
+  /* eslint-disable no-empty */
 // vanillaview.js
   // imports
-    import {CODE} from './common.js';
+    const CODE = Math.random().toFixed(18);
 
   // backwards compatible alias
     const skip = markup;
@@ -15,11 +17,9 @@
     const ATTRMATCH         = /\w+=/;
     const JOINER            = '<link rel=join>';
     const KEYLEN            = 20;
-    const DOM_PARSER        = new DOMParser;
     const XSS               = () => `Possible XSS / object forgery attack detected. ` +
                               `Object code could not be verified.`;
     const OBJ               = () => `Object values not allowed here.`;
-    const KEY               = v => `'key' property must be a string. Was: ${v.key}`;
     const UNSET             = () => `Unset values not allowed here.`;
     const INSERT            = () => `Error inserting template into DOM. ` +
       `Position must be one of: ` +
@@ -36,7 +36,7 @@
       insert      (frag,node) { node.replaceChildren(frag) }
     };
     const REMOVE_MAP        = new Map();
-    const Template          = document.createElement('template');
+    //const Template          = document.createElement('template');
     const DIV               = document.createElement('div');
     const POS               = 'beforeend';
     const EMPTY = '';
@@ -48,14 +48,14 @@
 
   // type functions
     const isKey             = v => !!v && (typeof v.key === 'string' || typeof v.key === 'number') && Object.getOwnPropertyNames(v).length <= 2;
-    const isHandlers        = v => typeof v === "object";
+    //const isHandlers        = v => typeof v === "object";
 
   // cache 
     const cache = {};
     // deux
 
   // main exports 
-    Object.assign(s,{say,attrskip,skip,attrmarkup,markup,guardEmptyHandlers,die});
+    Object.assign(s,{attrskip,skip,attrmarkup,markup,guardEmptyHandlers,die});
 
     Object.assign(globalThis, {vanillaview: {c, s}}); 
 
@@ -73,7 +73,6 @@
       if ( SystemCall ) {
         ({state} = v.shift());
         p.shift();
-        DEBUG && say('log','System VV_FUNC call: ' + v.join(', '));
         v = await Promise.all(v.map(val => process(that, val, state)));
         const xyz = vanillaview(p,v);
         //xyz[Symbol.for('BANG-VV')] = true;
@@ -86,7 +85,6 @@
           return xyz;
         };
         //laterFunc[Symbol.for('BANG-VV')] = true;
-        DEBUG && console.log('async laterFunc', laterFunc);
         return laterFunc;
       }
     }
@@ -154,7 +152,6 @@
         }
         retVal.nodes.forEach(node => {
           REMOVE_MAP.set(node, {ck:cacheKey, ik: instance.key+EMPTY});
-          DEBUG && console.log('rm set', node);
         });
       }
 
@@ -198,7 +195,7 @@
         // its values are recursively processed via this same function
         return process(that, (await Promise.all(
           (
-            await Promise.all(Array.from(x)).catch(e => err+EMPTY)
+            await Promise.all(Array.from(x)).catch(e => e+EMPTY)
           ).map(v => process(that, v, state))
         )), state);
       }
@@ -208,14 +205,12 @@
       const isVV      = x.code === CODE && Array.isArray(x.nodes);
       const isMAO = x.code === CODE && typeof x.str === "string";
       if ( isVVArray || isVVK || isMAO || isVV ) {
-        DEBUG && console.log('vv', x, {isVVArray, isVVK, isMAO, isVV});
         return isVVArray ? join(x) : x; // let vanillaview guardAndTransformVal handle
       }
 
       else 
 
       if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
-        DEBUG && console.log('asyncfunc', x);
         return await process(that, await x(state), state);
       }
       else
@@ -272,7 +267,6 @@
         }
 
         stateKey += EMPTY;
-        DEBUG && say('log',{stateKey});
         return stateKey;
       }
     }
@@ -296,8 +290,6 @@
       try {
         MOVE[position](frag,elem);
       } catch(e) {
-        DEBUG && console.log({location,options,e,elem,isNode});
-        DEBUG && console.warn(e);
         switch(e.constructor && e.constructor.name) {
           case "DOMException":      die({error: INSERT()},e);             break;
           case "TypeError":         die({error: NOTFOUND(location)},e);   break; 
@@ -377,29 +369,22 @@
               });
               state.lastAnchor = newVal.nodes[0];
             } else {
-              const LISTD = false;
               const insertable = [];
-              (DEBUG || LISTD) && console.log('\n');
               Array.from(newVal.nodes).forEach(node => {
                 const inserted = document.contains(node.ownerDocument);
                 if ( ! inserted ) {
-                  (DEBUG || LISTD) && console.dirxml('not yet inserted', node);
                   insertable.push(node);
                 } else {
-                  (DEBUG || LISTD) && console.dirxml('already inserted', node, `${insertable.length} to insert before`);
                   while( insertable.length ) {
                     const insertee = insertable.shift();
                     node.parentNode.insertBefore(insertee, node);
                   }
                 }
               });
-              (DEBUG || LISTD) && console.log('\n');
               while ( insertable.length ) {
                 const insertee = insertable.shift();
-                (DEBUG || LISTD) && console.log({insertee, lastAnchor, oldNodes});
                 lastAnchor.parentNode.insertBefore(insertee,lastAnchor);
               }
-              (DEBUG || LISTD) && console.log('Inserts done');
               state.lastAnchor = newVal.nodes[newVal.nodes.length-1];
             }
           }
@@ -421,7 +406,6 @@
             }
             if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\d+/) ) return;
             const kill = REMOVE_MAP.get(n);
-            DEBUG && console.log('rm get node', n);
             killSet.add(JS(kill));
           });
           killSet.forEach(kill => {
@@ -465,7 +449,6 @@
         node.nodeValue = newValue;
 
         if ( node.linkedCustomElement && newValue !== oldVal ) {
-          DEBUG && console.log('Updating linked customElement', node, newVal, node.linkedCustomElement);
           updateLinkedCustomElement(node);
         }
 
@@ -484,7 +467,6 @@
         getAttributes(span).forEach(({name, value}) => {
           if ( name === lce.localName ) return; // i.e., it's the bang tag name
           if ( name.startsWith('on') ) return; // we don't handle event handlers here, that's in bang
-          DEBUG && console.log(`setting ${name}=${value} on`, lce, node);
           lce.setAttribute(name, value);
           toRemove.delete(name);
         });
@@ -759,24 +741,6 @@
         } else {
           newAttrValue = before + newVal + after;
         }
-
-        if ( DEBUG && name === 'style' ) {
-          console.log('style attribute', {newAttrValue, before, newVal, after});
-        }
-
-        DEBUG && console.log(JS({
-          newVal,
-          valIndex,
-          lengths,
-          attr,
-          lengthBefore,
-          index,
-          correction,
-          before,
-          after,
-          oldVal,
-          newAttrValue
-        }, null, 2));
       }
 
       if ( attr !== newAttrValue ) {
@@ -795,7 +759,6 @@
       try {
         node.setAttribute(name,isUnset(value) ? name : value);
       } catch(e) {
-        DEBUG && console.warn(e);
       }
 
       // if you set style like this is fucks it up
@@ -803,7 +766,6 @@
         try {
           node[name] = isUnset(value) ? true : value;
         } catch(e) {
-          DEBUG && console.warn(e);
         }
       }
     }
@@ -951,10 +913,12 @@
         return DIV.firstElementChild.content;
       }
 
+      /*
       function toDOM_(str) {
         Template.innerHTML = str;
         return Template.content;
       }
+      */
 
       function guardAndTransformVal(v) {
         const isVVArray   = Array.isArray(v) && (v.length === 0 || Array.isArray(v[0].nodes));
@@ -985,7 +949,6 @@
           externals.push(...o.externals);
           bigNodes.push(...o.nodes);
         }
-        DEBUG && console.log({oldVals,v});
         const retVal = {v,code:CODE,oldVals,nodes:bigNodes,to,update,externals};
         return retVal;
       }
@@ -1006,13 +969,11 @@
 
       function update(newVals) {
         const updateable = this.v.filter(({vi}) => didChange(newVals[vi], this.oldVals[vi]));
-        DEBUG && console.log({updateable, oldVals:this.oldVals, newVals});
         updateable.forEach(({vi,replacers}) => replacers.forEach(f => f(newVals[vi])));
         this.oldVals = Array.from(newVals);
       }
 
       function didChange(oldVal, newVal) {
-        DEBUG && console.log({oldVal,newVal});
         const [oldType, newType] = [oldVal, newVal].map(getType); 
         let ret;
         if ( oldType != newType ) {
@@ -1048,32 +1009,11 @@
           }
         }
 
-        DEBUG && console.log({ret});
         return ret;
       }
 
   // reporting and error helpers 
     function die(msg,err) {
-      if (DEBUG && err) console.warn(err);
       msg.stack = ((DEBUG && err) || new Error()).stack.split(/\s*\n\s*/g);
       throw JS(msg,null,2);
-    }
-
-    function say(msg) {
-      if ( DEBUG ) {
-        console.log(JS(msg,showNodes,2));
-        console.info('.');
-      }
-    }
-
-    function showNodes(k,v) {
-      let out = v;
-      if ( v instanceof Node ) {
-        out = `<${v.nodeName.toLowerCase()} ${
-          !v.attributes ? EMPTY : [...v.attributes].map(({name,value}) => `${name}='${value}'`).join(' ')}>${
-          v.nodeValue || (v.children && v.children.length <= 1 ? v.innerText : EMPTY)}`;
-      } else if ( typeof v === "function" ) {
-        return `${v.name || 'anon'}() { ... }`
-      }
-      return out;
     }
