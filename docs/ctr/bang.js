@@ -84,7 +84,7 @@
             const shadow = this.attachShadow(SHADOW_OPTS);
             //console.log({observer});
             observer.observe(shadow, OBSERVE_OPTS);
-            cooked.to(shadow, INSERT);
+            await cooked.to(shadow, INSERT);
             const listening = shadow.querySelectorAll(CONFIG.EVENTS);
             listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
             
@@ -371,9 +371,9 @@
         currentBatch = 0;
 
         if ( useFrame ) {
-          await nextFrame();
+          //await nextFrame();
         } else if ( yieldTime > -1 ) {
-          await sleep(yieldTime);
+          //await sleep(yieldTime);
         }
       }
       return results;
@@ -698,14 +698,14 @@
     }
 
     // search and transform each added subtree
-    async function transformBangs(records) {
+    function transformBangs(records) {
       //console.log('records', records);
       for( const record of records ) {
         DEBUG && say('log',record);
         const {addedNodes} = record;
         if ( !addedNodes ) return;
         for( const node of addedNodes ) {
-          await findBangs(transformBang, node);
+          findBangs(transformBang, node);
         }
       }
     }
@@ -724,7 +724,7 @@
       current.parentNode.replaceChild(actualElement, current);
     }
 
-    async function findBangs(callback, root = document.documentElement, {
+    function findBangs(callback, root = document.documentElement, {
           allDependents: allDependents = false,
           batchSize: batchSize = 10,
           yieldTime: yieldTime = 0,
@@ -809,9 +809,9 @@
         if ( i < batchSize ) continue;
         i = 0;
         if ( useFrame ) {
-          await nextFrame();
+          //await nextFrame();
         } else {
-          await sleep(yieldTime);
+          //await sleep(yieldTime);
         }
       }
 

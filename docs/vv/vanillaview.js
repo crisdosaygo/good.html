@@ -10,7 +10,7 @@
     const DEBUG             = false;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
-    const KEYMATCH          = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
+    const KEYMATCH          = /(?:<!\-\-)?(key0.\d+)(?:\-\->)?/gm;
     /* eslint-enable no-useless-escape */
     const ATTRMATCH         = /\w+=/;
     const JOINER            = '<link rel=join>';
@@ -598,6 +598,8 @@
       if ( node.hasAttribute('class') ) {
         node.setAttribute('class', formatClassListValue(node.getAttribute('class')));
       }
+      return Array.from(node.attributes);
+      /*
       if ( !! node.attributes && Number.isInteger(node.attributes.length) ) return Array.from(node.attributes);
       const attrs = [];
       for ( const name of node ) {
@@ -606,6 +608,7 @@
         }
       }
       return attrs;
+      */
     }
 
     function updateAttrWithFunctionValue(newVal, scope) {
@@ -932,12 +935,12 @@
           if ( isKey(val) ) {
             return EMPTY;
           }
-          const key = ('key'+Math.random()).replace('.',EMPTY).padEnd(KEYLEN,'0').slice(0,KEYLEN);
+          const key = 'key'+Math.random().toFixed(15);
           let k = key;
           if ( val.code === CODE && Array.isArray(val.nodes) ) {
             k = `<!--${k}-->`;
           }
-          vmap[key.trim()] = {vi,val,replacers:[]};
+          vmap[key] = {vi,val,replacers:[]};
           return k;
         };
       }
