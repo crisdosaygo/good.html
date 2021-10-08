@@ -47,6 +47,7 @@
     "babel-loader": "latest",
     "babel-preset-env": "latest",
     "css-loader": "^6.3.0",
+    "eslint": "^7.32.0",
     "html-loader": "^2.1.2",
     "html-webpack-plugin": "^5.3.2",
     "roadroller": "latest",
