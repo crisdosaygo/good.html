@@ -11,6 +11,7 @@
   font-family: system-ui, sans-serif;
   margin: 1.5rem 0.5rem;
   max-height: 100%;
+  filter: saturation(61.8%);
 }
 
 .frame {

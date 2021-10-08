@@ -183,7 +183,7 @@
           // we do this because we want to display elements if they have no stylesheet defined
           // becuase it's reasonabgle to want to not include a stylesheet with your custom element
         fetchStyle(name).catch(err => {
-          say('warn!', err);
+          say('warn', err);
         });
       }
 

@@ -2,6 +2,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  padding-right: 0.5rem;
 }
 
 .box label {
@@ -15,9 +16,12 @@
 .box span.relation {
   width: 1.5rem;
   text-align: center;
+  margin-right: 0.25rem;
 }
 
 .box label input {
   max-width: 85%;
-  margin: 0 0.25rem;
+  margin-right: 0.5rem;
+  text-align: right;
+  letter-spacing: 1px;
 }
