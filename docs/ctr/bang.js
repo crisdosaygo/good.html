@@ -3,6 +3,7 @@
     const DEBUG = false;
     const PIPELINE_REQUESTS = true;
     const RANDOM_SLEEP_ON_FIRST_PRINT = true;
+    const RESPONSIVE_MEDIATION = true;
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const MOBILE = isMobile();
@@ -353,9 +354,9 @@
     // to let the main thread breathe at the same time 
     async function schedule(list, func, {
           batchSize: batchSize = 1,
-          yieldTime: yieldTime = 0,
-          strictSerial: strictSerial = false,
-          useFrame: useFrame = true
+          yieldTime: yieldTime = 30,
+          strictSerial: strictSerial = true,
+          useFrame: useFrame = false
         } = {}) {
       // note list can be async iterable
       const results = [];
@@ -369,15 +370,18 @@
           result = func(item, i);
         }
         results.push(result);
-        i++;
-        currentBatch++;
-        if ( currentBatch < batchSize ) continue;
-        currentBatch = 0;
 
-        if ( useFrame ) {
-          //await nextFrame();
-        } else if ( yieldTime > -1 ) {
-          //await sleep(yieldTime);
+        if ( RESPONSIVE_MEDIATION ) {
+          i++;
+          currentBatch++;
+          if ( currentBatch < batchSize ) continue;
+          currentBatch = 0;
+
+          if ( useFrame ) {
+            await nextFrame();
+          } else if ( yieldTime > -1 ) {
+            await sleep(yieldTime);
+          }
         }
       }
       return results;
@@ -701,12 +705,12 @@
     }
 
     // search and transform each added subtree
-    function transformBangs(records) {
+    async function transformBangs(records) {
       //console.log('records', records);
       for( const record of records ) {
         DEBUG && say('log',record);
         for( const node of record.addedNodes ) {
-          findBangs(transformBang, node);
+          await findBangs(transformBang, node);
         }
       }
     }
@@ -725,9 +729,9 @@
       current.parentNode.replaceChild(actualElement, current);
     }
 
-    function findBangs(callback, root = document.documentElement, {
+    async function findBangs(callback, root = document.documentElement, {
           allDependents: allDependents = false,
-          batchSize: batchSize = 10,
+          batchSize: batchSize = 100,
           yieldTime: yieldTime = 0,
           useFrame: useFrame = true
         } = {}) {
@@ -806,13 +810,15 @@
       let i = 0;
       while(replacements.length) {
         replacements.pop()();
-        i++;
-        if ( i < batchSize ) continue;
-        i = 0;
-        if ( useFrame ) {
-          //await nextFrame();
-        } else {
-          //await sleep(yieldTime);
+        if ( RESPONSIVE_MEDIATION && allDependents ) {
+          i++;
+          if ( i < batchSize ) continue;
+          i = 0;
+          if ( useFrame ) {
+            await nextFrame();
+          } else {
+            await sleep(yieldTime);
+          }
         }
       }
 
