@@ -6,6 +6,7 @@
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const MOBILE = isMobile();
+    const GC_TIMEOUT = 10000;
     const EMPTY = '';
     const {stringify:_STR} = JSON;
     const JS = o => _STR(o, null, EMPTY);
@@ -55,6 +56,7 @@
       finished = 0;
     };
     const Counts = new Counter;
+    const LoadChecker = countsChecker(Counts);
     const Finished = () => Counts.finished++;
     const SHADOW_OPTS = {mode:'open'};
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
@@ -77,41 +79,45 @@
       constructor({task: task = () => void 0} = {}) {
         super();
         DEBUG && say('log',name, 'constructed');
-        this.cookMarkup = async (markup, state) => {
-          const cooked = await cook.call(this, markup, state);
-          DEBUG && console.log(cooked);
-          if ( !this.shadowRoot ) {
-            const shadow = this.attachShadow(SHADOW_OPTS);
-            //console.log({observer});
-            observer.observe(shadow, OBSERVE_OPTS);
-            await cooked.to(shadow, INSERT);
-            const listening = shadow.querySelectorAll(CONFIG.EVENTS);
-            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-            
-            // add dependents
-            const deps = await findBangs(transformBang, shadow, ALL_DEPS);
-            //console.log(this, {deps});
-            this.#dependents = deps.map(node => node.untilLoaded());
-          }
-        }
-        this.markLoaded = async () => {
-          if ( ! this.loaded ) {
-            this.counts.finished++;
-            const loaded = await this.untilLoaded();
-            if ( loaded ) {
-              this.loaded = loaded;
-              //console.log(this, 'loaded');
-              this.setVisible();
-              if ( ! this.isLazy ) {
-                setTimeout(Finished, 0);
-              }
-            } else {
-              // right now this never happens
-              //console.log('not loaded', this);
+        this.counts = new Counter;
+        // some functions that close over this that we want to use as callbacks
+          this.cookMarkup = async (markup, state) => {
+            const cooked = await cook.call(this, markup, state);
+            DEBUG && console.log(cooked);
+            if ( !this.shadowRoot ) {
+              const shadow = this.attachShadow(SHADOW_OPTS);
+              //console.log({observer});
+              observer.observe(shadow, OBSERVE_OPTS);
+              await cooked.to(shadow, INSERT);
+              const listening = shadow.querySelectorAll(CONFIG.EVENTS);
+              listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+              
+              // add dependents
+              const deps = await findBangs(transformBang, shadow, ALL_DEPS);
+              //console.log(this, {deps});
+              this.#dependents = deps.map(node => node.untilLoaded());
             }
           }
-        }
-        this.counts = new Counter;
+          this.markLoaded = async () => {
+            if ( ! this.loaded ) {
+              this.counts.finished++;
+              const loaded = await this.untilLoaded();
+              if ( loaded ) {
+                this.loaded = loaded;
+                //console.log(this, 'loaded');
+                this.setVisible();
+                if ( ! this.isLazy ) {
+                  setTimeout(Finished, 0);
+                }
+              } else {
+                // right now this never happens
+                //console.log('not loaded', this);
+              }
+            }
+          }
+          this.checkLoad = countsChecker(this.counts);
+          this.loadKey = Math.random().toString(36);
+
         if ( this.hasAttribute('lazy') ) {
           this.isLazy = true;
           if ( this.hasAttribute('super') ) {
@@ -181,11 +187,8 @@
       }
 
       async untilLoaded() {
-        // we evaluate the dependents as lazily and as late as possible
-        this.#dependents = this.#dependents
         const myDependentsLoaded = (await Promise.all(this.#dependents)).every(loaded => loaded);
-        const myContentLoaded = await becomesTrue(() => this.counts.started > 0 && this.counts.finished >= this.counts.started);
-        //console.log(this, this.#dependents, myContentLoaded, myDependentsLoaded);
+        const myContentLoaded = await becomesTrue(this.checkLoad, this.loadKey);
         return myContentLoaded && myDependentsLoaded;
       }
 
@@ -223,6 +226,7 @@
         // setting the state attribute casues the custom element to re-render
         if ( name === 'state' && !isUnset(oldValue) ) {
           this.update();
+          setTimeout(() => Dependents.delete(oldValue), GC_TIMEOUT);
           /*
             if ( ! Dependents.has(value) ) {
               Dependents.set(value, Dependents.get(oldValue));
@@ -514,22 +518,21 @@
       }
     }
 
-    async function loaded() {
-      return becomesTrue(loadCheck);
+    function countsChecker(counts) {
+      return () => counts.started > 0 && counts.finished >= counts.started;
     }
 
-    function loadCheck() {
-      const nonZeroCount = Counts.started > 0; 
-      const finishedWhatWeStarted = Counts.finished >= Counts.started;
-      return nonZeroCount && finishedWhatWeStarted;
+    async function loaded() {
+      return becomesTrue(LoadChecker);
     }
 
     async function bangLoaded() {
-      const loadCheck = () => {
-        const c_defined = typeof _c$ === "function";
-        return c_defined;
-      };
-      return becomesTrue(loadCheck);
+      return becomesTrue(bangLoadedCheck);
+    }
+
+    function bangLoadedCheck() {
+      const c_defined = typeof _c$ === "function";
+      return c_defined;
     }
 
   // network pipelining (for performance)
@@ -600,7 +603,7 @@
       observer.observe(document, OBSERVE_OPTS);
       await findBangs(transformBang); 
       
-      loaded(globalThis.bangRatio).then(() => document.body.classList.add('bang-styled'));
+      loaded().then(() => document.body.classList.add('bang-styled'));
     }
 
     async function fetchMarkup(name, comp) {
@@ -702,9 +705,7 @@
       //console.log('records', records);
       for( const record of records ) {
         DEBUG && say('log',record);
-        const {addedNodes} = record;
-        if ( !addedNodes ) return;
-        for( const node of addedNodes ) {
+        for( const node of record.addedNodes ) {
           findBangs(transformBang, node);
         }
       }
@@ -1014,7 +1015,23 @@
       return Template.content;
     }
 
-    async function becomesTrue(check = () => true) {
+    async function becomesTrue(check, key) {
+      const WaitKey = key || check;
+      let waiters = Waiters.get(WaitKey);
+
+      if ( ! waiters ) {
+        waiters = _becomesTrue(check).then(checkResult => {
+          setTimeout(() => Waiters.delete(WaitKey), GC_TIMEOUT);
+          return checkResult; 
+        });
+        Waiters.set(WaitKey, waiters);
+        DEBUG && console.log('Setup waiter list', waiters);
+      }
+      const pr = new Promise(resolve => waiters.then(resolve));
+      return pr;
+    }
+
+    async function _becomesTrue(check) {
       return new Promise(async res => {
         while(true) {
           await nextFrame();
@@ -1028,26 +1045,14 @@
     // for every becomesTrue function call (in the case of the cache check, anyway)
     // we can use this pattern to apply to other becomesTrue calls like loaded
     async function cacheHasKey(key) {
-      try {
-        const WaitKey = `cache:${key}`;
-        let waiters = Waiters.get(WaitKey);
-        if ( ! waiters ) {
-          const list = [];
-          waiters = {
-            WaitKey,
-            list,
-            event: becomesTrue(() => CACHE.has(key)).then(() => list.reverse().forEach(res => res()))
-          };
-          Waiters.set(WaitKey, waiters);
-          DEBUG && console.log('Setup waiter list', waiters);
-        }
-        let res;
-        const pr = new Promise(resolve => res = resolve);
-        waiters.list.push(res);
-        return pr;
-      } catch(e) {
-        //say('warn!', e);
+      const cacheKey = `cache:${key}`;
+      const funcKey = `checkFunc:${key}`;
+      let checkFunc = Waiters.get(funcKey);
+      if ( ! checkFunc ) {
+        checkFunc = () => CACHE.has(key);
+        Waiters.set(funcKey,checkFunc);
       }
+      return becomesTrue(checkFunc, cacheKey);
     }
 
     async function sleep(ms) {
