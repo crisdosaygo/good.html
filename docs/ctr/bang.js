@@ -1,3 +1,4 @@
+/* eslint-disable no-setter-return, no-with, no-constant-condition, no-async-promise-executor */
 (function () {
   // constants, classes, config and state
     const DEBUG = false;
@@ -21,7 +22,6 @@
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
     const MirrorNode = Symbol.for('[[MN]]');
-    const Template = document.createElement('template');
     const DIV = document.createElement('div');
     const path = location.pathname;
     const CONFIG = {
@@ -41,7 +41,7 @@
       delayFirstPaintUntilLoaded: false,
       capBangRatioAtUnity: false,
       noHandlerPassthrough: false
-    };
+    }
     const History = [];
     const STATE = new Map();
     const CACHE = new Map();
@@ -55,7 +55,7 @@
     class Counter {
       started = 0;
       finished = 0;
-    };
+    }
     const Counts = new Counter;
     const LoadChecker = countsChecker(Counts);
     const Finished = () => Counts.finished++;
@@ -79,45 +79,38 @@
 
       constructor({task: task = () => void 0} = {}) {
         super();
-        DEBUG && say('log',name, 'constructed');
         this.counts = new Counter;
-        // some functions that close over this that we want to use as callbacks
-          this.cookMarkup = async (markup, state) => {
-            const cooked = await cook.call(this, markup, state);
-            DEBUG && console.log(cooked);
-            if ( !this.shadowRoot ) {
-              const shadow = this.attachShadow(SHADOW_OPTS);
-              //console.log({observer});
-              observer.observe(shadow, OBSERVE_OPTS);
-              await cooked.to(shadow, INSERT);
-              const listening = shadow.querySelectorAll(CONFIG.EVENTS);
-              listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-              
-              // add dependents
-              const deps = await findBangs(transformBang, shadow, ALL_DEPS);
-              //console.log(this, {deps});
-              this.#dependents = deps.map(node => node.untilLoaded());
-            }
+        this.cookMarkup = async (markup, state) => {
+          const cooked = await cook.call(this, markup, state);
+          if ( !this.shadowRoot ) {
+            const shadow = this.attachShadow(SHADOW_OPTS);
+            observer.observe(shadow, OBSERVE_OPTS);
+            await cooked.to(shadow, INSERT);
+            const listening = shadow.querySelectorAll(CONFIG.EVENTS);
+            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            
+            // add dependents
+            const deps = await findBangs(transformBang, shadow, ALL_DEPS);
+            this.#dependents = deps.map(node => node.untilLoaded());
           }
-          this.markLoaded = async () => {
-            if ( ! this.loaded ) {
-              this.counts.finished++;
-              const loaded = await this.untilLoaded();
-              if ( loaded ) {
-                this.loaded = loaded;
-                //console.log(this, 'loaded');
-                this.setVisible();
-                if ( ! this.isLazy ) {
-                  setTimeout(Finished, 0);
-                }
-              } else {
-                // right now this never happens
-                //console.log('not loaded', this);
+        }
+        this.markLoaded = async () => {
+          if ( ! this.loaded ) {
+            this.counts.finished++;
+            const loaded = await this.untilLoaded();
+            if ( loaded ) {
+              this.loaded = loaded;
+              this.setVisible();
+              if ( ! this.isLazy ) {
+                setTimeout(Finished, 0);
               }
+            } else {
+              // right now this never happens
             }
           }
-          this.checkLoad = countsChecker(this.counts);
-          this.loadKey = Math.random().toString(36);
+        }
+        this.checkLoad = countsChecker(this.counts);
+        this.loadKey = Math.random().toString(36);
 
         if ( this.hasAttribute('lazy') ) {
           this.isLazy = true;
@@ -143,19 +136,12 @@
       // BANG! API methods
       async print() {
         if ( !this.alreadyPrinted ) {
-          DEBUG && loaded().then(() => globalThis.exposeState = true);
           this.prepareVisibility();
         }
         const state = this.handleAttrs(this.attributes);
         if ( OPTIMIZE ) {
           const nextState = JS(state);
           if ( this.alreadyPrinted && this.lastState === nextState ) {
-            if ( DEBUG ) {
-              if ( globalThis.exposeState ) {
-                console.log(JSON.parse(this.lastState), state); 
-              }
-            }
-            DEBUG && console.log(this, 'state no change, returning');
             return;
           }
           this.lastState = nextState;
@@ -179,9 +165,7 @@
           Counts.started++;
         }
         this.classList.remove('bang-styled');
-        // this is like an onerror event for stylesheet's 
-          // we do this because we want to display elements if they have no stylesheet defined
-          // becuase it's reasonabgle to want to not include a stylesheet with your custom element
+        // we prefetch the style
         fetchStyle(name).catch(err => {
           say('warn', err);
         });
@@ -194,13 +178,10 @@
       }
 
       updateIfChanged(state) {
-        const {key, didChange} = stateChanged(state);
+        const {didChange} = stateChanged(state);
         if ( didChange ) {
-          DEBUG && console.log(`State changed`, key, state);
           const views = getViews(state);
-          DEBUG && console.log(`State views`, views);
           const newKey = updateState(state);
-          DEBUG && console.log(`New key`, newKey);
           views.forEach(view => view.setAttribute('state', newKey));
         }
       }
@@ -223,31 +204,16 @@
       }
 
       // Web Components methods
-      attributeChangedCallback(name, oldValue, value) {
-        // setting the state attribute casues the custom element to re-render
+      attributeChangedCallback(name, oldValue) {
         if ( name === 'state' && !isUnset(oldValue) ) {
           this.update();
-          setTimeout(() => Dependents.delete(oldValue), GC_TIMEOUT);
-          /*
-            if ( ! Dependents.has(value) ) {
-              Dependents.set(value, Dependents.get(oldValue));
-            }
-            Dependents.delete(oldValue);
-            if ( STATE.get(oldValue+'.json.last') !== JS(STATE.get(value)) ) {
-              DEBUG && say('log',`Changing state, so calling print.`, oldValue, value, this);
-              this.update();
-            }
-          */
         }
       }
 
       connectedCallback() {
         say('log',name, 'connected');
-        // attributes must be assigned on connection so we can search for
-        // references to parents
         this.handleAttrs(this.attributes, {originals: true});
       }
-
 
       // private methods
       handleAttrs(attrs, {node, originals} = {}) {
@@ -282,7 +248,6 @@
                 Dependents.set(stateKey, acquirers);
               }
               acquirers.add(node);
-              DEBUG && console.log({acquirers, Dependents});
             } else break;
           } else if ( originals ) { // set event handlers to custom element class instance methods
             if ( ! name.startsWith('on') ) continue;
@@ -347,7 +312,6 @@
         });
       
       self.customElements.define(name, component);
-      DEBUG && self.customElements.whenDefined(name).then(obj => say('log',name, 'defined', obj));
     }
     
     // run a map of a list of work with configurable breaks in between
@@ -391,7 +355,6 @@
       while( hindex > 0 ) {
         hindex -= 1;
         if ( History[hindex].name === key ) {
-          DEBUG && console.log('Undo state to', History[hindex], hindex, History);
           setState(key, transform(History[hindex].value));
           return true;
         }
@@ -403,7 +366,6 @@
       while( hindex < History.length - 1 ) {
         hindex += 1;
         if ( History[hindex].name === key ) {
-          DEBUG && console.log('Redo state to', History[hindex], hindex, History);
           setState(key, transform(History[hindex].value));
           return true;
         }
@@ -434,10 +396,8 @@
         console.warn('no key for state', state);
         throw new ReferenceError(`Key must exist to update state.`);
       }
-      DEBUG && console.log('update state', key, state, STATE);
       const oKey = key;
       const oStateJSON = STATE.get(key+'.json.last');
-      DEBUG && console.log('last state', oStateJSON);
       const stateJSON = JS(state);
       STATE.delete(oStateJSON);
       STATE.set(key, state);
@@ -476,15 +436,12 @@
         if ( !STATE.has(key) ) {
           STATE.set(key, state);
           STATE.set(state, key);
-          DEBUG && console.log('Setting stringified state', state, key);
           STATE.set(jss,lk);
           STATE.set(lk,jss);
         } else {
-          DEBUG && console.log('Updating state', key);
           const oStateJSON = STATE.get(lk);
           /*if ( stateChanged(oState).didChange ) {*/
           if ( oStateJSON !== jss ) {
-            DEBUG && console.log('State really changed. Will update', key);
             key = updateState(state, key);
           }
         }
@@ -498,12 +455,10 @@
       if ( save ) {
         hindex = Math.min(hindex+1, History.length);
         History.splice(hindex, 0, {name: key, value: clone(state)});
-        DEBUG && console.log('set state history add', hindex, History.length-1, History);
       }
 
       if ( rerender ) { // re-render only those components depending on that key
         const acquirers = Dependents.get(key);
-        DEBUG && console.log({acquirers, Dependents});
         if ( acquirers ) acquirers.forEach(host => host.print());
       }
       
@@ -549,19 +504,16 @@
         pr = fetch(...args).catch(err => (say('log', err), err));
         result.pr = pr;
         RequestPipeLine.set(key, result);
-        DEBUG && console.log(`${RequestPipeLine.size} concurrent running requests. Request just started and added at ${result.started}`);
         const complete = r => {
           const result = RequestPipeLine.get(key);
           result.finished = new Date;
           result.duration = result.finished - result.started;
           RequestPipeLine.delete(key); 
-          DEBUG && console.log(`${RequestPipeLine.size} concurrent running requests. Request just resolved and removed after ${(result.duration/1000).toFixed(1)} seconds.`);
           if ( RequestWaiting.length && RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
             const result = RequestWaiting.shift();
             const req = fetch(...result.args);
             req.then(complete).then(r => (result.resolve(r), r)).catch(e => (result.reject(e), e));
             RequestPipeLine.set(key, result);
-            DEBUG && console.log(`${RequestPipeLine.size} concurrent running requests. Request just started and added at ${result.started}`);
           }
           return r;
         };
@@ -583,12 +535,13 @@
   // helpers
     async function install() {
       Object.assign(globalThis, {
+        F,
         use, setState, patchState, cloneState, loaded, 
         sleep, bangFig, bangLoaded, isMobile, trace,
         undoState, redoState, stateChanged, getViews, updateState,
-        isUnset,  EMPTY,
+        isUnset,  EMPTY, 
         dateString,
-        runCode,
+        runCode, schedule,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
 
@@ -610,7 +563,7 @@
       loaded().then(() => document.body.classList.add('bang-styled'));
     }
 
-    async function fetchMarkup(name, comp) {
+    async function fetchMarkup(name) {
       // cache first
         // we make any subsequent calls for name wait for the first call to complete
         // otherwise we create many in parallel without benefitting from caching
@@ -706,9 +659,7 @@
 
     // search and transform each added subtree
     async function transformBangs(records) {
-      //console.log('records', records);
       for( const record of records ) {
-        DEBUG && say('log',record);
         for( const node of record.addedNodes ) {
           await findBangs(transformBang, node);
         }
@@ -716,14 +667,10 @@
     }
 
     function transformBang(current) {
-      DEBUG && say('log',{transformBang},{current});
       const [name, data] = getBangDetails(current);
-      //console.log(name, current);
-      DEBUG && say('log',{name, data});
 
       // replace the bang node (comment) with its actual custom element node
       const actualElement = createElement(name, data);
-      say('log',{current,actualElement});
       current.linkedCustomElement = actualElement;
       actualElement[MirrorNode] = current;
       current.parentNode.replaceChild(actualElement, current);
@@ -767,8 +714,6 @@
       const iterator = document.createTreeWalker(root, Filter, Acceptor);
       const replacements = [];
       const dependents = [];
-
-      DEBUG && console.log('root', root, {allDependents});
 
       // handle root node
         // Note:
@@ -876,112 +821,12 @@
       }
     }
 
-    async function process(x, state) {
-      const tox = typeof x;
-      if ( tox === 'string' ) return x;
-      else 
-
-      if ( tox === 'number' ) return x+EMPTY;
-      else
-
-      if ( tox === 'boolean' ) return x+EMPTY;
-      else
-
-      if ( x instanceof Date ) return x+EMPTY;
-      else
-
-      if ( isUnset(x) ) {
-        if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || EMPTY;
-        else {
-          throw new ReferenceError(`Value cannot be unset, was: ${x}`);
-        }
-      }
-      else
-
-      if ( x instanceof Promise ) return await x.catch(err => (say('warn!', err), err+EMPTY));
-      else
-
-      if ( x instanceof Element ) return x.outerHTML;
-      else
-
-      if ( x instanceof Node ) return x.textContent;
-      else
-
-      if ( isIterable(x) ) {
-        // if an Array or iterable is given then
-        // its values are recursively processed via this same function
-        return (await Promise.all(
-          (
-            await Promise.all(Array.from(x)).catch(e => (say('warn!', err), err+EMPTY))
-          ).map(v => process(v, state))
-        )).join(' ');
-      }
-      else
-
-      if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) return await x(state);
-      else
-
-      if ( x instanceof Function ) return x(state);
-      else // it's an object, of some type 
-
-      {
-        // State store     
-          /* so we assume an object is state and save it */
-          /* to the global state store */
-          /* which is two-sides so we can find a key */
-          /* given an object. This avoid duplicates */
-        const jx = JS(x);
-        let stateKey;
-
-        // own keys
-          // an object can specify it's own state key
-          // to provide a single logical identity for a piece of state that may
-          // be represented by many objects
-
-        if ( !isUnset(x[CONFIG.bangKey]) ) {
-          stateKey = new StateKey(x[CONFIG.bangKey])+EMPTY;
-          const jk = stateKey+'.json.last';
-          // in that case, replace the previously saved object with the same logical identity
-          const oldX = STATE.get(jk);
-          if ( oldX !== jx ) {
-            STATE.delete(oldX);
-            STATE.delete(STATE.get(stateKey));
-
-            STATE.set(stateKey, x);
-            STATE.set(x, stateKey);
-            STATE.set(jx, jk);
-            STATE.set(jk,jx);
-          }
-        } 
-
-        else  /* or the system can come up with a state key */
-
-        {
-          if ( STATE.has(jx) ) stateKey = STATE.get(jx);
-          else {
-            stateKey = new StateKey()+EMPTY;
-            const jk = stateKey+'.json.last';
-            STATE.set(stateKey, x);
-            STATE.set(x, stateKey);
-            STATE.set(js, jk);
-            STATE.set(jk,jx);
-          }
-        }
-
-        stateKey += EMPTY;
-        DEBUG && say('log',{stateKey});
-        return stateKey;
-      }
-    }
-
     async function cook(markup, state) {
-      const that = this;
       let cooked = EMPTY;
       try {
         if ( !state._self ) {
           Object.defineProperty(state, '_self', {value: state});
         }
-        DEBUG && say('log','_self', state._self);
       } catch(e) {
         say('warn!',
           `Cannot add '_self' self-reference property to state. 
@@ -992,7 +837,6 @@
         with(state) {
           cooked = await eval("(async function () { return await _FUNC`${{state}}"+markup+"`; }())");  
         }
-        DEBUG && console.log({cooked});
         return cooked;
       } catch(error) {
         say('error!', 'Template error', {markup, state, error});
@@ -1016,11 +860,6 @@
       return DIV.firstElementChild.content;
     }
 
-    function toDOM_(str) {
-      Template.innerHTML = str;
-      return Template.content;
-    }
-
     async function becomesTrue(check, key) {
       const WaitKey = key || check;
       let waiters = Waiters.get(WaitKey);
@@ -1031,7 +870,6 @@
           return checkResult; 
         });
         Waiters.set(WaitKey, waiters);
-        DEBUG && console.log('Setup waiter list', waiters);
       }
       const pr = new Promise(resolve => waiters.then(resolve));
       return pr;
@@ -1067,11 +905,6 @@
     
     async function nextFrame() {
       return new Promise(res => requestAnimationFrame(res));
-    }
-
-    function isIterable(y) {
-      if ( y === null ) return false;
-      return y[Symbol.iterator] instanceof Function;
     }
 
     function isUnset(x) {

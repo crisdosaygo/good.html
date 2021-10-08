@@ -4,7 +4,7 @@
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
   "main": "dist/pack.bang.js",
   "scripts": {
-    "lint": "npx eslint src/bang.js || : && npx eslint src/vv/vanillaview.js",
+    "lint": "clear && npx eslint src/bang.js || : && npx eslint src/vv/vanillaview.js",
     "dev": "npm run clean && watch -n 5 ./scripts/cpfiles.sh & serve -p 8080 docs/",
     "test": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/",
     "7guis": "npm run clean && watch -n 5 ./scripts/build.sh & serve -p 8080 docs/7guis/",
