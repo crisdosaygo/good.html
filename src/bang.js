@@ -279,7 +279,7 @@
       }
 
       printShadow(state) {
-        return fetchMarkup(this.#name, this).then(markup => this.cookMarkup(markup, state))
+        return fetchMarkup(this.#name).then(markup => this.cookMarkup(markup, state))
         .catch(err => DEBUG && say('warn!',err))
         .finally(this.markLoaded);
       }

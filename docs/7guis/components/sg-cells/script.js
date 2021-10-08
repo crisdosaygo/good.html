@@ -95,6 +95,7 @@ class Cells extends Base {
     cells.cell[key].editFormula = false;
 
     await this.run(cells);
+    setTimeout(() => target.scrollLeft = 0, 100);
     this.state = cells;
   }
 }

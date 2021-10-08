@@ -338,7 +338,6 @@
           if ( scope.oldVal == newVal ) return;
           scope.val.val = newVal;
           switch(getType(newVal)) {
-            case "markupobject": 
             case "vanillaviewobject":
               handleMarkupInNode(newVal, scope); break;
             default:
@@ -550,7 +549,6 @@
             case "funcarray":       updateAttrWithFuncarrayValue(newVal, scope); break;
             case "function":        updateAttrWithFunctionValue(newVal, scope); break;
             case "handlers":        updateAttrWithHandlersValue(newVal, scope); break;
-            case "markupobject":     
             case "vanillaviewobject": 
               newVal = nodesToStr(newVal.nodes); 
               updateAttrWithTextValue(newVal, scope); break;
@@ -989,7 +987,6 @@
               ret = true;
               break;
             case "markupattrobject":
-            case "markupobject":
               // need to check multiple things
               ret = true;
               break;
@@ -1006,5 +1003,5 @@
   // reporting and error helpers 
     function die(msg,err) {
       msg.stack = ((DEBUG && err) || new Error()).stack.split(/\s*\n\s*/g);
-      throw JS(msg,null,2);
+      throw JS(msg);
     }
