@@ -1,10 +1,15 @@
 ${{key}}
 <sg-frame state=${_self}>
   <table>
+    <colgroup>
+      ${columnNames.map(name => F`${{key:`${key}col${name}`}}
+      <col name=${name} width=128px></col>
+      `)}
+    </colgroup>
     <thead>
       <tr class="label column">
         <th class=top-left></th>
-        ${columnNames.map(name => F`${{key:`${key}col${name}`}}
+        ${columnNames.map(name => F`${{key:`${key}colheader${name}`}}
         <th scope=col>${name}</th>
         `)}
       </tr>
