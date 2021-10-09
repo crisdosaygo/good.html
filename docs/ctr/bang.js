@@ -9,6 +9,7 @@
     const GET_ONLY = true;
     const MOBILE = isMobile();
     const GC_TIMEOUT = 10000;
+    const GENERATOR = (function*(){yield}()).constructor;
     const EMPTY = '';
     const {stringify:_STR} = JSON;
     const JS = o => _STR(o, null, EMPTY);
@@ -787,6 +788,7 @@
         const currentPath = [PARENT_PATH + ONE_HIGHER];
         while( node ) {
           if ( node[value] instanceof Function ) return currentPath.join(EMPTY);
+
           node = node.getRootNode().host;
           currentPath.push( 'getRootNode().host.' );
         }

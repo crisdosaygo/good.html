@@ -6,6 +6,8 @@ class Cells extends Base {
 
   constructor() {
     super();
+    const resizer = this.columnResizer();
+    this.ResizeColumn = event => resizer.next(event);
   }
 
   async run({cell}) {
@@ -95,5 +97,27 @@ class Cells extends Base {
     await this.run(cells);
     setTimeout(() => target.scrollLeft = 0, 100);
     this.state = cells;
+  }
+
+  *columnResizer() {
+    while(true) {
+      let event = yield;
+      if ( !event.target.matches('.column-sizer') ) continue;  
+      if ( event.type === 'pointerdown' ) {
+        let {clientX:newX} = event;
+        const startX = newX;
+        const columnHeader = event.target.closest('th');
+        const columnElement = columnHeader.closest('table').querySelector(`colgroup col[name="${columnHeader.getAttribute('name')}"]`);
+        const {x,y,width,height} = columnHeader.getBoundingClientRect();
+        const newWidth = () => `${(width + (newX - startX)).toFixed(2)}px`;
+        dragging: while(true) {
+          event = yield;
+          if ( event.type === 'pointerup' ) break dragging;
+          if ( !event.target.matches('.column-sizer') ) break dragging;
+          ({clientX:newX} = event);
+          columnElement.style.width = newWidth(); 
+        }
+      }
+    }
   }
 }

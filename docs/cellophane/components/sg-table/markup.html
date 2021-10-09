@@ -1,18 +1,27 @@
 ${{key}}
 <sg-frame state=${_self}>
-  <div class=box>
+  <div class=box 
+      onpointerdown=ResizeColumn 
+      onpointermove=ResizeColumn 
+      onpointerup=ResizeColumn
+    >
     <table>
       <colgroup>
-        <col class="row-header">
+        <col class="row-header" name="top-left">
         ${columnNames.map(name => F`${{key:`${key}col${name}`}}
         <col name=${name} width=128px>
         `)}
       </colgroup>
       <thead>
         <tr class="label column">
-          <th class=top-left></th>
+          <th class=top-left name="top-left">
+            <div class=column-sizer></div>
+          </th>
           ${columnNames.map(name => F`${{key:`${key}colheader${name}`}}
-          <th scope=col>${name}</th>
+          <th scope=col name=${name}>
+            ${name}
+            <div class=column-sizer></div>
+          </th>
           `)}
         </tr>
       </thead>
