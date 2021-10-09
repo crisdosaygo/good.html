@@ -5,27 +5,33 @@
 <meta name=viewport content="width=device-width,initial-scale=1">
 <meta name=description content="This is a spreadsheet with JavaScript scripting, called the Cellophane Spreadsheet Component. It is built with the BANG! Web Component framework">
 <link rel=stylesheet href=./style.css>
+<style>
+  :root, body {
+    margin: 0; 
+    padding: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+</style>
 <script src=err.js></script>
 <script type=application/javascript src=./bang.js?2.718></script>
 <script>
   bangLoaded().then(() => {
-    use('sg-look-book');
     use('sg-cells');
     use('sg-cell');
     use('sg-frame');
 
     const State = {
-      cells: {
-        title: 'Cells (works!)',
-        sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
-        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-        rowNames: Array(100).join('.').split('').map((_,i) => i+1),
-      }
+      title: 'Cellophane',
+      sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
+      columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+      rowNames: Array(100).join('.').split('').map((_,i) => i+1),
     };
-    State.cells.cell = Object.fromEntries((function () {
+    State.cell = Object.fromEntries((function () {
       const entries = [];
-      State.cells.columnNames.forEach(col => {
-        State.cells.rowNames.forEach(row => {
+      State.columnNames.forEach(col => {
+        State.rowNames.forEach(row => {
           const key = `${col}${row}`;
           const value = {key, value: '', formula: '', editFormula: false};
           entries.push([key, value]);
@@ -33,14 +39,10 @@
       });
       return entries;
     }()));
-    State.cells.cell.A1.value = 123;
-    State.cells.cell.B1.value = 456;
-    State.cells.cell.A2.formula = '= A1 * B1';
-    State.cells.cell.A2.editFormula = true;
 
     setState('data', State, {save:true});
   });
 </script>
 <main>
-  <!sg-cells state=data />
+  <!sg-cells state=data incremental-load />
 </main>

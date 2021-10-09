@@ -1,25 +1,81 @@
 :host {
-  max-height: 500px;
-  max-width: 400px;
+  max-height: 100vh;
+  max-width: 100vw;
+  width: 100%;
+  height: 100%;
 }
 
 sg-frame {
-  max-height: 500px;
+  max-height: 100vh;
 }
 
-.label {
-  position: sticky;
-  background: azure;
-  font-weight: bold;
-  z-index: 10000;
-}
+/* everything */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
 
-.row {
-  left: 0;
-}
+/* rows */
+  tr {
+    padding: 0;
+    margin: 0;
+    border: 0;
+  }
 
-.column {
-  top: 0;
-}
+/* cells */
+  th, td {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+/* table extras (to organize */
+  table, tr, th, td {
+    border: 0;
+  }
 
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  tr {
+
+  }
+
+  table, th, td {
+    border: 1px solid grey;
+  }
+
+  tr {
+
+  }
+
+
+  th, .label {
+    position: sticky;
+    background: azure;
+    font-weight: bold;
+    z-index: 2;
+  }
+
+  th.row {
+    left: 0;
+    width: 40px;
+  }
+
+  tr.column {
+    top: 0;
+    z-index: 4;
+  }
+
+  th[scope="row"] {
+    z-index: 1;
+  }
+
+  th.top-left, th[scope="col"] {
+    z-index: 4;
+  }
 

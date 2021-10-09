@@ -9,9 +9,10 @@
   overflow: hidden;
   border: thin solid var(--border-color);
   font-family: system-ui, sans-serif;
-  margin: 1.5rem 0.5rem;
   max-height: 100%;
   filter: saturation(61.8%);
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .frame {
@@ -35,11 +36,13 @@
 }
 
 .content {
+  position: relative;
   background: mintcream;
   overflow: auto;
   max-height: 100%;
+  padding: 0;
 }
 
-.top-bar, .content {
+.top-bar {
   padding: var(--gap);
 }

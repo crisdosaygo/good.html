@@ -6,17 +6,11 @@ class Cells extends Base {
 
   constructor() {
     super();
-    this.untilLoaded().then(async () => {
-      await sleep(3000);
-      const cells = this.state;
-      await this.run(cells);
-      cells.cell.A2.editFormula = false;
-      this.state = cells;
-    });
   }
 
   async run({cell}) {
     Cells.DEBUG && console.log('running');
+    console.log('run');
     const Formulas = [];
     const CellProxy = {};
     for( let [coord, {formula,value}] of Object.entries(cell) ) {
@@ -59,7 +53,10 @@ class Cells extends Base {
       }
     }
     let iter = Cells.MAX_ITERATIONS;
-    while( iter-- && Formulas.map(f => f()).some(status => status === Cells.CHANGED) );
+    while( iter-- && Formulas.map(f => f()).some(status => status === Cells.CHANGED) ) {
+      console.log('Iteration');
+    }
+    console.log('done');
   }
 
   fastUpdate() {

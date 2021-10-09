@@ -1,16 +1,18 @@
-:not(:defined), .bang-el:not(.bang-styled) {
+:not(:defined), .bang-el:not(.bang-styled):not([incremental-load]) {
   visibility: hidden;
 }
-body > .bang-el:not(.bang-styled)::before,
+
+body .bang-el:first-of-type:not(.bang-styled)::before,
 [lazy].bang-el:not(.bang-styled)::before {
-  position: relative;
+  position: absolute;
   top: 0;
-  margin: 1.5rem 0.5rem;
+  margin: 0.5rem;
+  z-index: 9999999;
   display: inline-block;
   width: fit-content;
   max-width: 20px;
   content: "Loading...";
-  background-image: url(https://user-images.githubusercontent.com/22254235/135793966-edd05c8e-777e-41f1-b228-b3c2c1a7949b.gif);
+  background-image: url(/loader.gif);
   background-size: contain;
   background-repeat: no-repeat;
   /*

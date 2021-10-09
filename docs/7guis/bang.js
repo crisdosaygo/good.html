@@ -80,8 +80,9 @@
       constructor({task: task = () => void 0} = {}) {
         super();
         this.counts = new Counter;
+        const that = this;
         this.cookMarkup = async (markup, state) => {
-          const cooked = await cook.call(this, markup, state);
+          const cooked = await cook.call(that, markup, state);
           if ( !this.shadowRoot ) {
             const shadow = this.attachShadow(SHADOW_OPTS);
             observer.observe(shadow, OBSERVE_OPTS);
@@ -164,7 +165,9 @@
         if ( !this.isLazy ) {
           Counts.started++;
         }
-        this.classList.remove('bang-styled');
+        if ( !this.hasAttribute('incremental-load') ) {
+          this.classList.remove('bang-styled');
+        }
         // we prefetch the style
         fetchStyle(name).catch(err => {
           say('warn', err);
@@ -754,7 +757,7 @@
 
       let i = 0;
       while(replacements.length) {
-        replacements.pop()();
+        replacements.shift()();
         if ( RESPONSIVE_MEDIATION && allDependents ) {
           i++;
           if ( i < batchSize ) continue;
@@ -827,6 +830,7 @@
         if ( !state._self ) {
           Object.defineProperty(state, '_self', {value: state});
         }
+        state._comp = this;
       } catch(e) {
         say('warn!',
           `Cannot add '_self' self-reference property to state. 
