@@ -24,6 +24,7 @@
 
 .box label input {
   max-width: 85%;
+  width: 15ex;
   margin-right: 0.5rem;
   text-align: right;
   letter-spacing: 1px;

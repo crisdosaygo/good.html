@@ -1,15 +1,15 @@
 <sg-frame state=${_self}>
-  <div class=box>
+  <form class=box onsubmit="event.preventDefault();">
     <label>
-      <input required name=C type=number oninput=SetKelvin value="${c}" step=0.05>
+      <input required name=C type=number oninput=SetKelvin value="${c}" step=0.01>
       &deg;C
     </label>
     <span class=relation>
       &approx;
     </span>
     <label>
-      <input required name=F type=number oninput=SetKelvin value="${f}" step=0.05>
+      <input required name=F type=number oninput=SetKelvin value="${f}" step=0.01>
       &deg;F
     </label>
-  </div>
+  </form>
 </sg-frame>

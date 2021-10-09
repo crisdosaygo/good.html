@@ -1,6 +1,6 @@
 class Component extends Base {
   SetKelvin(inputEvent) {
-    if ( !inputEvent.target.checkValidity() ) return;
+    if ( !inputEvent.target.closest('form').reportValidity() ) return;
     const {target: targ} = inputEvent;
     const type = targ.name;
     const value = Number(targ.value);
