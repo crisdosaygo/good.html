@@ -14,6 +14,7 @@ class Cells extends Base {
     const Formulas = [];
     const CellProxy = {};
     for( let [coord, {formula,value}] of Object.entries(cell) ) {
+      const cellCoord = coord.split(':')[1];
       if ( formula ) {
         Formulas.push(() => {
           let newValue = Cells.EMPTY;
@@ -37,7 +38,7 @@ class Cells extends Base {
               console.info('cell error nan');
             }
           }
-          CellProxy[coord] = newValue;
+          CellProxy[cellCoord] = newValue;
           if ( newValue !== cell[coord].value ) {
             cell[coord].value = newValue;
             return Cells.CHANGED;
@@ -45,11 +46,11 @@ class Cells extends Base {
         });
       }
       if ( value === Cells.EMPTY ) {
-        CellProxy[coord] = Cells.EMPTY; 
-        CellProxy[coord.toLowerCase()] = Cells.EMPTY; 
+        CellProxy[cellCoord] = Cells.EMPTY; 
+        CellProxy[cellCoord.toLowerCase()] = Cells.EMPTY; 
       } else {
-        CellProxy[coord] = !Number.isNaN(Number(value)) ? Number(value) : value;
-        CellProxy[coord.toLowerCase()] = !Number.isNaN(Number(value)) ? Number(value) : value;
+        CellProxy[cellCoord] = !Number.isNaN(Number(value)) ? Number(value) : value;
+        CellProxy[cellCoord.toLowerCase()] = !Number.isNaN(Number(value)) ? Number(value) : value;
       }
     }
     let iter = Cells.MAX_ITERATIONS;

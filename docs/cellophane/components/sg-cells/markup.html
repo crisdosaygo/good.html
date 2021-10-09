@@ -4,7 +4,7 @@ ${{key}}
     <thead>
       <tr class="label column">
         <th class=top-left></th>
-        ${columnNames.map(name => F`${{key:`col${name}`}}
+        ${columnNames.map(name => F`${{key:`${key}col${name}`}}
         <th scope=col>${name}</th>
         `)}
       </tr>
@@ -14,17 +14,10 @@ ${{key}}
       <tr>
         <th scope=row class="label row">${rowName}</th>
         ${schedule(columnNames, async colName => {
-          const key = `${key}${colName}${rowName}`;
-          /** DON'T do this
-            /* setting state within a render will cause
-            /* unnecessary re-renders as well as race-condition errors
-            if ( ! cell[key] ) {
-              cell[key] = {key, formula: '', value: ''};
-            }
-          **/
-          return await F`${{key}}
+          const cellKey = `${key}:${colName}${rowName}`;
+          return await F`${{key:cellKey}}
         <td>
-          <!sg-cell data-key=${key} state=${cell[key]} />
+          <!sg-cell data-key=${cellKey} state=${cell[cellKey]} />
         </td>
         `}, {batchSize: 5})}
       </tr>

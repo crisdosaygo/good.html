@@ -23,9 +23,10 @@
     use('sg-cell');
     use('sg-frame');
 
+    const compKey = Math.random().toFixed(18);
     const State = {
       cells : {
-        key: Math.random().toFixed(18),
+        key: compKey,
         title: 'Cellophane',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
         columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
@@ -36,7 +37,7 @@
       const entries = [];
       State.cells.columnNames.forEach(col => {
         State.cells.rowNames.forEach(row => {
-          const key = `${col}${row}`;
+          const key = `${compKey}:${col}${row}`;
           const value = {key, value: '', formula: '', editFormula: false};
           entries.push([key, value]);
         });
@@ -51,8 +52,9 @@
     use('sg-cell');
     use('sg-frame');
 
+    const compKey = Math.random().toFixed(18);
     const State = {
-      key: Math.random().toFixed(18),
+      key: compKey,
       title: 'Cellophane',
       sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
       columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
@@ -62,7 +64,7 @@
       const entries = [];
       State.columnNames.forEach(col => {
         State.rowNames.forEach(row => {
-          const key = `${col}${row}`;
+          const key = `${compKey}:${col}${row}`;
           const value = {key, value: '', formula: '', editFormula: false};
           entries.push([key, value]);
         });
