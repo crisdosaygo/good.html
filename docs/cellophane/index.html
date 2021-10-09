@@ -19,7 +19,7 @@
 <script>
   bangLoaded().then(() => {
     use('sg-look-book');
-    use('sg-cells');
+    use('sg-table');
     use('sg-cell');
     use('sg-frame');
 
@@ -28,7 +28,7 @@
       cells : {
         key: compKey,
         title: 'Cellophane',
-        sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
+        sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-table',
         columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
         rowNames: Array(100).join('.').split('').map((_,i) => i+1),
       }
@@ -48,7 +48,7 @@
     setState('data', State, {save:true});
   });
   bangLoaded().then(() => {
-    use('sg-cells');
+    use('sg-table');
     use('sg-cell');
     use('sg-frame');
 
@@ -56,7 +56,7 @@
     const State = {
       key: compKey,
       title: 'Cellophane',
-      sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
+      sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-table',
       columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
       rowNames: Array(100).join('.').split('').map((_,i) => i+1),
     };
@@ -77,5 +77,5 @@
 </script>
 <main>
   <!sg-look-book state=data />
-  <!sg-cells super lazy state=xdata />
+  <!sg-table super lazy state=xdata />
 </main>

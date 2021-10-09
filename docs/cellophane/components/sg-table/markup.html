@@ -1,0 +1,35 @@
+${{key}}
+<sg-frame state=${_self}>
+  <div class=box>
+    <table>
+      <colgroup>
+        <col class="row-header">
+        ${columnNames.map(name => F`${{key:`${key}col${name}`}}
+        <col name=${name} width=128px>
+        `)}
+      </colgroup>
+      <thead>
+        <tr class="label column">
+          <th class=top-left></th>
+          ${columnNames.map(name => F`${{key:`${key}colheader${name}`}}
+          <th scope=col>${name}</th>
+          `)}
+        </tr>
+      </thead>
+      <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
+      <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}}
+        <tr>
+          <th scope=row class="label row">${rowName}</th>
+          ${schedule(columnNames, async colName => {
+            const cellKey = `${key}:${colName}${rowName}`;
+            return await F`${{key:cellKey}}
+          <td>
+            <!sg-cell data-key=${cellKey} state=${cell[cellKey]} />
+          </td>
+          `}, {batchSize: 5})}
+        </tr>
+      `, {batchSize: 1})
+      }</tbody>
+    </table>
+  </div>
+</sg-frame>

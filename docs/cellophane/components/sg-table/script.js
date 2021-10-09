@@ -68,7 +68,7 @@ class Cells extends Base {
   }
 
   async loadCalculator() {
-    const calculator = await import('./components/sg-cells/calculator.js');
+    const calculator = await import('./components/sg-table/calculator.js');
     Object.assign(this, {calculator});
   }
 
