@@ -105,19 +105,18 @@ class Cells extends Base {
       if ( !event.target.matches('.column-sizer') ) continue;  
       if ( event.type === 'pointerdown' ) {
         let {pageX:newX} = event;
-        const startX = newX;
         const columnHeader = event.target.closest('th');
         const columnElement = columnHeader.closest('table').querySelector(`colgroup col[name="${columnHeader.getAttribute('name')}"]`);
-        const {x,y,width,height} = columnHeader.getBoundingClientRect();
-        const attachRight = width - (newX - x);
+        const {x:startX, width} = columnHeader.getBoundingClientRect();
+        const attachRight = width - (newX - startX);
         const newWidth = () => {
-          const nw = `${(newX - x + 0).toFixed(3)}px`;
+          //const {x,y,width,height} = columnHeader.getBoundingClientRect();
+          const nw = `${(newX - startX + attachRight).toFixed(3)}px`;
           return nw;
         };
         dragging: while(true) {
           event = yield;
           if ( event.type === 'pointerup' ) break dragging;
-          if ( !event.target.matches('.column-sizer') ) break dragging;
           ({pageX:newX} = event);
           columnElement.style.width = newWidth(); 
         }
