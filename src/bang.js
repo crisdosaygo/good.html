@@ -296,6 +296,10 @@
 
   // API
     async function use(name) {
+      if ( self.customElements.get(name) ) return;
+
+      console.log('getting', name);
+
       let component;
       await fetchScript(name)
         .then(script => { // if there's a script that extends base, evaluate it to be component
@@ -311,6 +315,8 @@
           component = BangBase(name);
         });
       
+      if ( self.customElements.get(name) ) return;
+
       self.customElements.define(name, component);
     }
     
@@ -501,7 +507,7 @@
       const result = {args, started: new Date};
       let pr;
       if ( RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
-        pr = fetch(...args).catch(err => (say('log', err), err));
+        pr = fetch(...args).catch(err => (say('log', err), `/* ${err} */`));
         result.pr = pr;
         RequestPipeLine.set(key, result);
         const complete = r => {
@@ -601,22 +607,13 @@
       
         if ( CACHE.get(styleKey) instanceof Error ) { 
           resp = `<style>
-            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
-              return e;
-            })}
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
           </style>${text}` 
         } else {
           // inlining styles for increase speed */
           resp = `<style>
-            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
-              return e;
-            })}
-            ${await fetchStyle(name).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
-              return e;
-            })}
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
+            ${await fetchStyle(name)}
           </style>${text}`;
         }
         
@@ -644,6 +641,7 @@
         resp = new ReferenceError(`Fetch error: ${url}, ${r.statusText}`);
         throw resp;
       })
+      .then(e => e instanceof Error ? `/* no ${name}/${file} defined */` : e)
       .finally(async () => CACHE.set(key, await resp));
       
       return fileText;

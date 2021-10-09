@@ -25,6 +25,7 @@
 
     const State = {
       cells : {
+        key: Math.random().toFixed(18),
         title: 'Cellophane',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
         columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
@@ -45,7 +46,34 @@
 
     setState('data', State, {save:true});
   });
+  bangLoaded().then(() => {
+    use('sg-cells');
+    use('sg-cell');
+    use('sg-frame');
+
+    const State = {
+      key: Math.random().toFixed(18),
+      title: 'Cellophane',
+      sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
+      columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+      rowNames: Array(100).join('.').split('').map((_,i) => i+1),
+    };
+    State.cell = Object.fromEntries((function () {
+      const entries = [];
+      State.columnNames.forEach(col => {
+        State.rowNames.forEach(row => {
+          const key = `${col}${row}`;
+          const value = {key, value: '', formula: '', editFormula: false};
+          entries.push([key, value]);
+        });
+      });
+      return entries;
+    }()));
+
+    setState('xdata', State, {save:true});
+  });
 </script>
 <main>
   <!sg-look-book state=data />
+  <!sg-cells super lazy state=xdata />
 </main>

@@ -1,3 +1,4 @@
+${{key}}
 <sg-frame state=${_self}>
   <table>
     <thead>
@@ -9,11 +10,11 @@
       </tr>
     </thead>
     <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
-    <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`row${rowName}`}}
+    <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}}
       <tr>
         <th scope=row class="label row">${rowName}</th>
         ${schedule(columnNames, async colName => {
-          const key = `${colName}${rowName}`;
+          const key = `${key}${colName}${rowName}`;
           /** DON'T do this
             /* setting state within a render will cause
             /* unnecessary re-renders as well as race-condition errors
