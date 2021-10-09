@@ -1,0 +1,25 @@
+:host {
+  max-height: 500px;
+  max-width: 400px;
+}
+
+sg-frame {
+  max-height: 500px;
+}
+
+.label {
+  position: sticky;
+  background: azure;
+  font-weight: bold;
+  z-index: 10000;
+}
+
+.row {
+  left: 0;
+}
+
+.column {
+  top: 0;
+}
+
+
