@@ -295,7 +295,7 @@
         }
       }
       while(this.externals.length) {
-        this.externals.pop()();
+        this.externals.shift()();
       }
     }
 
@@ -416,7 +416,7 @@
         }
         state.oldNodes = newVal.nodes || [lastAnchor];
         while ( newVal.externals.length ) {
-          const func = newVal.externals.pop();
+          const func = newVal.externals.shift();
           func();
         } 
       }
