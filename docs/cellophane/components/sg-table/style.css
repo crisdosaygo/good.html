@@ -39,6 +39,10 @@ sg-frame {
     }
 
   /* cells */
+    th {
+      user-select: none;
+    }
+
     th, td {
       position: relative;
       box-sizing: border-box;
