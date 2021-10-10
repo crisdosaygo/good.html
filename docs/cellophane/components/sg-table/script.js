@@ -1,8 +1,9 @@
-class Cells extends Base {
-  static EMPTY = '';
-  static MAX_ITERATIONS = 10;
-  static CHANGED = 1e12+1;
-  static DEBUG = false;
+class Table extends Base {
+  static #DragSizeStart = new Set(['pointerdown', 'contextmenu']);
+  static get EMPTY() { return ''; }
+  static get MAX_ITERATIONS() { return 10; }
+  static get CHANGED() { return 1e12+1; }
+  static get DEBUG() { return false; }
 
   constructor() {
     super();
@@ -11,8 +12,6 @@ class Cells extends Base {
   }
 
   async run({cell}) {
-    Cells.DEBUG && console.log('running');
-    console.log('run');
     const Formulas = [];
     const CellProxy = {};
     for( let [coord, {formula,value}] of Object.entries(cell) ) {
@@ -30,7 +29,6 @@ class Cells extends Base {
                 return e;
               }
             }())`);
-            Cells.DEBUG && console.log({newValue});
           } catch(e) {
             console.info('cell error', coord, formula, e);
             newValue = 'error'; 
@@ -57,9 +55,7 @@ class Cells extends Base {
     }
     let iter = Cells.MAX_ITERATIONS;
     while( iter-- && Formulas.map(f => f()).some(status => status === Cells.CHANGED) ) {
-      console.log('Iteration');
     }
-    console.log('done');
   }
 
   fastUpdate() {
@@ -100,25 +96,43 @@ class Cells extends Base {
   }
 
   *columnResizer() {
-    while(true) {
+    picking: while(true) {
       let event = yield;
-      if ( !event.target.matches('.column-sizer') ) continue;  
-      if ( event.type === 'pointerdown' ) {
-        let {pageX:newX} = event;
-        const columnHeader = event.target.closest('th');
-        const columnElement = columnHeader.closest('table').querySelector(`colgroup col[name="${columnHeader.getAttribute('name')}"]`);
-        const {x:startX, width} = columnHeader.getBoundingClientRect();
-        const attachRight = width - (newX - startX);
-        const newWidth = () => {
-          //const {x,y,width,height} = columnHeader.getBoundingClientRect();
-          const nw = `${(newX - startX + attachRight).toFixed(3)}px`;
-          return nw;
-        };
-        dragging: while(true) {
-          event = yield;
-          if ( event.type === 'pointerup' ) break dragging;
-          ({pageX:newX} = event);
-          columnElement.style.width = newWidth(); 
+      const {target} = event;
+      sizing: if ( target.matches('.column-sizer') ) {
+        if ( event.type === 'contextmenu' ) {
+          event.preventDefault();
+        }
+
+        if ( Table.#DragSizeStart.has(event.type) ) {
+          const {clientX:startX} = event;
+          const columnHeader = target.closest('th');
+          const columnElement = columnHeader.closest('table').querySelector(`colgroup col[name="${columnHeader.getAttribute('name')}"]`);
+          const previousColumnElement = columnElement.previousElementSibling;
+          if ( ! previousColumnElement ) continue picking;
+          const widthBack = parseFloat(previousColumnElement.width || previousColumnElement.style.width)
+          const widthFront = parseFloat(columnElement.width || columnElement.style.width)
+          let newX = startX;
+
+          dragging: while(true) {
+            event = yield;
+            if ( event.type === 'pointerup' ) break dragging;
+            if ( event.target.matches('.column-sizer') && event.target !== target ) {
+              //continue newTarget;
+              break dragging;
+            }
+            ({clientX:newX} = event);
+            const [back, front] = newWidth();
+            previousColumnElement.width = back;
+            columnElement.width = front;
+          }
+
+          function newWidth() {
+            return [
+              `${(widthBack + newX - startX).toFixed(3)}px`,
+              `${(widthFront + startX - newX).toFixed(3)}px`
+            ];
+          }
         }
       }
     }

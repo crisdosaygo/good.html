@@ -1,6 +1,7 @@
 ${{key}}
 <sg-frame state=${_self}>
   <div class=box 
+      oncontextmenu=ResizeColumn
       onpointerdown=ResizeColumn 
       onpointermove=ResizeColumn 
       onpointerup=ResizeColumn
@@ -19,8 +20,8 @@ ${{key}}
           </th>
           ${columnNames.map(name => F`${{key:`${key}colheader${name}`}}
           <th scope=col name=${name}>
-            ${name}
             <div class=column-sizer></div>
+            ${name}
           </th>
           `)}
         </tr>

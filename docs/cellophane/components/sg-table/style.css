@@ -5,6 +5,7 @@
   height: 100%;
   --row-headers-width: 40px;
   --column-headers-height: 2rem;
+  --sizer-width: 3rem;
 }
 
 sg-frame {
@@ -113,14 +114,17 @@ sg-frame {
     }
 
 /* column sizing */
+  col {
+    min-width: calc(4 / 3 * var(--sizer-width));
+  }
   .column-sizer {
     display: block; 
     position: absolute;
-    right: 0;
+    left: 0;
     top: 0;
     height: 100%;
-    width: 3rem;
-    transform: translate(33%, 0);
+    width: var(--sizer-width);
+    transform: translate(-50%, 0);
     border: thin solid lime;
     box-sizing: border-box;
     z-index: 20;
