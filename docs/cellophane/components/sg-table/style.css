@@ -1,0 +1,151 @@
+:host {
+  max-height: 50vh;
+  max-width: 100vw;
+  width: 100%;
+  height: 100%;
+  --row-headers-width: 40px;
+  --column-headers-height: 2rem;
+  --sizer-width: 3rem;
+  --sizer-height: 1rem;
+  --row-height: 2rem;
+}
+
+sg-frame {
+  max-height: 50vh;
+}
+
+/* basic layout and scroll */
+  /* .box */
+    .box {
+      position: relative;
+      display: flex;
+      scroll-snap-type: both mandatory;
+      overflow: auto;
+      width: 100%;
+      height: 100%;
+      scroll-padding: var(--column-headers-height) 0 0 var(--row-headers-width);
+    }
+
+  /* everything */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+  /* rows */
+    tr {
+      padding: 0;
+      margin: 0;
+      border: 0;
+      height: var(--row-height);
+    }
+
+  /* cells */
+    thead, th, .label {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    th, td {
+      position: relative;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scroll-snap-align: start start;
+    }
+
+  /* table extras (to organize */
+    table, tr, th, td {
+      border: 0;
+    }
+
+    table {
+      table-layout: fixed;
+      width: 100%;
+      height: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    tr {
+      height: 2rem;
+    }
+
+    table, th, td {
+      border: 1px solid grey;
+    }
+
+    tr {
+
+    }
+
+
+    th, .label {
+      position: sticky;
+      background: azure;
+      font-weight: bold;
+      z-index: 2;
+    }
+
+    th.row {
+      left: 0;
+    }
+
+    tr.column {
+      top: 0;
+      z-index: 4;
+      height: var(--column-headers-height);
+    }
+
+    th[scope="row"] {
+      z-index: 1;
+    }
+
+    th.top-left, th[scope="col"] {
+      z-index: 4;
+    }
+
+    th.top-left {
+      z-index: 100;
+      top: 0;
+      left: 0;
+    }
+
+    col.row-header {
+      width: var(--row-headers-width);
+    }
+
+/* column sizing */
+  col {
+    min-width: calc(4 / 3 * var(--sizer-width));
+  }
+  .sizer {
+    display: block; 
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-sizing: border-box;
+    z-index: 20;
+    background-color: transparent;
+    scroll-snap-align: none none;
+  }
+  .column.sizer {
+    height: 100%;
+    width: var(--sizer-width);
+    transform: translate(-50%, 0);
+    cursor: ew-resize;
+  }
+  .row.sizer {
+    height: var(--sizer-height);
+    width: 100%;
+    transform: translate(0, -50%);
+    cursor: ns-resize;
+  }
+
+
+/* debug */
+:host([DEBUG]) .sizer {
+  border: thin solid lime;
+}
