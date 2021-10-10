@@ -466,7 +466,7 @@
 
       if ( rerender ) { // re-render only those components depending on that key
         const acquirers = Dependents.get(key);
-        if ( acquirers ) acquirers.forEach(host => host.print());
+        if ( acquirers ) acquirers.forEach(host => host.update());
       }
       
       return true;

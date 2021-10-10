@@ -59,8 +59,8 @@ class Table extends Base {
   }
 
   fastUpdate() {
-    const state = cloneState('data'); 
-    const {cells} = state;
+    const state = this.state;
+    const cells = state.cells || state;
 
     Object.entries(cells.cell).forEach(([key, cellState]) => this.updateIfChanged(cellState));
   }
@@ -156,7 +156,6 @@ class Table extends Base {
               }
               ({clientY:newY} = event);
               const [back, front] = newHeight();
-              console.log(back, front, previousRowElement);
               if ( previousRowElement.matches('.column-header') ) {
                 previousRowElement.closest('.box').style.setProperty(`--column-headers-height`, back);
               } else {
