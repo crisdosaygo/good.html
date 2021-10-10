@@ -18,7 +18,7 @@ class Table extends Base {
       const cellCoord = coord.split(':')[1];
       if ( formula ) {
         Formulas.push(() => {
-          let newValue = Cells.EMPTY;
+          let newValue = Table.EMPTY;
           try {
             newValue = runCode(CellProxy, `(function(){ 
               try {
@@ -41,20 +41,20 @@ class Table extends Base {
           CellProxy[cellCoord] = newValue;
           if ( newValue !== cell[coord].value ) {
             cell[coord].value = newValue;
-            return Cells.CHANGED;
+            return Table.CHANGED;
           }
         });
       }
-      if ( value === Cells.EMPTY ) {
-        CellProxy[cellCoord] = Cells.EMPTY; 
-        CellProxy[cellCoord.toLowerCase()] = Cells.EMPTY; 
+      if ( value === Table.EMPTY ) {
+        CellProxy[cellCoord] = Table.EMPTY; 
+        CellProxy[cellCoord.toLowerCase()] = Table.EMPTY; 
       } else {
         CellProxy[cellCoord] = !Number.isNaN(Number(value)) ? Number(value) : value;
         CellProxy[cellCoord.toLowerCase()] = !Number.isNaN(Number(value)) ? Number(value) : value;
       }
     }
-    let iter = Cells.MAX_ITERATIONS;
-    while( iter-- && Formulas.map(f => f()).some(status => status === Cells.CHANGED) ) {
+    let iter = Table.MAX_ITERATIONS;
+    while( iter-- && Formulas.map(f => f()).some(status => status === Table.CHANGED) ) {
     }
   }
 
