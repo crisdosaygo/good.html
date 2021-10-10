@@ -14,7 +14,7 @@
 ## Demos
 
 - [7GUIs](https://i5ik.github.io/_____/7guis/)
-- [Spreadsheet Component (*a work in progress*)](https://i5ik.github.io/_____/7guis/)
+- [Spreadsheet Component (*a work in progress*)](https://i5ik.github.io/_____/cellophane/)
 - [Simple Greeter Demo](https://i5ik.github.io/_____/)
 - [Simple Counter Demo](https://i5ik.github.io/_____/ctr/)
 
