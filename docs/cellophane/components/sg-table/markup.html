@@ -1,10 +1,10 @@
 ${{key}}
 <sg-frame state=${_self}>
   <div class=box 
-      oncontextmenu=ResizeColumn
-      onpointerdown=ResizeColumn 
-      onpointermove=ResizeColumn 
-      onpointerup=ResizeColumn
+      oncontextmenu=ResizeAxial
+      onpointerdown=ResizeAxial 
+      onpointermove=ResizeAxial 
+      onpointerup=ResizeAxial
     >
     <table>
       <colgroup>
@@ -14,13 +14,13 @@ ${{key}}
         `)}
       </colgroup>
       <thead>
-        <tr class="label column">
+        <tr class="label column column-header">
           <th class=top-left name="top-left">
-            <div class=column-sizer></div>
+            <div class="column sizer"></div>
           </th>
           ${columnNames.map(name => F`${{key:`${key}colheader${name}`}}
           <th scope=col name=${name}>
-            <div class=column-sizer></div>
+            <div class="column sizer"></div>
             ${name}
           </th>
           `)}
@@ -29,7 +29,10 @@ ${{key}}
       <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
       <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}}
         <tr>
-          <th scope=row class="label row">${rowName}</th>
+          <th scope=row class="label row">
+            <div class="row sizer"></div>
+            ${rowName}
+          </th>
           ${schedule(columnNames, async colName => {
             const cellKey = `${key}:${colName}${rowName}`;
             return await F`${{key:cellKey}}

@@ -6,6 +6,8 @@
   --row-headers-width: 40px;
   --column-headers-height: 2rem;
   --sizer-width: 3rem;
+  --sizer-height: 1rem;
+  --row-height: 2rem;
 }
 
 sg-frame {
@@ -36,7 +38,7 @@ sg-frame {
       padding: 0;
       margin: 0;
       border: 0;
-      height: 2rem;
+      height: var(--row-height);
     }
 
   /* cells */
@@ -117,17 +119,26 @@ sg-frame {
   col {
     min-width: calc(4 / 3 * var(--sizer-width));
   }
-  .column-sizer {
+  .sizer {
     display: block; 
     position: absolute;
     left: 0;
     top: 0;
-    height: 100%;
-    width: var(--sizer-width);
-    transform: translate(-50%, 0);
-    border: thin solid lime;
     box-sizing: border-box;
     z-index: 20;
     background-color: transparent;
+    border: thin solid lime;
+    scroll-snap-align: none none;
+  }
+  .column.sizer {
+    height: 100%;
+    width: var(--sizer-width);
+    transform: translate(-50%, 0);
     cursor: ew-resize;
+  }
+  .row.sizer {
+    height: var(--sizer-height);
+    width: 100%;
+    transform: translate(0, -50%);
+    cursor: ns-resize;
   }

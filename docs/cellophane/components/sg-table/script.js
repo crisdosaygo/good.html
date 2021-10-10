@@ -7,8 +7,8 @@ class Table extends Base {
 
   constructor() {
     super();
-    const resizer = this.columnResizer();
-    this.ResizeColumn = event => resizer.next(event);
+    const resizer = this.Resizer();
+    this.ResizeAxial = event => resizer.next(event);
   }
 
   async run({cell}) {
@@ -95,43 +95,82 @@ class Table extends Base {
     this.state = cells;
   }
 
-  *columnResizer() {
+  *Resizer() {
     picking: while(true) {
       let event = yield;
       const {target} = event;
-      sizing: if ( target.matches('.column-sizer') ) {
+      sizing: if ( target.matches('.sizer') ) {
         if ( event.type === 'contextmenu' ) {
           event.preventDefault();
         }
 
         if ( Table.#DragSizeStart.has(event.type) ) {
-          const {clientX:startX} = event;
-          const columnHeader = target.closest('th');
-          const columnElement = columnHeader.closest('table').querySelector(`colgroup col[name="${columnHeader.getAttribute('name')}"]`);
-          const previousColumnElement = columnElement.previousElementSibling;
-          if ( ! previousColumnElement ) continue picking;
-          const widthBack = parseFloat(previousColumnElement.width || previousColumnElement.style.width)
-          const widthFront = parseFloat(columnElement.width || columnElement.style.width)
-          let newX = startX;
+          const {clientX:startX,clientY:startY} = event;
+          const header = target.closest('th');
 
-          dragging: while(true) {
-            event = yield;
-            if ( event.type === 'pointerup' ) break dragging;
-            if ( event.target.matches('.column-sizer') && event.target !== target ) {
-              //continue newTarget;
-              break dragging;
+          if ( target.matches('.column') ) {
+            const columnElement = header.closest('table').querySelector(`colgroup col[name="${header.getAttribute('name')}"]`);
+            const previousColumnElement = columnElement.previousElementSibling;
+            if ( ! previousColumnElement ) continue picking;
+            const widthBack = parseFloat(previousColumnElement.width || previousColumnElement.style.width || previousColumnElement.getBoundingClientRect().width);
+            const widthFront = parseFloat(columnElement.width || columnElement.style.width)
+            let newX = startX;
+
+            col_size_dragging: while(true) {
+              event = yield;
+              if ( event.type === 'pointerup' ) break col_size_dragging;
+              if ( event.target.matches('.column.sizer') && event.target !== target ) {
+                //continue newTarget;
+                break col_size_dragging;
+              }
+              ({clientX:newX} = event);
+              const [back, front] = newWidth();
+              if ( previousColumnElement.matches('.row-header') ) {
+                previousColumnElement.closest('.box').style.setProperty(`--row-headers-width`, back);
+              } else {
+                previousColumnElement.width = back;
+              }
+              columnElement.width = front;
             }
-            ({clientX:newX} = event);
-            const [back, front] = newWidth();
-            previousColumnElement.width = back;
-            columnElement.width = front;
-          }
 
-          function newWidth() {
-            return [
-              `${(widthBack + newX - startX).toFixed(3)}px`,
-              `${(widthFront + startX - newX).toFixed(3)}px`
-            ];
+            function newWidth() {
+              return [
+                `${(widthBack + newX - startX).toFixed(3)}px`,
+                `${(widthFront + startX - newX).toFixed(3)}px`
+              ];
+            }
+          } else if ( target.matches('.row') ) {
+            const rowElement = header.closest('tr')
+            const previousRowElement = rowElement.previousElementSibling || rowElement.closest('table').querySelector('thead').lastElementChild;
+            if ( ! previousRowElement ) continue picking;
+            const heightBack = parseFloat(previousRowElement.height || previousRowElement.style.height || previousRowElement.getBoundingClientRect().height )
+            const heightFront = parseFloat(rowElement.height || rowElement.style.height || rowElement.getBoundingClientRect().height)
+            let newY = startY;
+
+            row_size_dragging: while(true) {
+              event = yield;
+              if ( event.type === 'pointerup' ) break row_size_dragging;
+              if ( event.target.matches('.row.sizer') && event.target !== target ) {
+                //continue newTarget;
+                break row_size_dragging;
+              }
+              ({clientY:newY} = event);
+              const [back, front] = newHeight();
+              console.log(back, front, previousRowElement);
+              if ( previousRowElement.matches('.column-header') ) {
+                previousRowElement.closest('.box').style.setProperty(`--column-headers-height`, back);
+              } else {
+                previousRowElement.style.height = back;
+              }
+              //rowElement.style.height = front;
+            }
+
+            function newHeight() {
+              return [
+                `${(heightBack + newY - startY).toFixed(3)}px`,
+                `${(heightFront + startY - newY).toFixed(3)}px`
+              ];
+            }
           }
         }
       }
