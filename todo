@@ -1,3 +1,2 @@
-- run not iterating in cells (some positions not updated till next change)
-- add column and row focus, tab index, and highlight
 - weirdness in column sizing on mobile
+- weirdness in snap padding everywhere especially on the row header
