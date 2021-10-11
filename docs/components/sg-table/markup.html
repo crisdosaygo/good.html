@@ -13,13 +13,16 @@ ${{key}}
         <col name=${name} width=128px>
         `)}
       </colgroup>
-      <thead>
+      <thead 
+        onfocusin=SelectColumn 
+        onfocusout=DeselectColumn
+      >
         <tr class="label column column-header">
           <th class=top-left name="top-left">
             <div class="column sizer"></div>
           </th>
           ${columnNames.map(name => F`${{key:`${key}colheader${name}`}}
-          <th scope=col name=${name}>
+          <th scope=col name=${name} tabindex=1>
             <div class="column sizer"></div>
             ${name}
           </th>
@@ -29,7 +32,7 @@ ${{key}}
       <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
       <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}}
         <tr>
-          <th scope=row class="label row">
+          <th scope=row class="label row" tabindex=1>
             <div class="row sizer"></div>
             ${rowName}
           </th>

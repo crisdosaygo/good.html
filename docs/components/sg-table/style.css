@@ -4,10 +4,10 @@
   width: 100%;
   height: 100%;
   --row-headers-width: 40px;
-  --column-headers-height: 2rem;
+  --column-headers-height: var(--row-height);
   --sizer-width: 3rem;
   --sizer-height: 1rem;
-  --row-height: 2rem;
+  --row-height: 2.5rem;
   --max-height: 500px;
   --max-width: 400px;
 }
@@ -53,6 +53,11 @@ sg-frame {
       margin: 0;
       padding: 0;
       scroll-snap-align: start start;
+      background: transparent;
+    }
+
+    table {
+      background: white;
     }
 
   /* table extras (to organize */
@@ -68,10 +73,6 @@ sg-frame {
       border-spacing: 0;
     }
 
-    tr {
-      height: 2rem;
-    }
-
     table, th, td {
       border: 1px solid grey;
     }
@@ -81,11 +82,15 @@ sg-frame {
     }
 
 
-    th, .label {
+    th.row, thead {
       position: sticky;
       background: azure;
       font-weight: bold;
       z-index: 2;
+    }
+
+    thead {
+      top: 0;
     }
 
     th.row {
@@ -104,12 +109,6 @@ sg-frame {
 
     th.top-left, th[scope="col"] {
       z-index: 4;
-    }
-
-    th.top-left {
-      z-index: 100;
-      top: 0;
-      left: 0;
     }
 
     col.row-header {
@@ -163,3 +162,17 @@ sg-frame {
   :host([DEBUG]) .sizer {
     border: thin solid lime;
   }
+
+/* focus */
+  th:focus {
+    outline: thin inset dodgerblue;
+    background-color: lightskyblue;
+  }
+
+  col.selected, tr th:focus ~ td {
+    background: lightskyblue;
+  }
+
+
+  
+

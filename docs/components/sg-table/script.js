@@ -11,6 +11,18 @@ class Table extends Base {
     this.ResizeAxial = event => resizer.next(event);
   }
 
+  SelectColumn(focusEvent) {
+    const {path:[th]} = focusEvent;
+    const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);
+    colElement.classList.add('selected');
+  }
+
+  DeselectColumn(focusEvent) {
+    const {path:[th]} = focusEvent;
+    const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);
+    colElement.classList.remove('selected');
+  }
+
   async run({cell}) {
     let iter = Table.MAX_ITERATIONS;
     const Formulas = [];
