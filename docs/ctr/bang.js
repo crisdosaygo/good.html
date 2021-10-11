@@ -64,11 +64,19 @@
 
       check() {
         const {root} = this;
-        if ( root == document ) say('log', 'Checking counts');
-        const noNonLazyTopLevel = root.getRootNode() === document && root.querySelectorAll('.bang-el:not([lazy])').length === 0;
-        const nonZeroCheck = noNonLazyTopLevel || this.started > 0;
-        const finishedCheck = this.started >= this.finished;
-        return nonZeroCheck && finishedCheck;
+        const isTopLevel = root === document;
+        let loaded = false;
+
+        if ( isTopLevel ) {
+          const noSwiftDescendents = root.querySelectorAll('.bang-el:not([lazy])').length === 0;
+          loaded = noSwiftDescendents;
+        } else {
+          const nonZeroCheck = this.started > 0;
+          const finishedCheck = this.finished >= this.started;
+          loaded = nonZeroCheck && finishedCheck;
+        }
+
+        return loaded;
       }
 
       start() {
@@ -100,7 +108,7 @@
       #name = name;
       #dependents = [];
 
-      constructor({task: task = () => void 0} = {}) {
+      constructor() {
         super();
         new Counter(this);
         this.cookMarkup = async (markup, state) => {
@@ -114,10 +122,11 @@
             
             // add dependents
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
-            this.#dependents = deps.map(node => node.untilLoaded());
+            this.#dependents = deps.map(node => node.untilVisible());
           }
         }
         this.markLoaded = async () => {
+          this.alreadyPrinted = true;
           if ( ! this.loaded ) {
             this.counts.finish();
             const loaded = await this.untilLoaded();
@@ -128,28 +137,16 @@
                 setTimeout(() => document.counts.finish(), 0);
               }
             } else {
+              console.warn('Not loaded', this);
               // right now this never happens
             }
           }
         }
-        this.checkLoad = () => this.counts.check();
+        this.loadCheck = () => this.counts.check();
+        this.visibleCheck = () => this.classList?.contains('bang-styled');
         this.loadKey = Math.random().toString(36);
+        this.visibleLoadKey = Math.random().toString(36);
 
-        if ( this.hasAttribute('lazy') ) {
-          this.isLazy = true;
-          if ( this.hasAttribute('super') ) {
-            this.superLazy = true;
-            loaded().then(() => sleep(400*Math.random()).then(() => this.print().then(task)));
-          } else {
-            if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
-              sleep(160*Math.random()).then(() => this.print().then(task));
-            } else {
-              this.print().then(task);
-            }
-          }
-        } else {
-          this.print().then(task);
-        }
       }
 
       get name() {
@@ -181,7 +178,6 @@
       }
 
       prepareVisibility() {
-        this.alreadyPrinted = true;
         this.classList.add('bang-el');
         this.counts.start();
         if ( !this.isLazy ) {
@@ -195,9 +191,18 @@
       }
 
       async untilLoaded() {
-        const myDependentsLoaded = (await Promise.all(this.#dependents)).every(loaded => loaded);
-        const myContentLoaded = await becomesTrue(this.checkLoad, this.loadKey);
+        const myDependentsLoaded = (await Promise.all(this.#dependents)).every(visible => visible);
+        const myContentLoaded = await becomesTrue(this.loadCheck, this.loadKey);
         return myContentLoaded && myDependentsLoaded;
+      }
+
+      async untilVisible() {
+        if ( this.isLazy ) return true;
+        return await becomesTrue(this.visibleCheck, this.visibleLoadKey);
+      }
+
+      get deps() {
+        return this.#dependents;
       }
 
       updateIfChanged(state) {
@@ -236,6 +241,21 @@
       connectedCallback() {
         say('log',name, 'connected');
         this.handleAttrs(this.attributes, {originals: true});
+        if ( this.hasAttribute('lazy') ) {
+          this.isLazy = true;
+          if ( this.hasAttribute('super') ) {
+            this.superLazy = true;
+            loaded().then(() => sleep(400*Math.random()).then(() => this.print()));
+          } else {
+            if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
+              sleep(160*Math.random()).then(() => this.print());
+            } else {
+              this.print();
+            }
+          }
+        } else {
+          this.print();
+        }
       }
 
       // private methods

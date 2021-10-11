@@ -12,11 +12,6 @@
   --max-width: 400px;
 }
 
-:host([fill]) {
-  --max-height: 100vh;
-  --max-width: 100vw;
-}
-
 sg-frame {
   max-height: var(--max-height);
 }
@@ -36,11 +31,6 @@ sg-frame {
   /* everything */
     * {
       box-sizing: border-box;
-    }
-
-    :host([fill]) * {
-      margin: 0;
-      padding: 0;
     }
 
   /* rows */
@@ -153,8 +143,23 @@ sg-frame {
     cursor: ns-resize;
   }
 
+/* the adjustment bureau */
+  :host([fill]) {
+    --max-height: 100vh;
+    --max-width: 100vw;
+  }
+
+  :host([fill]) * {
+    margin: 0;
+    padding: 0;
+  }
+
+  :host([fill]) table {
+    border: 0;
+    border-bottom: 1px solid grey;
+  }
 
 /* debug */
-:host([DEBUG]) .sizer {
-  border: thin solid lime;
-}
+  :host([DEBUG]) .sizer {
+    border: thin solid lime;
+  }

@@ -1,3 +1,3 @@
 - run not iterating in cells (some positions not updated till next change)
-- weirdness running old cells
+- add column and row focus, tab index, and highlight
 - weirdness in column sizing on mobile
