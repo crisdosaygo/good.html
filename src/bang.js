@@ -30,7 +30,7 @@
       scriptFile: 'script.js',
       styleFile: 'style.css',
       bangKey: '_bang_key',
-      componentsPath: `../components`,
+      componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}../components`,
       allowUnset: false,
       unsetPlaceholder: EMPTY,
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
