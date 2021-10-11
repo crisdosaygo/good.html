@@ -12,50 +12,54 @@ class Table extends Base {
   }
 
   async run({cell}) {
-    const Formulas = [];
-    const CellProxy = {};
-    for( let [coord, {formula,value}] of Object.entries(cell) ) {
-      const cellCoord = coord.split(':')[1];
-      if ( formula ) {
-        Formulas.push(() => {
-          let newValue = Table.EMPTY;
-          try {
-            newValue = runCode(CellProxy, `(function(){ 
-              try {
-                const result ${formula}; 
-                return result;
-              } catch(e) {
-                console.warn(e);
-                return e;
-              }
-            }())`);
-          } catch(e) {
-            console.info('cell error', coord, formula, e);
-            newValue = 'error'; 
-          } finally {
-            if ( Number.isNaN(value) ) {
-              newValue = 'not a number';
-              console.info('cell error nan');
-            }
-          }
-          CellProxy[cellCoord] = newValue;
-          if ( newValue !== cell[coord].value ) {
-            cell[coord].value = newValue;
-            return Table.CHANGED;
-          }
-        });
-      }
-      if ( value === Table.EMPTY ) {
-        CellProxy[cellCoord] = Table.EMPTY; 
-        CellProxy[cellCoord.toLowerCase()] = Table.EMPTY; 
-      } else {
-        CellProxy[cellCoord] = !Number.isNaN(Number(value)) ? Number(value) : value;
-        CellProxy[cellCoord.toLowerCase()] = !Number.isNaN(Number(value)) ? Number(value) : value;
-      }
-    }
     let iter = Table.MAX_ITERATIONS;
-    while( iter-- && Formulas.map(f => f()).some(status => status === Table.CHANGED) ) {
-    }
+    const Formulas = [];
+    do {
+      Formulas.length = 0;
+      const CellProxy = {};
+      for( let [coord, {formula,value}] of Object.entries(cell) ) {
+        const cellCoord = coord.split(':')[1];
+        if ( formula ) {
+          Formulas.push(() => {
+            let newValue = Table.EMPTY;
+            try {
+              newValue = runCode(CellProxy, `(function(){ 
+                try {
+                  const result ${formula}; 
+                  return result;
+                } catch(e) {
+                  console.warn(e);
+                  return e;
+                }
+              }())`);
+            } catch(e) {
+              console.info('cell error', coord, formula, e);
+              newValue = 'error'; 
+            } finally {
+              if ( Number.isNaN(value) ) {
+                newValue = 'not a number';
+                console.info('cell error nan');
+              }
+            }
+            CellProxy[cellCoord] = newValue;
+            if ( newValue !== cell[coord].value ) {
+              Table.DEBUG && console.log(`Cell ${cellCoord} has changed.`, cell[coord].value, newValue);
+              cell[coord].value = newValue;
+              return Table.CHANGED;
+            } else {
+              Table.DEBUG && console.log(`Cell ${cellCoord} did NOT change.`);
+            }
+          });
+        }
+        if ( value === Table.EMPTY ) {
+          CellProxy[cellCoord] = Table.EMPTY; 
+          CellProxy[cellCoord.toLowerCase()] = Table.EMPTY; 
+        } else {
+          CellProxy[cellCoord] = !Number.isNaN(Number(value)) ? Number(value) : value;
+          CellProxy[cellCoord.toLowerCase()] = !Number.isNaN(Number(value)) ? Number(value) : value;
+        }
+      }
+    } while( iter-- && Formulas.map(f => f()).some(status => status === Table.CHANGED) );
   }
 
   fastUpdate() {

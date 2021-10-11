@@ -1,4 +1,8 @@
 class Component extends Base {
+  ScrollIntoView() {
+    this.scrollIntoView();
+  }
+
   ShowFormula() {
     const {state} = this;
     state.editFormula = true;

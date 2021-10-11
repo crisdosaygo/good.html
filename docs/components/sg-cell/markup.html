@@ -1,6 +1,7 @@
 ${{key}}
 <input type=text name=cell 
   value="${editFormula ? (formula||value) : !isUnset(value) ? value : EMPTY}" 
+  onfocusin=ScrollIntoView
   onchange=Recalculate 
   ondblclick=ShowFormula
   oncontextmenu=ShowFormula
