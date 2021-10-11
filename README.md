@@ -11,6 +11,13 @@
 
 ***BANG!*** is a view library that prints custom elements, so you get style encapsulation, and component-powered reusability baked-in. It also has minimal DOM diffing, JavaScript templating syntax, zero dependences and needs to transpiler. Built with the power of the web, in 
 
+## Demos
+
+- [7GUIs](https://i5ik.github.io/_____/7guis/)
+- [Spreadsheet Component (*a work in progress*)](https://i5ik.github.io/_____/cellophane/)
+- [Simple Greeter Demo](https://i5ik.github.io/_____/)
+- [Simple Counter Demo](https://i5ik.github.io/_____/ctr/)
+
 The page above has over 10,000 DOM nodes, yet Lighthouse manages to love it, anyway. How is this possible? ***EXPLORE BANG! FOR KNOWLEDGE***
 
 This is ***BANG!***, making a component:
