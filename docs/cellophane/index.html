@@ -18,36 +18,6 @@
 <script type=application/javascript src=./bang.js?2.718></script>
 <script>
   bangLoaded().then(() => {
-    use('sg-look-book');
-    use('sg-table');
-    use('sg-cell');
-    use('sg-frame');
-
-    const compKey = Math.random().toFixed(18);
-    const State = {
-      cells : {
-        key: compKey,
-        title: 'Cellophane',
-        sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-table',
-        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-        rowNames: Array(100).join('.').split('').map((_,i) => i+1),
-      }
-    };
-    State.cells.cell = Object.fromEntries((function () {
-      const entries = [];
-      State.cells.columnNames.forEach(col => {
-        State.cells.rowNames.forEach(row => {
-          const key = `${compKey}:${col}${row}`;
-          const value = {key, value: '', formula: '', editFormula: false};
-          entries.push([key, value]);
-        });
-      });
-      return entries;
-    }()));
-
-    setState('data', State, {save:true});
-  });
-  bangLoaded().then(() => {
     use('sg-table');
     use('sg-cell');
     use('sg-frame');
@@ -57,8 +27,8 @@
       key: compKey,
       title: 'Cellophane',
       sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-table',
-      columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-      rowNames: Array(100).join('.').split('').map((_,i) => i+1),
+      columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
+      rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
     };
     State.cell = Object.fromEntries((function () {
       const entries = [];
@@ -72,10 +42,9 @@
       return entries;
     }()));
 
-    setState('xdata', State, {save:true});
+    setState('data', State, {save:true});
   });
 </script>
 <main>
-  <!sg-look-book state=data />
-  <!sg-table super lazy state=xdata />
+  <!sg-table fill super lazy state=data />
 </main>

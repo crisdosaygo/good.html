@@ -1,2 +1,3 @@
-- shift other things (like loaded / etc) to subscription model to save timers
-
+- run not iterating in cells (some positions not updated till next change)
+- weirdness running old cells
+- weirdness in column sizing on mobile

@@ -30,7 +30,7 @@
       scriptFile: 'script.js',
       styleFile: 'style.css',
       bangKey: '_bang_key',
-      componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}components`,
+      componentsPath: `/components`,
       allowUnset: false,
       unsetPlaceholder: EMPTY,
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
@@ -56,14 +56,36 @@
     class Counter {
       started = 0;
       finished = 0;
+
+      constructor(root) {
+        root.counts = this;
+        this.root = root;
+      }
+
+      check() {
+        const {root} = this;
+        if ( root == document ) say('log', 'Checking counts');
+        const noNonLazyTopLevel = root.getRootNode() === document && root.querySelectorAll('.bang-el:not([lazy])').length === 0;
+        const nonZeroCheck = noNonLazyTopLevel || this.started > 0;
+        const finishedCheck = this.started >= this.finished;
+        return nonZeroCheck && finishedCheck;
+      }
+
+      start() {
+        if ( this.root == document ) say('log', 'Counting start');
+        this.started++;
+      }
+
+      finish() {
+        if ( this.root == document ) say('log', 'Counting finished');
+        this.finished++;
+      }
     }
-    const Counts = new Counter;
-    const LoadChecker = countsChecker(Counts);
-    const Finished = () => Counts.finished++;
     const SHADOW_OPTS = {mode:'open'};
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
     const INSERT = 'insert';
     const ALL_DEPS = {allDependents: true};
+    let LoadChecker;
     let RequestId = 0;
     let hindex = 0;
     let observer; // global mutation observer
@@ -80,7 +102,7 @@
 
       constructor({task: task = () => void 0} = {}) {
         super();
-        this.counts = new Counter;
+        new Counter(this);
         this.cookMarkup = async (markup, state) => {
           const cooked = await cook.call(this, markup, state);
           if ( !this.shadowRoot ) {
@@ -97,20 +119,20 @@
         }
         this.markLoaded = async () => {
           if ( ! this.loaded ) {
-            this.counts.finished++;
+            this.counts.finish();
             const loaded = await this.untilLoaded();
             if ( loaded ) {
               this.loaded = loaded;
               this.setVisible();
               if ( ! this.isLazy ) {
-                setTimeout(Finished, 0);
+                setTimeout(() => document.counts.finish(), 0);
               }
             } else {
               // right now this never happens
             }
           }
         }
-        this.checkLoad = countsChecker(this.counts);
+        this.checkLoad = () => this.counts.check();
         this.loadKey = Math.random().toString(36);
 
         if ( this.hasAttribute('lazy') ) {
@@ -161,9 +183,9 @@
       prepareVisibility() {
         this.alreadyPrinted = true;
         this.classList.add('bang-el');
-        this.counts.started++;
+        this.counts.start();
         if ( !this.isLazy ) {
-          Counts.started++;
+          document.counts.start();
         }
         this.classList.remove('bang-styled');
         // we prefetch the style
@@ -484,10 +506,6 @@
       }
     }
 
-    function countsChecker(counts) {
-      return () => counts.started > 0 && counts.finished >= counts.started;
-    }
-
     async function loaded() {
       return becomesTrue(LoadChecker);
     }
@@ -541,6 +559,9 @@
 
   // helpers
     async function install() {
+      new Counter(document);
+      LoadChecker = () => document.counts.check();
+
       Object.assign(globalThis, {
         F,
         use, setState, patchState, cloneState, loaded, 

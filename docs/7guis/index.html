@@ -20,11 +20,14 @@
     use('sg-circle');
     use('sg-sizer-modal');
     use('sg-cells');
+    use('sg-table');
     use('sg-cell');
     use('sg-frame');
 
+    const compKey = Math.random().toFixed(18);
     const State = {
       temperatureConverter: {
+        key: Math.random().toFixed(18),
         title: 'Temperature Converter',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-temp-converter',
         k: 198,
@@ -32,6 +35,7 @@
         f: 32,
       },
       flightBooker: {
+        key: Math.random().toFixed(18),
         title: 'Flight Booker',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-flight-booker',
         valence: 'one-way',
@@ -40,12 +44,14 @@
         formValid: true
       },
       timer: {
+        key: Math.random().toFixed(18),
         title: 'Timer',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-timer',
         duration: 37.518,
         elapsed: 11.3710000
       },
       crud: {
+        key: Math.random().toFixed(18),
         title: 'CRUD',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-crud',
         prefix: '',
@@ -74,10 +80,18 @@
         selected: '',
       },
       cells: {
+        key: Math.random().toFixed(18),
         title: 'Cells (works!)',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-cells',
-        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-        rowNames: Array(100).join('.').split('').map((_,i) => i+1),
+        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
+        rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
+      },
+      cells2: {
+        key: compKey,
+        title: 'Cells (works!)',
+        sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-table',
+        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
+        rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
       }
     };
     State.cells.cell = Object.fromEntries((function () {
@@ -96,14 +110,28 @@
     State.cells.cell.A2.formula = '= A1 * B1';
     State.cells.cell.A2.editFormula = true;
 
+    State.cells2.cell = Object.fromEntries((function () {
+      const entries = [];
+      State.cells2.columnNames.forEach(col => {
+        State.cells2.rowNames.forEach(row => {
+          const key = `${compKey}:${col}${row}`;
+          const value = {key, value: '', formula: '', editFormula: false};
+          entries.push([key, value]);
+        });
+      });
+      return entries;
+    }()));
+
     setState('data', State, {save:true});
     setState('circleDrawer', {
+      key: Math.random().toFixed(18),
       title: 'Cricle Drawer',
       sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-circle-drawer',
       selected: '',
       circles: []
     }, {save:true});
     const ctr = {
+      key: Math.random().toFixed(18),
       title: 'Counter',
       sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/7guis/components/sg-counter',
       count: 42
