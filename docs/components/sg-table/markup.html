@@ -1,5 +1,5 @@
 ${{key}}
-<sg-frame state=${_self}>
+<sg-frame state=${_self} fill>
   <div class=box 
       oncontextmenu=ResizeAxial
       onpointerdown=ResizeAxial 
@@ -18,7 +18,8 @@ ${{key}}
         onfocusout=DeselectColumn
       >
         <tr class="label column column-header">
-          <th class=top-left name="top-left">
+          <th scope=col class=top-left name=top-left>
+            &nbsp;
             <div class="column sizer"></div>
           </th>
           ${columnNames.map(name => F`${{key:`${key}colheader${name}`}}
@@ -29,9 +30,7 @@ ${{key}}
           `)}
         </tr>
       </thead>
-      <!-- the below loops using schedule to print 2500+ components are heavily optimized -->
-      <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}}
-        <tr>
+      <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}} <tr>
           <th scope=row class="label row" tabindex=1>
             <div class="row sizer"></div>
             ${rowName}

@@ -2,6 +2,7 @@
   position: relative;
   display: flex;
   --gap: 0.5rem;
+  --gap2: 0.5rem;
   width: -moz-fit-content;
   width: fit-content;
   --border-color: silver;
@@ -16,6 +17,11 @@
   margin: 1.5rem 0.5rem;
 }
 
+:host([fill]) {
+  --gap: 0;
+  width: 100%;
+}
+
 :host-context([fill]) {
   margin: 0;
   border: 0;
@@ -24,6 +30,7 @@
 
 .frame {
   display: grid;
+  width: 100%;
   grid-template-areas: 
     "top-bar"
     "content";
@@ -48,7 +55,10 @@
   max-height: 100%;
 }
 
-.top-bar, .content {
+.top-bar {
+  padding: var(--gap2);
+}
+.content {
   padding: var(--gap);
 }
 

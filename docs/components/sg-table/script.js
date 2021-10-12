@@ -11,6 +11,11 @@ class Table extends Base {
     this.ResizeAxial = event => resizer.next(event);
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    //setInterval(() => alert(this.style.getPropertyValue('--column-headers-height')), 6000);
+  }
+
   SelectColumn(focusEvent) {
     const {path:[th]} = focusEvent;
     const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);

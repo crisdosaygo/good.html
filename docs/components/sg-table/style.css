@@ -1,15 +1,17 @@
 :host {
+  --sizer-width: 3rem;
+  --sizer-height: 1rem;
+  --row-height: 3rem;
+  --max-height: 500px;
+  --max-width: 400px;
+  --comfortable-sizer: calc(2 * var(--sizer-width));
+  --comfortable-height: calc(2 * var(--sizer-height));
+  --row-headers-width: max(40px, var(--comfortable-sizer));
+  --column-headers-height: max(var(--comfortable-height), var(--row-height));
   max-height: var(--max-height);
   max-width: var(--max-width);
   width: 100%;
   height: 100%;
-  --row-headers-width: 40px;
-  --column-headers-height: var(--row-height);
-  --sizer-width: 3rem;
-  --sizer-height: 1rem;
-  --row-height: 2.5rem;
-  --max-height: 500px;
-  --max-width: 400px;
 }
 
 sg-frame {
@@ -48,8 +50,6 @@ sg-frame {
     }
 
     th, td {
-      position: relative;
-      box-sizing: border-box;
       margin: 0;
       padding: 0;
       scroll-snap-align: start start;
@@ -63,6 +63,8 @@ sg-frame {
   /* table extras (to organize */
     table, tr, th, td {
       border: 0;
+      position: relative;
+      box-sizing: border-box;
     }
 
     table {
@@ -76,11 +78,6 @@ sg-frame {
     table, th, td {
       border: 1px solid grey;
     }
-
-    tr {
-
-    }
-
 
     th.row, thead {
       position: sticky;
@@ -100,7 +97,6 @@ sg-frame {
     tr.column {
       top: 0;
       z-index: 4;
-      height: var(--column-headers-height);
     }
 
     th[scope="row"] {
@@ -117,17 +113,20 @@ sg-frame {
 
 /* column sizing */
   col {
-    min-width: calc(4 / 3 * var(--sizer-width));
+    min-width: var(--row-headers-width);
   }
+
   .sizer {
     display: block; 
     position: absolute;
     left: 0;
     top: 0;
     box-sizing: border-box;
-    z-index: 20;
+    z-index: 30;
     background-color: transparent;
     scroll-snap-align: none none;
+    margin: 0;
+    padding: 0;
   }
   .column.sizer {
     height: 100%;
@@ -173,6 +172,10 @@ sg-frame {
     background: lightskyblue;
   }
 
+/* height */
+  tr.column {
+    height: var(--column-headers-height);
+  }
 
   
 
