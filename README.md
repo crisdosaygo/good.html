@@ -15,10 +15,9 @@
 
 - [7GUIs](https://i5ik.github.io/_____/7guis/)
 - [Spreadsheet Component (*a work in progress*)](https://i5ik.github.io/_____/cellophane/)
-- [Simple Greeter Demo](https://i5ik.github.io/_____/)
 - [Simple Counter Demo](https://i5ik.github.io/_____/ctr/)
 
-The page above has over 10,000 DOM nodes, yet Lighthouse manages to love it, anyway. How is this possible? ***EXPLORE BANG! FOR KNOWLEDGE***
+The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse manages to love it, anyway. How is this possible? ***EXPLORE BANG! FOR KNOWLEDGE***
 
 This is ***BANG!***, making a component:
 
