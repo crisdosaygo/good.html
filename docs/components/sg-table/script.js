@@ -1,5 +1,6 @@
 class Table extends Base {
-  static #DragSizeStart = new Set(['pointerdown', 'contextmenu']);
+  static #DragSizeStart = new Set(['pointerdown', 'contextmenu', 'touchstart']);
+  static #DragSizeStop = new Set(['pointerup', 'touchend', 'touchcancel']);
   static get EMPTY() { return ''; }
   static get MAX_ITERATIONS() { return 10; }
   static get CHANGED() { return 1e12+1; }
@@ -126,26 +127,30 @@ class Table extends Base {
         }
 
         if ( Table.#DragSizeStart.has(event.type) ) {
-          const {clientX:startX,clientY:startY} = event;
+          const {clientX:startX,clientY:startY} = event.type.includes('touch') ? event.touches[0] : event;
           const header = target.closest('th');
+          const box = header.closest('.box');
 
           if ( target.matches('.column') ) {
             const columnElement = header.closest('table').querySelector(`colgroup col[name="${header.getAttribute('name')}"]`);
             const previousColumnElement = columnElement.previousElementSibling;
             if ( ! previousColumnElement ) continue picking;
-            const widthBack = parseFloat(previousColumnElement.width || previousColumnElement.style.width || previousColumnElement.getBoundingClientRect().width);
+            const widthBack = parseFloat(previousColumnElement.width || previousColumnElement.style.width || header.previousElementSibling.getBoundingClientRect().width);
             const widthFront = parseFloat(columnElement.width || columnElement.style.width)
             let newX = startX;
 
             col_size_dragging: while(true) {
+              header.classList.add('dragging');
+              box.style.overflow = 'hidden';
               event = yield;
-              if ( event.type === 'pointerup' ) break col_size_dragging;
+              if ( Table.#DragSizeStop.has(event.type) ) break col_size_dragging;
               if ( event.target.matches('.column.sizer') && event.target !== target ) {
                 //continue newTarget;
                 break col_size_dragging;
               }
-              ({clientX:newX} = event);
+              ({clientX:newX} = event.type.includes('touch') ? event.touches[0] : event);
               const [back, front] = newWidth();
+              //setTimeout(() => alert([widthBack, widthFront, startX, newX, back, front]), 3000);
               if ( previousColumnElement.matches('.row-header') ) {
                 previousColumnElement.closest('.box').style.setProperty(`--row-headers-width`, back);
               } else {
@@ -153,6 +158,8 @@ class Table extends Base {
               }
               columnElement.width = front;
             }
+            box.style.overflow = 'auto';
+            header.classList.remove('dragging');
 
             function newWidth() {
               return [
@@ -169,13 +176,15 @@ class Table extends Base {
             let newY = startY;
 
             row_size_dragging: while(true) {
+              box.style.overflow = 'hidden';
+              header.classList.add('dragging');
               event = yield;
-              if ( event.type === 'pointerup' ) break row_size_dragging;
+              if ( Table.#DragSizeStop.has(event.type) ) break row_size_dragging;
               if ( event.target.matches('.row.sizer') && event.target !== target ) {
                 //continue newTarget;
                 break row_size_dragging;
               }
-              ({clientY:newY} = event);
+              ({clientY:newY} = event.type.includes('touch') ? event.touches[0] : event);
               const [back, front] = newHeight();
               if ( previousRowElement.matches('.column-header') ) {
                 previousRowElement.closest('.box').style.setProperty(`--column-headers-height`, back);
@@ -184,6 +193,8 @@ class Table extends Base {
               }
               //rowElement.style.height = front;
             }
+            box.style.overflow = 'auto';
+            header.classList.remove('dragging');
 
             function newHeight() {
               return [

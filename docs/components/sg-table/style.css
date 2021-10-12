@@ -1,7 +1,7 @@
 :host {
   --sizer-width: 3rem;
-  --sizer-height: 1rem;
-  --row-height: 3rem;
+  --sizer-height: 2rem;
+  --row-height: 4rem;
   --max-height: 500px;
   --max-width: 400px;
   --comfortable-sizer: calc(2 * var(--sizer-width));
@@ -112,10 +112,6 @@ sg-frame {
     }
 
 /* column sizing */
-  col {
-    min-width: var(--row-headers-width);
-  }
-
   .sizer {
     display: block; 
     position: absolute;
@@ -127,7 +123,18 @@ sg-frame {
     scroll-snap-align: none none;
     margin: 0;
     padding: 0;
+    /*
+    outline: thin solid lime;
+    background: lime;
+    */
   }
+
+  .sizer:active {
+    /*
+    background: dodgerblue;
+    */
+  }
+
   .column.sizer {
     height: 100%;
     width: var(--sizer-width);
@@ -175,6 +182,11 @@ sg-frame {
 /* height */
   tr.column {
     height: var(--column-headers-height);
+  }
+    
+  th.dragging {
+    background: dodgerblue;
+    outline: medium solid lightskyblue;
   }
 
   
