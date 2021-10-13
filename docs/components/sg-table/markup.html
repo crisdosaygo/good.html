@@ -22,14 +22,11 @@ ${{key}}
         onfocusout=DeselectColumn
       >
         <tr class="label column column-header">
-          <th scope=col class=top-left name=top-left>
-            &nbsp;
-            <div class="column sizer"></div>
+          <th scope=col class=top-left name="">
           </th>
           ${columnNames.map(name => F`${{key:`${key}colheader${name}`}}
           <th scope=col name=${name} tabindex=1>
-            <div class="column sizer"></div>
-            ${name}
+            <span class="column sizer"></span>
           </th>
           `)}
         </tr>

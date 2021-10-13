@@ -111,43 +111,6 @@ sg-frame {
       width: var(--row-headers-width);
     }
 
-/* column sizing */
-  .sizer {
-    display: block; 
-    position: absolute;
-    left: 0;
-    top: 0;
-    box-sizing: border-box;
-    z-index: 30;
-    background-color: transparent;
-    scroll-snap-align: none none;
-    margin: 0;
-    padding: 0;
-    /*
-    outline: thin solid lime;
-    background: lime;
-    */
-  }
-
-  .sizer:active {
-    /*
-    background: dodgerblue;
-    */
-  }
-
-  .column.sizer {
-    height: 100%;
-    width: var(--sizer-width);
-    transform: translate(-50%, 0);
-    cursor: ew-resize;
-  }
-  .row.sizer {
-    height: var(--sizer-height);
-    width: 100%;
-    transform: translate(0, -50%);
-    cursor: ns-resize;
-  }
-
 /* the adjustment bureau */
   :host([fill]) {
     --max-height: 100vh;
@@ -189,5 +152,54 @@ sg-frame {
     outline: medium solid lightskyblue;
   }
 
-  
+  th[scope="col"]::after {
+    content: attr(name);
+    color: black;
+    display: block;
+    position: relative;
+  }
 
+/* column sizing */
+  .sizer {
+    display: flex; 
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-sizing: border-box;
+    z-index: 30;
+    background-color: transparent;
+    scroll-snap-align: none none;
+    margin: 0;
+    padding: 0;
+    outline: thin solid lime;
+    /*
+    background: lime;
+    */
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .sizer:active {
+    /*
+    background: dodgerblue;
+    */
+  }
+
+  .column.sizer {
+    height: 100%;
+    width: var(--sizer-width);
+    transform: translate(-50%, 0);
+    cursor: ew-resize;
+    text-align: right;
+  }
+  .row.sizer {
+    height: var(--sizer-height);
+    width: 100%;
+    transform: translate(0, -50%);
+    cursor: ns-resize;
+  }
+
+  col, th, tr {
+    min-width: var(--comfortable-sizer);
+    min-height: var(--comfortable-height);
+  }
