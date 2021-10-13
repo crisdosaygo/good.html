@@ -17,7 +17,9 @@
 - [Spreadsheet Component (*a work in progress*)](https://i5ik.github.io/_____/cellophane/)
 - [Simple Counter Demo](https://i5ik.github.io/_____/ctr/)
 
-The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse manages to love it, anyway. How is this possible? ***EXPLORE BANG! FOR KNOWLEDGE***
+The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse manages to love it, anyway. How is this possible? Mostly through the use of the `lazy` and `super lazy` attributes, particularly on the large 'Cells' spreadsheet component.
+
+***EXPLORE BANG! FOR KNOWLEDGE***
 
 This is ***BANG!***, making a component:
 
