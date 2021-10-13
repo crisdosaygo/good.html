@@ -14,7 +14,6 @@ class Table extends Base {
 
   connectedCallback() {
     super.connectedCallback();
-    //setInterval(() => alert(this.style.getPropertyValue('--column-headers-height')), 6000);
   }
 
   SelectColumn(focusEvent) {
@@ -42,26 +41,16 @@ class Table extends Base {
             let newValue = Table.EMPTY;
             try {
               newValue = runCode(CellProxy, `(function(){ 
-                try {
-                  const result ${formula}; 
-                  return result;
-                } catch(e) {
-                  console.warn(e);
-                  return e;
-                }
+                const result ${formula}; 
+                return result;
               }())`);
             } catch(e) {
               console.info('cell error', coord, formula, e);
               newValue = 'error'; 
-            } finally {
-              if ( Number.isNaN(value) ) {
-                newValue = 'not a number';
-                console.info('cell error nan');
-              }
             }
             CellProxy[cellCoord] = newValue;
             if ( newValue !== cell[coord].value ) {
-              Table.DEBUG && console.log(`Cell ${cellCoord} has changed.`, cell[coord].value, newValue);
+              Table.DEBUG && console.log(`Cell ${cellCoord} changed.`, cell[coord].value, newValue);
               cell[coord].value = newValue;
               return Table.CHANGED;
             } else {
@@ -143,14 +132,18 @@ class Table extends Base {
               header.classList.add('dragging');
               box.style.overflow = 'hidden';
               event = yield;
-              if ( Table.#DragSizeStop.has(event.type) ) break col_size_dragging;
+              if ( event.type === 'contextmenu' ) {
+                continue col_size_dragging;
+              }
+              if ( Table.#DragSizeStop.has(event.type) ) {
+                break col_size_dragging;
+              }
               if ( event.target.matches('.column.sizer') && event.target !== target ) {
                 //continue newTarget;
-                break col_size_dragging;
+                //break col_size_dragging;
               }
               ({clientX:newX} = event.type.includes('touch') ? event.touches[0] : event);
               const [back, front] = newWidth();
-              //setTimeout(() => alert([widthBack, widthFront, startX, newX, back, front]), 3000);
               if ( previousColumnElement.matches('.row-header') ) {
                 previousColumnElement.closest('.box').style.setProperty(`--row-headers-width`, back);
               } else {
@@ -179,10 +172,15 @@ class Table extends Base {
               box.style.overflow = 'hidden';
               header.classList.add('dragging');
               event = yield;
-              if ( Table.#DragSizeStop.has(event.type) ) break row_size_dragging;
+              if ( Table.#DragSizeStop.has(event.type) ) {
+                break row_size_dragging;
+              }
+              if ( event.type === 'contextmenu' ) {
+                continue row_size_dragging;
+              }
               if ( event.target.matches('.row.sizer') && event.target !== target ) {
                 //continue newTarget;
-                break row_size_dragging;
+                //break row_size_dragging;
               }
               ({clientY:newY} = event.type.includes('touch') ? event.touches[0] : event);
               const [back, front] = newHeight();
