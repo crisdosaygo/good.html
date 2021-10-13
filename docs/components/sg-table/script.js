@@ -17,13 +17,13 @@ class Table extends Base {
   }
 
   SelectColumn(focusEvent) {
-    const {path:[th]} = focusEvent;
+    const [th] = focusEvent.composedPath();
     const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);
     colElement.classList.add('selected');
   }
 
   DeselectColumn(focusEvent) {
-    const {path:[th]} = focusEvent;
+    const [th] = focusEvent.composedPath();
     const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);
     colElement.classList.remove('selected');
   }
