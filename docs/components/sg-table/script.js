@@ -31,9 +31,12 @@ class Table extends Base {
   async run({cell}) {
     let iter = Table.MAX_ITERATIONS;
     const Formulas = [];
+    const Deps = new Map();
+
     do {
       Formulas.length = 0;
-      const CellProxy = {};
+      const CellProxy = {_currentCoord: null};
+      const CellMap = {};
       for( let [coord, {formula,value}] of Object.entries(cell) ) {
         const cellCoord = coord.split(':')[1];
         if ( formula ) {
@@ -41,6 +44,7 @@ class Table extends Base {
             let newValue = Table.EMPTY;
             try {
               newValue = runCode(CellProxy, `(function(){ 
+                _currentCoord = "${cellCoord}";
                 const result ${formula}; 
                 return result;
               }())`);
@@ -48,7 +52,7 @@ class Table extends Base {
               console.info('cell error', coord, formula, e);
               newValue = 'error'; 
             }
-            CellProxy[cellCoord] = newValue;
+            CellMap[cellCoord] = newValue;
             if ( newValue !== cell[coord].value ) {
               Table.DEBUG && console.log(`Cell ${cellCoord} changed.`, cell[coord].value, newValue);
               cell[coord].value = newValue;
@@ -59,14 +63,45 @@ class Table extends Base {
           });
         }
         if ( value === Table.EMPTY ) {
-          CellProxy[cellCoord] = Table.EMPTY; 
-          CellProxy[cellCoord.toLowerCase()] = Table.EMPTY; 
+          defineGetter(CellMap, CellProxy, cellCoord, Table.EMPTY);
         } else {
-          CellProxy[cellCoord] = !Number.isNaN(Number(value)) ? Number(value) : value;
-          CellProxy[cellCoord.toLowerCase()] = !Number.isNaN(Number(value)) ? Number(value) : value;
+          const realValue = !Number.isNaN(Number(value)) ? Number(value) : value;
+          defineGetter(CellMap, CellProxy, cellCoord, realValue);
         }
       }
     } while( iter-- && Formulas.map(f => f()).some(status => status === Table.CHANGED) );
+
+    //console.log(Deps);
+
+    function defineGetter(env, proxy, name, value) {
+      const descriptor = {
+        get() {
+          //console.log(proxy._currentCoord, 'getting', name); 
+          noteDep(proxy._currentCoord, name);
+          return env[name];
+        },
+        set(value) {
+          console.warn(proxy._currentCoord, 'setting', name); 
+          //noteDep(proxy._currentCoord, name);
+          env[name] = value; 
+          return true;
+        },
+        enumerable: true,
+        configurable: true
+      };
+      env[name] = value;
+      Object.defineProperty(proxy, name, descriptor);
+      Object.defineProperty(proxy, name.toLowerCase(), descriptor);
+    }
+
+    function noteDep(source, scope) {
+      let deps = Deps.get(source);
+      if ( ! deps ) {
+        deps = new Set();
+        Deps.set(source, deps);
+      }
+      deps.add(scope);
+    }
   }
 
   fastUpdate() {
