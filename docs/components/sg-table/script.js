@@ -157,7 +157,7 @@ class Table extends Base {
                 } else {
                   previousColumnElement.width = back;
                 }
-                columnElement.width = front;
+                //columnElement.width = front;
               }
               box.style.overflow = 'auto';
               backEl.classList.remove('dragging');
