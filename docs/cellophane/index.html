@@ -29,6 +29,17 @@
       sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/components/sg-table',
       columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,15),
       rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,20),
+      selections: [
+        /*
+          {
+            key: Math.random()+'',
+            left: 200,
+            top: 200,
+            width: 300,
+            height: 64
+          }
+        */
+      ]
     };
     State.cell = Object.fromEntries((function () {
       const entries = [];

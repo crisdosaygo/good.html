@@ -18,15 +18,12 @@
 }
 
 :host([fill]) {
-  --gap: 0;
   width: 100%;
-}
-
-:host-context([fill]) {
   margin: 0;
   border: 0;
-  border-radius: 0;
+  --gap: 0;
 }
+
 
 .frame {
   display: grid;

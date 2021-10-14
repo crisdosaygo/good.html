@@ -45,6 +45,11 @@ ${{key}}
         </tr>
       `, {batchSize: 1})
       }</tbody>
+      <tbody class=overlay>${selections.map(sel => F`${{key:sel.key}}
+        <tr style="
+          top: ${sel.top}px; left: ${sel.left}px; width: ${sel.width}px; height: ${sel.height}px;
+        "></tr>
+      `)}</tbody>
     </table>
   </div>
 </sg-frame>
