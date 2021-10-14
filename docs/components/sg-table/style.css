@@ -1,9 +1,9 @@
   :host {
-    --sizer-width: 1.25em;
-    --sizer-height: 1.25em;
+    --sizer-width: 1.5em;
+    --sizer-height: 1.5em;
     --row-height: max(2em, var(--comfortable-height));
-    --comfortable-width: calc(2 * var(--sizer-width));
-    --comfortable-height: calc(2 * var(--sizer-height));
+    --comfortable-width: calc(2.25 * var(--sizer-width));
+    --comfortable-height: calc(2.25 * var(--sizer-height));
     --row-headers-width: max(3.5em, var(--comfortable-width));
     --column-headers-height: max(var(--comfortable-height), var(--row-height));
     --max-height: 500px;
@@ -195,9 +195,7 @@
     }
 
     .sizer:active {
-      /*
-      background: darkturquoise;
-      */
+      background: blueviolet;
     }
 
     .column.sizer {
@@ -217,6 +215,10 @@
     col, th, tr {
       min-width: var(--comfortable-width);
       min-height: var(--comfortable-height);
+    }
+
+    tr:first-of-type th .row.sizer {
+      transform: translate(0,-25%);
     }
 
   /* selections overlay */
