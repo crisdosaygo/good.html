@@ -19,7 +19,7 @@ class Table extends Base {
   SelectColumn(focusEvent) {
     const th = Array.from(focusEvent.composedPath()).find(el => el?.matches?.('th[scope="col"]'));
     if ( this.isDragSizing ) {
-      return;
+      //return;
     }
     if ( th ) {
       const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);
@@ -149,7 +149,7 @@ class Table extends Base {
   }
 
   *Resizer() {
-    let frontEl, backEl, box;
+    let frontEl, backEl, table, box, overflowStyle;
     picking: while(true) {
       try {
         let event = yield;
@@ -162,20 +162,22 @@ class Table extends Base {
           if ( Table.#DragSizeStart.has(event.type) ) {
             const {clientX:startX,clientY:startY} = event.type.includes('touch') ? event.touches[0] : event;
             frontEl = target.closest('th');
+            table = table || frontEl.closest('table');
             backEl = frontEl.previousElementSibling || (
               frontEl.closest('tr').previousElementSibling || 
-              frontEl.closest('table').querySelector('thead').lastElementChild
+              table.querySelector('thead').lastElementChild
             )?.firstElementChild;
-            box = backEl.closest('.box');
+            box = box || backEl.closest('.box');
             const boxStyle = getComputedStyle(box);
+            overflowStyle = getComputedStyle(document?.scrollingElement).overflow;
             const minWidth = parseFloat(boxStyle.getPropertyValue('min-width'));
             const minHeight = parseFloat(boxStyle.getPropertyValue('min-height'));
 
             this.isDragSizing = true;
-            frontEl.blur();
+            //frontEl.blur();
 
             if ( target.matches('.column') ) {
-              const columnElement = frontEl.closest('table').querySelector(`colgroup col[name="${frontEl.getAttribute('name')}"]`);
+              const columnElement = table.querySelector(`colgroup col[name="${frontEl.getAttribute('name')}"]`);
               const previousColumnElement = columnElement.previousElementSibling;
               if ( ! previousColumnElement ) continue picking;
               const widthBack = parseFloat(previousColumnElement.width || previousColumnElement.style.width || backEl.getBoundingClientRect().width);
@@ -186,6 +188,7 @@ class Table extends Base {
                 backEl.classList.add('dragging');
                 previousColumnElement.classList.add('sizing');
                 box.style.overflow = 'hidden';
+                document.scrollingElement.style.overflow = 'hidden';
                 event = yield;
                 if ( event.type === 'contextmenu' ) {
                   continue col_size_dragging;
@@ -201,13 +204,18 @@ class Table extends Base {
                 const [back, front] = newWidth();
                 if ( previousColumnElement.matches('.row-header') ) {
                   box.style.setProperty(`--row-headers-width`, back);
+                  table.classList.add('row-header-sizing');
                 } else {
                   previousColumnElement.width = back;
                 }
                 //columnElement.width = front;
               }
+              if ( overflowStyle ) {
+                document.scrollingElement.style.overflow = overflowStyle;
+              }
               box.style.overflow = 'auto';
               backEl.classList.remove('dragging');
+              table.classList.remove('row-header-sizing');
               previousColumnElement.classList.remove('sizing');
 
               function newWidth() {
@@ -226,6 +234,7 @@ class Table extends Base {
 
               row_size_dragging: while(true) {
                 box.style.overflow = 'hidden';
+                document.scrollingElement.style.overflow = 'hidden';
                 backEl.classList.add('dragging');
                 previousRowElement.classList.add('sizing');
                 event = yield;
@@ -248,6 +257,9 @@ class Table extends Base {
                 }
                 //rowElement.style.height = front;
               }
+              if ( overflowStyle ) {
+                document.scrollingElement.style.overflow = overflowStyle;
+              }
               box.style.overflow = 'auto';
               backEl.classList.remove('dragging');
               previousRowElement.classList.remove('sizing');
@@ -260,7 +272,7 @@ class Table extends Base {
               }
             }
             this.isDragSizing = false;
-            frontEl.blur();
+            //frontEl.blur();
           }
         }
       } catch(e) {
