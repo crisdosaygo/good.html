@@ -1,26 +1,25 @@
 ${{key}}
 <sg-frame state=${_self} fill>
   <div class=box 
-      ontouchstart=ResizeAxial
-      oncontextmenu=ResizeAxial
-      onpointerdown=ResizeAxial 
-      onpointermove=ResizeAxial 
-      ontouchmove=ResizeAxial
-      onpointerup=ResizeAxial
-      ontouchend=ResizeAxial
-      ontouchcancel=ResizeAxial
+      ontouchstart=Resize
+      oncontextmenu=Resize
+      onpointerdown=Resize 
+      onpointermove=Resize 
+      ontouchmove=Resize
+      onpointerup=Resize
+      ontouchend=Resize
+      ontouchcancel=Resize
+      onfocusin=SelectColumn 
+      onfocusout=DeselectColumn
     >
     <table>
       <colgroup>
         <col class="row-header" name="top-left">
         ${columnNames.map(name => F`${{key:`${key}col${name}`}}
-        <col name=${name} width=111px>
+        <col name=${name} width=101px>
         `)}
       </colgroup>
-      <thead 
-        onfocusin=SelectColumn 
-        onfocusout=DeselectColumn
-      >
+      <thead>
         <tr class="label column column-header">
           <th scope=col class=top-left name="">
           </th>

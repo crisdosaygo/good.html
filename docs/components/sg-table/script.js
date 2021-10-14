@@ -9,7 +9,7 @@ class Table extends Base {
   constructor() {
     super();
     const resizer = this.Resizer();
-    this.ResizeAxial = event => resizer.next(event);
+    this.Resize = event => resizer.next(event);
   }
 
   connectedCallback() {
@@ -17,15 +17,22 @@ class Table extends Base {
   }
 
   SelectColumn(focusEvent) {
-    const th = Array.from(focusEvent.composedPath()).find(el => el.localName === 'th');
-    const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);
-    colElement.classList.add('selected');
+    const th = Array.from(focusEvent.composedPath()).find(el => el?.matches?.('th[scope="col"]'));
+    if ( this.isDragSizing ) {
+      return;
+    }
+    if ( th ) {
+      const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);
+      colElement.classList.add('selected');
+    }
   }
 
   DeselectColumn(focusEvent) {
-    const th = Array.from(focusEvent.composedPath()).find(el => el.localName === 'th');
-    const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);
-    colElement.classList.remove('selected');
+    const th = Array.from(focusEvent.composedPath()).find(el => el?.matches?.('th[scope="col"]'));
+    if ( th ) {
+      const colElement = th.closest('table').querySelector(`col[name="${th.getAttribute('name')}"]`);
+      colElement.classList.remove('selected');
+    }
   }
 
   async run({cell}) {
@@ -142,6 +149,7 @@ class Table extends Base {
   }
 
   *Resizer() {
+    let frontEl, backEl, box;
     picking: while(true) {
       try {
         let event = yield;
@@ -153,15 +161,18 @@ class Table extends Base {
 
           if ( Table.#DragSizeStart.has(event.type) ) {
             const {clientX:startX,clientY:startY} = event.type.includes('touch') ? event.touches[0] : event;
-            const frontEl = target.closest('th');
-            const backEl = frontEl.previousElementSibling || (
+            frontEl = target.closest('th');
+            backEl = frontEl.previousElementSibling || (
               frontEl.closest('tr').previousElementSibling || 
               frontEl.closest('table').querySelector('thead').lastElementChild
             )?.firstElementChild;
-            const box = backEl.closest('.box');
+            box = backEl.closest('.box');
             const boxStyle = getComputedStyle(box);
             const minWidth = parseFloat(boxStyle.getPropertyValue('min-width'));
             const minHeight = parseFloat(boxStyle.getPropertyValue('min-height'));
+
+            this.isDragSizing = true;
+            frontEl.blur();
 
             if ( target.matches('.column') ) {
               const columnElement = frontEl.closest('table').querySelector(`colgroup col[name="${frontEl.getAttribute('name')}"]`);
@@ -173,6 +184,7 @@ class Table extends Base {
 
               col_size_dragging: while(true) {
                 backEl.classList.add('dragging');
+                previousColumnElement.classList.add('sizing');
                 box.style.overflow = 'hidden';
                 event = yield;
                 if ( event.type === 'contextmenu' ) {
@@ -196,6 +208,7 @@ class Table extends Base {
               }
               box.style.overflow = 'auto';
               backEl.classList.remove('dragging');
+              previousColumnElement.classList.remove('sizing');
 
               function newWidth() {
                 return [
@@ -214,6 +227,7 @@ class Table extends Base {
               row_size_dragging: while(true) {
                 box.style.overflow = 'hidden';
                 backEl.classList.add('dragging');
+                previousRowElement.classList.add('sizing');
                 event = yield;
                 if ( Table.#DragSizeStop.has(event.type) ) {
                   break row_size_dragging;
@@ -236,6 +250,7 @@ class Table extends Base {
               }
               box.style.overflow = 'auto';
               backEl.classList.remove('dragging');
+              previousRowElement.classList.remove('sizing');
 
               function newHeight() {
                 return [
@@ -244,6 +259,8 @@ class Table extends Base {
                 ];
               }
             }
+            this.isDragSizing = false;
+            frontEl.blur();
           }
         }
       } catch(e) {
