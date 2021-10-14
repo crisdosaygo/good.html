@@ -85,6 +85,7 @@
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/components/sg-cells',
         columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
         rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
+        selections: []
       },
       cells2: {
         key: compKey,
@@ -92,6 +93,7 @@
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/components/sg-table',
         columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
         rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
+        selections: []
       }
     };
     State.cells.cell = Object.fromEntries((function () {
