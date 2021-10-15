@@ -155,11 +155,11 @@ class Table extends Base {
         let event = yield;
         const target = event.composedPath()[0];
         sizing: if ( target.matches('.sizer') ) {
-          if ( event.type === 'contextmenu' ) {
-            event.preventDefault();
-          }
-
           if ( Table.#DragSizeStart.has(event.type) ) {
+            if ( event.type === 'contextmenu' ) {
+              event.preventDefault();
+            }
+
             const {clientX:startX,clientY:startY} = event.type.includes('touch') ? event.touches[0] : event;
             frontEl = target.closest('th');
             table = table || frontEl.closest('table');
@@ -185,10 +185,12 @@ class Table extends Base {
               let newX = startX;
 
               col_size_dragging: while(true) {
+                if ( event.type.includes('move') ) event.preventDefault();
                 backEl.classList.add('dragging');
                 previousColumnElement.classList.add('sizing');
                 box.style.overflow = 'hidden';
-                document.scrollingElement.style.overflow = 'hidden';
+                box.classList.add('snap-free');
+                //document.scrollingElement.style.overflow = 'hidden';
                 event = yield;
                 if ( event.type === 'contextmenu' ) {
                   continue col_size_dragging;
@@ -210,10 +212,11 @@ class Table extends Base {
                 }
                 //columnElement.width = front;
               }
-              if ( overflowStyle ) {
-                document.scrollingElement.style.overflow = overflowStyle;
-              }
+              //if ( overflowStyle ) {
+              //  document.scrollingElement.style.overflow = overflowStyle;
+              //}
               box.style.overflow = 'auto';
+              box.classList.remove('snap-free');
               backEl.classList.remove('dragging');
               table.classList.remove('row-header-sizing');
               previousColumnElement.classList.remove('sizing');
@@ -233,8 +236,10 @@ class Table extends Base {
               let newY = startY;
 
               row_size_dragging: while(true) {
+                if ( event.type.includes('move') ) event.preventDefault();
                 box.style.overflow = 'hidden';
-                document.scrollingElement.style.overflow = 'hidden';
+                box.classList.add('snap-free');
+                //document.scrollingElement.style.overflow = 'hidden';
                 backEl.classList.add('dragging');
                 previousRowElement.classList.add('sizing');
                 event = yield;
@@ -257,10 +262,11 @@ class Table extends Base {
                 }
                 //rowElement.style.height = front;
               }
-              if ( overflowStyle ) {
-                document.scrollingElement.style.overflow = overflowStyle;
-              }
+              //if ( overflowStyle ) {
+              //  document.scrollingElement.style.overflow = overflowStyle;
+              //}
               box.style.overflow = 'auto';
+              box.classList.remove('snap-free');
               backEl.classList.remove('dragging');
               previousRowElement.classList.remove('sizing');
 
