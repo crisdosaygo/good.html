@@ -149,7 +149,7 @@ class Table extends Base {
   }
 
   *Resizer() {
-    let frontEl, backEl, table, box, overflowStyle;
+    let frontEl, backEl, table, box, scrollLeft, scrollTop;
     picking: while(true) {
       try {
         let event = yield;
@@ -169,7 +169,6 @@ class Table extends Base {
             )?.firstElementChild;
             box = box || backEl.closest('.box');
             const boxStyle = getComputedStyle(box);
-            overflowStyle = getComputedStyle(document?.scrollingElement).overflow;
             const minWidth = parseFloat(boxStyle.getPropertyValue('min-width'));
             const minHeight = parseFloat(boxStyle.getPropertyValue('min-height'));
 
@@ -186,11 +185,11 @@ class Table extends Base {
 
               col_size_dragging: while(true) {
                 if ( event.type.includes('move') ) event.preventDefault();
+                ({scrollLeft, scrollTop} = box);
                 backEl.classList.add('dragging');
                 previousColumnElement.classList.add('sizing');
                 box.style.overflow = 'hidden';
                 box.classList.add('snap-free');
-                //document.scrollingElement.style.overflow = 'hidden';
                 event = yield;
                 if ( event.type === 'contextmenu' ) {
                   continue col_size_dragging;
@@ -212,14 +211,12 @@ class Table extends Base {
                 }
                 //columnElement.width = front;
               }
-              //if ( overflowStyle ) {
-              //  document.scrollingElement.style.overflow = overflowStyle;
-              //}
-              box.style.overflow = 'auto';
-              box.classList.remove('snap-free');
-              backEl.classList.remove('dragging');
               table.classList.remove('row-header-sizing');
               previousColumnElement.classList.remove('sizing');
+              backEl.classList.remove('dragging');
+              box.classList.remove('snap-free');
+              box.style.overflow = 'auto';
+              Object.assign(box, {scrollLeft,scrollTop});
 
               function newWidth() {
                 return [
@@ -237,9 +234,9 @@ class Table extends Base {
 
               row_size_dragging: while(true) {
                 if ( event.type.includes('move') ) event.preventDefault();
+                ({scrollLeft,scrollTop} = box);
                 box.style.overflow = 'hidden';
                 box.classList.add('snap-free');
-                //document.scrollingElement.style.overflow = 'hidden';
                 backEl.classList.add('dragging');
                 previousRowElement.classList.add('sizing');
                 event = yield;
@@ -262,13 +259,11 @@ class Table extends Base {
                 }
                 //rowElement.style.height = front;
               }
-              //if ( overflowStyle ) {
-              //  document.scrollingElement.style.overflow = overflowStyle;
-              //}
-              box.style.overflow = 'auto';
-              box.classList.remove('snap-free');
-              backEl.classList.remove('dragging');
               previousRowElement.classList.remove('sizing');
+              backEl.classList.remove('dragging');
+              box.classList.remove('snap-free');
+              box.style.overflow = 'auto';
+              Object.assign(box, {scrollLeft,scrollTop});
 
               function newHeight() {
                 return [
