@@ -24,6 +24,12 @@
   --gap: 0;
 }
 
+:host([resize]) {
+  overflow: hidden;
+  max-width: unset;
+  max-height: unset;
+  resize: both;
+}
 
 .frame {
   display: grid;

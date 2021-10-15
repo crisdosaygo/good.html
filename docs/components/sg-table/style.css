@@ -18,7 +18,7 @@
   }
 
   sg-frame {
-    max-height: var(--max-height);
+    height: var(--max-height);
     user-select: none;
     -webkit-user-select: none;
   }
