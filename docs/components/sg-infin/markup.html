@@ -1,0 +1,20 @@
+${{key}}
+<sg-frame state=${_self} resize>
+  <div class=box 
+      b:passive:touchstart=Resize
+      b:passive:pointerdown=Resize 
+      b:passive:pointerup=Resize
+      b:passive:touchend=Resize
+      b:passive:touchcancel=Resize
+      b:passive:focusin=SelectColumn 
+      b:passive:focusout=DeselectColumn
+
+      oncontextmenu=Resize
+      onpointermove=Resize 
+      ontouchmove=Resize
+    >
+    <ul>
+      <li>Infinite data should go here</li>
+    </ul>
+  </div>
+</sg-frame>
