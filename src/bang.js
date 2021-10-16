@@ -5,6 +5,9 @@
     const PIPELINE_REQUESTS = true;
     const RANDOM_SLEEP_ON_FIRST_PRINT = true;
     const RESPONSIVE_MEDIATION = true;
+    const USE_XPATH = true;
+    const XON_EVENT_ATTRS = `.//@*[contains(local-name(), 'on')]`;
+    const X_LISTENING = document.createExpression(XON_EVENT_ATTRS);
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const MOBILE = isMobile();
@@ -117,8 +120,12 @@
             const shadow = this.attachShadow(SHADOW_OPTS);
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
-            const listening = shadow.querySelectorAll(CONFIG.EVENTS);
-            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            const listening = select(shadow, USE_XPATH ? XON_EVENT_ATTRS : CONFIG.EVENTS);
+            if ( USE_XPATH ) {
+              listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true}));
+            } else {
+              listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            }
             
             // add dependents
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
@@ -193,6 +200,7 @@
       async untilLoaded() {
         const myDependentsLoaded = (await Promise.all(this.#dependents)).every(visible => visible);
         const myContentLoaded = await becomesTrue(this.loadCheck, this.loadKey);
+        DEBUG && console.log(new Date - self.Start);
         return myContentLoaded && myDependentsLoaded;
       }
 
@@ -260,62 +268,16 @@
 
       // private methods
       handleAttrs(attrs, {node, originals} = {}) {
-        let state = {};
+        const state = {};
 
         if ( ! node ) node = this;
 
         // we can optimize this method more, we only get attrs if originals == true
         // otherwise we just get and process the single 'state' attr 
         // this is a lot more performant
-        for( let {name,value} of attrs ) {
+        for( const {name,value} of attrs ) {
           if ( isUnset(value) ) continue;
-          if ( name === 'state' ) {
-            const stateKey = value.trim(); 
-            const stateObject = cloneState(stateKey);
-            
-            if ( isUnset(stateObject) ) {
-              console.warn(node);
-              self.STATE = STATE;
-              console.warn(new ReferenceError(`
-                <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.
-              `));
-              break;
-            }
-            
-            state = stateObject;
-
-            if ( originals ) {
-              let acquirers = Dependents.get(stateKey);
-              if ( ! acquirers ) {
-                acquirers = new Set();
-                Dependents.set(stateKey, acquirers);
-              }
-              acquirers.add(node);
-            } else break;
-          } else if ( originals ) { // set event handlers to custom element class instance methods
-            if ( ! name.startsWith('on') ) continue;
-            value = value.trim();
-            if ( ! value ) continue;
-
-            // Perf note:
-              // Local and Parent are just optimizations to avoid if we can the
-              // getAncestor function call, which saves us a couple seconds in large documents
-            const Local = node[value] instanceof Function;
-            const Parent = node.getRootNode()?.host?.[value] instanceof Function;
-            const path = Local ? LOCAL_PATH :
-              Parent ? PARENT_PATH : 
-              getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
-            ;
-
-            if ( !path || value.startsWith(path) ) continue;
-
-            // Conditional logic explained:
-              // don't add a function call bracket if
-              // 1. it already has one
-              // 2. the reference is not a function
-            const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
-            node.setAttribute(name, `${path}${value}${ender}`);
-          }
+          handleAttribute(name, value, {node, originals, state});
         }
 
         return state;
@@ -578,7 +540,95 @@
     }
 
   // helpers
+    function handleAttribute(name, value, {node, originals, state} = {}) {
+      if ( name === 'state' ) {
+        const stateKey = value.trim(); 
+        const stateObject = cloneState(stateKey);
+        
+        if ( isUnset(stateObject) ) {
+          console.warn(node);
+          self.STATE = STATE;
+          console.warn(new ReferenceError(`
+            <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.
+          `));
+          return;
+        }
+        
+        Object.assign(state, stateObject);
+
+        if ( originals ) {
+          let acquirers = Dependents.get(stateKey);
+          if ( ! acquirers ) {
+            acquirers = new Set();
+            Dependents.set(stateKey, acquirers);
+          }
+          acquirers.add(node);
+        } else return;
+      } else if ( originals ) { // set event handlers to custom element class instance methods
+        if ( ! name.startsWith('on') ) return;
+        value = value.trim();
+        if ( ! value ) return;
+
+        // Perf note:
+          // Local and Parent are just optimizations to avoid if we can the
+          // getAncestor function call, which saves us a couple seconds in large documents
+        const Local = node[value] instanceof Function;
+        const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+        const path = Local ? LOCAL_PATH :
+          Parent ? PARENT_PATH : 
+          getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
+        ;
+
+        if ( !path || value.startsWith(path) ) return;
+
+        // Conditional logic explained:
+          // don't add a function call bracket if
+          // 1. it already has one
+          // 2. the reference is not a function
+        const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
+        node.setAttribute(name, `${path}${value}${ender}`);
+      }
+    }
+
+    function select(context, selector) {
+      try {
+        if ( USE_XPATH ) {
+          const results = [];
+          let xresult;
+          if ( context instanceof DocumentFragment ) {
+            for( const elContext of context.children ) {
+              if ( selector instanceof XPathExpression ) {
+                xresult = selector.evaluate(elContext, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+              } else {
+                xresult = document.evaluate(selector, elContext, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+              }
+              let node;
+              while(node = xresult.iterateNext()) {
+                results.push(node);
+              }
+            }
+          } else {
+            if ( selector instanceof XPathExpression ) {
+              xresult = selector.evaluate(context, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+            } else {
+              xresult = document.evaluate(selector, context, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+            }
+            let node;
+            while(node = xresult.iterateNext()) {
+              results.push(node);
+            }
+          }
+          return results;
+        } else {
+          return context.querySelectorAll(selector);
+        }
+      } catch(e) {
+        console.warn(e);
+      }
+    }
+
     async function install() {
+      DEBUG && self.Start = new Date;
       new Counter(document);
       LoadChecker = () => document.counts.check();
 
