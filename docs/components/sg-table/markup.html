@@ -1,16 +1,17 @@
 ${{key}}
 <sg-frame state=${_self} fill resize>
   <div class=box 
-      ontouchstart=Resize
+      b:passive:touchstart=Resize
+      b:passive:pointerdown=Resize 
+      b:passive:pointerup=Resize
+      b:passive:touchend=Resize
+      b:passive:touchcancel=Resize
+      b:passive:focusin=SelectColumn 
+      b:passive:focusout=DeselectColumn
+
       oncontextmenu=Resize
-      onpointerdown=Resize 
       onpointermove=Resize 
       ontouchmove=Resize
-      onpointerup=Resize
-      ontouchend=Resize
-      ontouchcancel=Resize
-      onfocusin=SelectColumn 
-      onfocusout=DeselectColumn
     >
     <table>
       <colgroup>

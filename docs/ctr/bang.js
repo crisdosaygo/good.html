@@ -6,7 +6,9 @@
     const RANDOM_SLEEP_ON_FIRST_PRINT = true;
     const RESPONSIVE_MEDIATION = true;
     const USE_XPATH = true;
-    const XON_EVENT_ATTRS = `.//@*[contains(local-name(), 'on')]`;
+    const X_NS_ATTRS = `.//@*[starts-with(name(), 'b:')]`;
+    const X_NEWLISTENING = document.createExpression(X_NS_ATTRS);
+    const XON_EVENT_ATTRS = `.//@*[starts-with(local-name(), 'on')]`;
     const X_LISTENING = document.createExpression(XON_EVENT_ATTRS);
     const OPTIMIZE = true;
     const GET_ONLY = true;
@@ -120,11 +122,17 @@
             const shadow = this.attachShadow(SHADOW_OPTS);
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
-            const listening = select(shadow, USE_XPATH ? XON_EVENT_ATTRS : CONFIG.EVENTS);
+            const listening = select(shadow, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
             if ( USE_XPATH ) {
               listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true}));
             } else {
               listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
+            }
+
+            if ( USE_XPATH ) {
+              // new style event listeners (only with XPath)
+              const newListening = select(shadow, X_NEWLISTENING);
+              newListening.forEach(({name, value, ownerElement:node}) => handleNewAttribute(name, value, {node, originals: true}));
             }
             
             // add dependents
@@ -590,6 +598,38 @@
       }
     }
 
+    function handleNewAttribute(name, value, {node}) {
+      value = value.trim();
+      if ( ! value ) return;
+
+      const [nameSpace, ...flags] = name.split(':');
+      const eventName = flags.pop();
+      const flagObj = flags.reduce((o, name) => (o[name] = true, o), {});
+
+      // Perf note:
+        // Local and Parent are just optimizations to avoid if we can the
+        // getAncestor function call, which saves us a couple seconds in large documents
+      const Local = node[value] instanceof Function;
+      const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+      const path = Local ? LOCAL_PATH :
+        Parent ? PARENT_PATH : 
+        getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
+      ;
+
+      if ( !path || value.startsWith(path) ) return;
+
+      // Conditional logic explained:
+        // don't add a function call bracket if
+        // 1. it already has one
+        // 2. the reference is not a function
+      const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
+      node.addEventListener(
+        eventName, 
+        new Function('event', `return ${path}${value}${ender}`), 
+        flagObj
+      );
+    }
+
     function select(context, selector) {
       try {
         if ( USE_XPATH ) {
@@ -628,7 +668,7 @@
     }
 
     async function install() {
-      DEBUG && self.Start = new Date;
+      DEBUG && (self.Start = new Date);
       new Counter(document);
       LoadChecker = () => document.counts.check();
 
@@ -698,12 +738,16 @@
         else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
       
         if ( CACHE.get(styleKey) instanceof Error ) { 
-          resp = `<style>
+          resp = `
+          <root xmlns:b="https://github.com/i5ik/____"></root>
+          <style>
             ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
           </style>${text}` 
         } else {
           // inlining styles for increase speed */
-          resp = `<style>
+          resp = `
+          <root xmlns:b="https://github.com/i5ik/____"></root>
+          <style>
             ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
             ${await fetchStyle(name)}
           </style>${text}`;
