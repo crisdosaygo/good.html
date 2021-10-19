@@ -62,7 +62,11 @@ class Table extends Base {
             CellMap[cellCoord] = newValue;
             if ( newValue !== cell[coord].value ) {
               Table.DEBUG && console.log(`Cell ${cellCoord} changed.`, cell[coord].value, newValue);
-              cell[coord].value = newValue;
+              if ( Array.isArray(newValue) ) {
+                cell[coord].value = JSON.stringify(newValue);
+              } else {
+                cell[coord].value = newValue;
+              }
               return Table.CHANGED;
             } else {
               Table.DEBUG && console.log(`Cell ${cellCoord} did NOT change.`);

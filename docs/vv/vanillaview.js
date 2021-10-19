@@ -41,6 +41,7 @@
     const EMPTY = '';
     const {stringify:_STR} = JSON;
     const JS = o => _STR(o, null, EMPTY);
+    const isVV  = x => x.code === CODE && Array.isArray(x.nodes);
 
   // logging
     globalThis.onerror = (...v) => (console.log(v, v[0]+EMPTY, v[4] && v[4].message, v[4] && v[4].stack), true);
@@ -185,24 +186,27 @@
 
       if ( x instanceof Node ) return x.textContent;
 
-      const isVVArray   = Array.isArray(x) && (x.length === 0 || Array.isArray(x[0].nodes));
+      const isArray     = Array.isArray(x);
+      const isVVArray   = isArray && (x.length === 0 || isVV(x[0]));
 
-      if ( isIterable(x) && ! isVVArray ) {
-        // if an Array or iterable is given then
-        // its values are recursively processed via this same function
-        return process(that, (await Promise.all(
-          (
-            await Promise.all(Array.from(x)).catch(e => e+EMPTY)
-          ).map(v => process(that, v, state))
-        )), state);
+      if ( isIterable(x) ) {
+        if ( isVVArray ) {
+          return join(x);
+        } else {
+          // if an Array or iterable is given then
+          // its values are recursively processed via this same function
+          return process(that, await Promise.all(
+            (
+              await Promise.all(Array.from(x)).catch(e => e+EMPTY)
+            ).map(v => process(that, v, state))
+          ), state);
+        }
       }
 
-
       const isVVK = isKey(x);
-      const isVV      = x.code === CODE && Array.isArray(x.nodes);
       const isMAO = x.code === CODE && typeof x.str === "string";
-      if ( isVVArray || isVVK || isMAO || isVV ) {
-        return isVVArray ? join(x) : x; // let vanillaview guardAndTransformVal handle
+      if ( isVVK || isMAO || isVV(x) ) {
+        return x; // let vanillaview guardAndTransformVal handle
       }
 
       else 
@@ -910,7 +914,7 @@
       }
 
       function guardAndTransformVal(v) {
-        const isVVArray   = Array.isArray(v) && (v.length === 0 || Array.isArray(v[0].nodes));
+        const isVVArray   = Array.isArray(v) && (v.length === 0 || isVV(v));
         const isNotSet         = isUnset(v);
         const isForgery = v.code !== CODE && Array.isArray(v.nodes);
         const isObject        = typeof v === 'object';
