@@ -739,14 +739,12 @@
       
         if ( CACHE.get(styleKey) instanceof Error ) { 
           resp = `
-          <root xmlns:b="https://github.com/i5ik/____"></root>
           <style>
             ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
           </style>${text}` 
         } else {
           // inlining styles for increase speed */
           resp = `
-          <root xmlns:b="https://github.com/i5ik/____"></root>
           <style>
             ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
             ${await fetchStyle(name)}

@@ -8,9 +8,11 @@
 <link rel=stylesheet href=./rainbow.css>
 <script src=err.js></script>
 <script type=application/javascript src=./bang.js?1.618></script>
-<script>
+<script type=module>
+  const Countries = `[]`;
   bangLoaded().then(() => {
     use('sg-look-book');
+    use('sg-multi-search');
     use('sg-counter');
     use('sg-temp-converter');
     use('sg-flight-booker');
@@ -94,6 +96,12 @@
         columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
         rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
         selections: []
+      },
+      ms: {
+        key: Math.random().toFixed(18),
+        title: 'Multi Search-select List',
+        sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/components/sg-multi-search',
+        list: JSON.parse(Countries)
       }
     };
     State.cells.cell = Object.fromEntries((function () {
