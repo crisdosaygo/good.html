@@ -122,19 +122,7 @@
             const shadow = this.attachShadow(SHADOW_OPTS);
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
-            const listening = select(shadow, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
-            if ( USE_XPATH ) {
-              listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true}));
-            } else {
-              listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-            }
-
-            if ( USE_XPATH ) {
-              // new style event listeners (only with XPath)
-              const newListening = select(shadow, X_NEWLISTENING);
-              newListening.forEach(({name, value, ownerElement:node}) => handleNewAttribute(name, value, {node, originals: true}));
-            }
-            
+            cookListeners(shadow);
             // add dependents
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
             this.#dependents = deps.map(node => node.untilVisible());
@@ -311,7 +299,7 @@
     async function use(name) {
       if ( self.customElements.get(name) ) return;
 
-      console.log('getting', name);
+      console.log('using', name);
 
       let component;
       await fetchScript(name)
@@ -793,7 +781,10 @@
     async function transformBangs(records) {
       for( const record of records ) {
         for( const node of record.addedNodes ) {
-          await findBangs(transformBang, node);
+          if ( node.nodeType !== Node.TEXT_NODE ) {
+            cookListeners(node);
+            await findBangs(transformBang, node);
+          }
         }
       }
     }
@@ -906,6 +897,24 @@
       } else return;
     }
 
+
+    function cookListeners(root) {
+      const that = root.getRootNode().host;
+      const listening = select(root, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
+      if ( USE_XPATH ) {
+        listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true}));
+      } else {
+        listening.forEach(node => that.handleAttrs(node.attributes, {node, originals: true}));
+      }
+
+      if ( USE_XPATH ) {
+        // new style event listeners (only with XPath)
+        const newListening = select(root, X_NEWLISTENING);
+        newListening.forEach(({name, value, ownerElement:node}) => handleNewAttribute(name, value, {node, originals: true}));
+      }
+    }
+
+
     function actualElement(node) {
       const el = node.nodeType === Node.COMMENT_NODE ? 
         node.linkedCustomElement 
@@ -956,16 +965,28 @@
 
     async function cook(markup, state) {
       let cooked = EMPTY;
-      try {
-        if ( !state._self ) {
+      if ( !state._self ) {
+        try {
           Object.defineProperty(state, '_self', {value: state});
+        } catch(e) {
+          say('warn!',
+            `Cannot add '_self' self-reference property to state. 
+              This enables a component to inspect the top-level state object it is passed.`
+          );
         }
-      } catch(e) {
-        say('warn!',
-          `Cannot add '_self' self-reference property to state. 
-            This enables a component to inspect the top-level state object it is passed.`
-        );
       }
+      if ( !state._host ) {
+        const _host = this;
+        try {
+          Object.defineProperty(state, '_host', {value: _host});
+        } catch(e) {
+          say('warn!',
+            `Cannot add '_host' self-reference property to component host. 
+              This enables a component to inspect its Shadow Host element`
+          );
+        }
+      }
+
       try {
         with(state) {
           cooked = await eval("(async function () { return await _FUNC`${{state}}"+markup+"`; }())");  

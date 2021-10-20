@@ -1,39 +1,42 @@
 class Component extends Base {
-  SetKelvin(inputEvent) {
-    if ( !inputEvent.target.closest('form').reportValidity() ) return;
-    const {target: targ} = inputEvent;
-    const type = targ.name;
-    const value = Number(targ.value);
-    const state = cloneState('data');
-    const {temperatureConverter: t} = state;
+  static DEFAULT_TYPE = 'text';
 
-    switch(type) {
-      case "C":
-        t.k = this.cToK(value);
-        break;
-      case "F":
-        t.k = this.fToK(value);
-        break;
+  get type() {
+    return this.getAttribute('type') || Component.DEFAULT_TYPE;
+  }
+
+  constructor() {
+    super();
+    this.allowedValues = new Set(this.state.list);
+  }
+
+  Choose(change) {
+    const {value} = change.target;
+
+    // only Choose values in the list
+    if ( !this.allowedValues.has(value) ) return;
+
+    const {state} = this;
+
+    this.state.chosen.push({
+      key: Math.random().toFixed(18),
+      item: value
+    });
+
+    change.target.value = '';
+
+    this.state = state;
+  }
+
+  Unchoose(change) {
+    const {value:keyToRemove} = change.target;
+    const {state} = this;
+    const removeIndex = state.chosen.findIndex(({key}) => key === keyToRemove);
+
+    if ( removeIndex >= 0 ) {
+      state.chosen.splice(removeIndex, 1);
     }
 
-    t.c = parseFloat(this.kToC(t.k).toFixed(2));
-    t.f = parseFloat(this.kToF(t.k).toFixed(2));
-    setState('data', state);
-  }
-
-  kToC(k) {
-    return k - 273.15;
-  }
-
-  kToF(k) {
-    return (k - 273.15) * 9/5 + 32;
-  }
-
-  cToK(c) {
-    return c + 273.15;
-  }
-
-  fToK(f) {
-    return (f - 32) * 5/9 + 273.15;
+    this.state = state;
   }
 }

@@ -9,7 +9,7 @@
 <script src=err.js></script>
 <script type=application/javascript src=./bang.js?1.618></script>
 <script type=module>
-  const Countries = `[]`;
+  import Countries from './countries.js';
   bangLoaded().then(() => {
     use('sg-look-book');
     use('sg-multi-search');
@@ -101,7 +101,9 @@
         key: Math.random().toFixed(18),
         title: 'Multi Search-select List',
         sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/components/sg-multi-search',
-        list: JSON.parse(Countries)
+        list: Countries,
+        chosen: [
+        ]
       }
     };
     State.cells.cell = Object.fromEntries((function () {
