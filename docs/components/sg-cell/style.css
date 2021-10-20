@@ -4,6 +4,7 @@
   height: 100%;
   user-select: auto;
   -webkit-user-select: auto;
+  cursor: cell;
 }
 
 input {
@@ -16,6 +17,11 @@ input {
   box-sizing: border-box;
   font-size: 0.85rem;
   background: transparent;
+  cursor: cell;
+}
+
+input:focus {
+  cursor: text;
 }
 
 input.number {

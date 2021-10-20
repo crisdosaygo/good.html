@@ -6,6 +6,7 @@
   height: var(--radius);
   border: thin solid;
   transform: translate(-50%, -50%);
+  cursor: zoom-out;
 }
 
 :host(.selected) {

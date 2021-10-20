@@ -210,14 +210,15 @@
       height: 100%;
       width: var(--sizer-width);
       transform: translate(-50%, 0);
-      cursor: ew-resize;
+      cursor: col-resize;
       text-align: right;
     }
+
     .row.sizer {
       height: var(--sizer-height);
       width: 100%;
       transform: translate(0, -50%);
-      cursor: ns-resize;
+      cursor: row-resize;
     }
 
     col, th, tr {

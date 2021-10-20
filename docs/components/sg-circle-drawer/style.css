@@ -35,5 +35,6 @@ fieldset.history {
   background: white;
   border: thin solid lightslategray;
   overflow: hidden;
+  cursor: crosshair;
 }
 

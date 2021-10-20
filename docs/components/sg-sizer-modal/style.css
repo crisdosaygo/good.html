@@ -11,6 +11,7 @@
   bottom: 0;
   right: 0;
   overflow: hidden;
+  cursor: pointer;
 }
 
 * {
@@ -36,6 +37,7 @@ label {
   flex-direction: column;
   width: 100%;
   justify-content: space-between;
+  cursor: auto;
 }
 
 input[type="range"] {

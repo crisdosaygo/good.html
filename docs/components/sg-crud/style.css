@@ -20,6 +20,7 @@
   grid-area: names-list;
   min-height: 150px;
   max-width: 450px;
+  cursor: pointer;
 }
 
 fieldset {
