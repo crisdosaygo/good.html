@@ -6,6 +6,11 @@ class Table extends Base {
   static get CHANGED() { return 1e12+1; }
   static get DEBUG() { return false; }
 
+  static getRealValue(thing) {
+    const realValue = !Number.isNaN(Number(thing)) ? Number(thing) : thing;
+    return realValue;
+  }
+
   constructor() {
     super();
     const resizer = this.Resizer();
@@ -76,7 +81,7 @@ class Table extends Base {
         if ( value === Table.EMPTY ) {
           defineGetter(CellMap, CellProxy, cellCoord, Table.EMPTY);
         } else {
-          const realValue = !Number.isNaN(Number(value)) ? Number(value) : value;
+          const realValue = Table.getRealValue(value);
           defineGetter(CellMap, CellProxy, cellCoord, realValue);
         }
       }
@@ -132,6 +137,7 @@ class Table extends Base {
     const {target} = event;
     const host = target.getRootNode().host;
     const entry = target.value.trim();
+    const value = Table.getRealValue(entry);
     const key = host.dataset.key;
    
     if ( ! cells.cell[key] ) {
@@ -139,9 +145,9 @@ class Table extends Base {
     }
     
     if ( entry.startsWith('=') ) {
-      cells.cell[key].formula = entry;
+      cells.cell[key].formula = value;
     } else {
-      cells.cell[key].value = entry;
+      cells.cell[key].value = value;
       cells.cell[key].formula = '';
     }
 
