@@ -34,7 +34,7 @@
       const entries = [];
       State.columnNames.forEach(col => {
         State.rowNames.forEach(row => {
-          const key = `${col}${row}`;
+          const key = `${compKey}:${col}${row}`;
           const value = {key, value: '', formula: '', editFormula: false};
           entries.push([key, value]);
         });

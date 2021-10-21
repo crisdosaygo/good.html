@@ -32,7 +32,7 @@
         overflow: auto;
         width: 100%;
         height: 100%;
-        scroll-padding: var(--column-headers-height) 0 0 var(--row-headers-width);
+        x-scroll-padding: var(--column-headers-height) 0 0 var(--row-headers-width);
         min-width: var(--comfortable-width);
         min-height: var(--comfortable-height);
       }
@@ -68,7 +68,6 @@
       }
 
       table {
-        background: white;
       }
 
     /* table extras (to organize */
@@ -247,4 +246,12 @@
     display: block;
     pointer-events: none;
     border: medium solid dodgerblue;
+  }
+
+ /* infinite overrides */
+  tbody {
+    position: absolute;
+    width: 20000em;
+    background: white;
+    height: 20000em;
   }
