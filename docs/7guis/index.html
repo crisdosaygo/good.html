@@ -97,14 +97,6 @@
         rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
         selections: []
       },
-      ms: {
-        key: Math.random().toFixed(18),
-        title: 'Multi Search-select List',
-        sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/components/sg-multi-search',
-        list: Countries,
-        chosen: [
-        ]
-      }
     };
     State.cells.cell = Object.fromEntries((function () {
       const entries = [];
@@ -149,6 +141,16 @@
       count: 42
     };
     setState('ctr', ctr, {save:true});
+
+    const multi = {
+      key: Math.random().toFixed(18),
+      title: 'Multi Search-select List',
+      sourceUrl: 'https://github.com/i5ik/_____/tree/main/docs/components/sg-multi-search',
+      list: Countries,
+      chosen: [
+      ]
+    }
+    setState('multi', multi, {save:true});
   });
 </script>
 <style>
@@ -166,8 +168,13 @@
     <h1 class="rainbow rainbow_text_animated"><a href=https://github.com/i5ik/_____>7GUIs</a></h1>
   </div>
   <!sg-look-book state=data />
+  <hr>
+  <div id=shadowBox>
+    <h1 class="rainbow rainbow_text_animated">More UI Components</h1>
+  </div>
+  
+  <!sg-multi-search state=multi />
 </main>
-<hr>
 <a target=_blank rel=noreferrer href=https://github.com/eugenkiss/7guis>What is 7GUIs?</a>
 <br>
 <a href=https://github.com/i5ik/_____>What is <i>BANG!</i>?</a>
