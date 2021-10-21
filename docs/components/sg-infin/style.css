@@ -28,7 +28,7 @@
       .box {
         position: relative;
         display: flex;
-        scroll-snap-type: both;
+        x-scroll-snap-type: both;
         overflow: auto;
         width: 100%;
         height: 100%;
@@ -249,9 +249,13 @@
   }
 
  /* infinite overrides */
-  tbody {
+  table {
     position: absolute;
     width: 20000em;
     background: white;
     height: 20000em;
+  }
+
+  tbody {
+    position: absolute;
   }

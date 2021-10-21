@@ -1,6 +1,6 @@
 ${{key}}
 <sg-frame state=${_self} resize>
-  <div class=box >
+  <div class=box b:passive:scroll=UpdatePosition>
     <table>
       <colgroup>
         <col class="row-header" name="top-left">
@@ -19,11 +19,6 @@ ${{key}}
         </tr>
       `, {batchSize: 1})
       }</tbody>
-      <tbody class=overlay>${selections.map(sel => F`${{key:sel.key}}
-        <tr style="
-          top: ${sel.top}px; left: ${sel.left}px; width: ${sel.width}px; height: ${sel.height}px;
-        "></tr>
-      `)}</tbody>
     </table>
   </div>
 </sg-frame>
