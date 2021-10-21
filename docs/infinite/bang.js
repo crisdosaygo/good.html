@@ -36,7 +36,7 @@
       styleFile: 'style.css',
       bangKey: '_bang_key',
       componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}../components`,
-      allowUnset: false,
+      allowUnset: true,
       unsetPlaceholder: EMPTY,
       EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 

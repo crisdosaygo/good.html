@@ -14,21 +14,34 @@
     height: 100%;
   }
 </style>
-<script src=err.js></script>
 <script type=application/javascript src=./bang.js?2.718></script>
 <script>
   bangLoaded().then(async () => {
     use('sg-infin');
     use('sg-frame');
+    use('sg-cell');
 
     const compKey = Math.random().toFixed(18);
     const State = {
       key: compKey,
       sourceUrl: 'https://github.com/i5ik/____',
-      title: 'Infinite'
+      title: 'Infinite',
+      columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
+      rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
+      selections: []
     };
+    State.cell = Object.fromEntries((function () {
+      const entries = [];
+      State.columnNames.forEach(col => {
+        State.rowNames.forEach(row => {
+          const key = `${col}${row}`;
+          const value = {key, value: '', formula: '', editFormula: false};
+          entries.push([key, value]);
+        });
+      });
+      return entries;
+    }()));
     setState('data', State, {save:true});
-    throw new TypeError(`Fetch big data at least 60000 rows and multiple columns.`);
   });
 </script>
 <main>
