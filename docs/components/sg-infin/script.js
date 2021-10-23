@@ -4,24 +4,24 @@ class Infin extends Base {
     this.untilVisible().then(() => {
       this.#top = new IntersectionObserver(
         entries => entries.forEach(entry => {
-          if ( entry.boundingClientRect.y == entry.intersectionRect.y ) return;
-          console.log('top', this.#direction);
           if ( this.#direction >= 0 ) {
-            this.topToPool(entry.target);
+            this.topToPool(this.first().first);
+            this.poolToBottom(entry);
           } else {
             this.poolToTop(entry);
+            this.bottomToPool(this.last().last);
           }
         }), 
-        {root: this.viewport}
+        {root: this.viewport, threshold: 1.0}
       );
       this.#bottom = new IntersectionObserver(
         entries => entries.forEach(entry => {
-          if ( entry.boundingClientRect.height == entry.intersectionRect.height ) return;
-          console.log('bottom', this.#direction);
           if ( this.#direction >= 0 ) {
+            this.topToPool(this.first().first);
             this.poolToBottom(entry);
           } else {
-            this.bottomToPool(entry.target);
+            this.poolToTop(entry);
+            this.bottomToPool(this.last().last);
           }
         }), 
         {root: this.viewport}
@@ -29,18 +29,42 @@ class Infin extends Base {
 
       // so when the first row crosses threshold, put new one on bottom
       // when last row crosses threashold, put one on top
-      const first = this.viewport.querySelector('tr.sc-item');
-      const last = Array.from(this.viewport.querySelectorAll('tbody tr.sc-item')).pop();
-      //console.log(first, last);
-      this.#top.observe(first);
-      this.#bottom.observe(last);
-
       let start = 0;
       Array.from(this.viewport.querySelectorAll('tr.sc-item')).forEach(row => {
-        row.style.top = `${start}px`;
         start += row.scrollHeight;
+        row.style.top = `${start}px`;
       });
+      this.topToPool(this.first().first);
+      this.bottomToPool(this.last().last);
     });
+  }
+
+  first() {
+    let first, firstTop = Infinity;
+    Array.from(this.viewport.querySelectorAll('tbody tr.sc-item'))
+      .find(el => {
+        const thisTop = parseFloat(el.style.top);
+        if ( thisTop < firstTop ) {
+          firstTop = thisTop;
+          first = el;
+        }
+      });
+    console.log('f', first);
+    return {first, firstTop};
+  }
+
+  last() {
+    let last, lastTop = -Infinity;
+    Array.from(this.viewport.querySelectorAll('tbody tr.sc-item'))
+      .find(el => {
+        const thisTop = parseFloat(el.style.top);
+        if ( thisTop > lastTop ) {
+          lastTop = thisTop;
+          last = el;
+        }
+      });
+    console.log('l', last);
+    return {last, lastTop};
   }
 
   // state 
@@ -61,86 +85,44 @@ class Infin extends Base {
 
   topToPool(el) {
     console.log("Top to pool", el);
+    this.#top.unobserve(el);
     el.style.top = `-${el.scrollHeight+10}px`;
     el.classList.add('sc-pool');
     el.classList.remove('sc-item');
-    this.#top.unobserve(el);
-    let first, firstTop = Infinity;
-    Array.from(this.viewport.querySelectorAll('tbody tr.sc-item'))
-      .find(el => {
-        const thisTop = parseFloat(el.style.top);
-        if ( thisTop < firstTop ) {
-          firstTop = thisTop;
-          first = el;
-        }
-      });
-    console.log('first', first);
-    this.#top.observe(first);
+    this.#top.observe(this.first().first);
   }
 
   bottomToPool(el) {
     console.log("Bottom to pool", el);
+    this.#bottom.unobserve(el);
     el.style.top = `-${el.scrollHeight+10}px`;
     el.classList.add('sc-pool');
     el.classList.remove('sc-item');
-    this.#bottom.unobserve(el);
-    let last, lastTop = -Infinity;
-    Array.from(this.viewport.querySelectorAll('tbody tr.sc-item'))
-      .find(el => {
-        const thisTop = parseFloat(el.style.top);
-        if ( thisTop > lastTop ) {
-          lastTop = thisTop;
-          last = el;
-        }
-      });
-    console.log('last', last);
-    this.#bottom.observe(last);
+    this.#bottom.observe(this.last().last);
   }
 
   poolToTop(entry) {
     console.log("Pool to top", entry);
-    const {top} = entry.boundingClientRect;
     const pool = this.viewport.querySelector('.sc-pool');
-    let first, firstTop = Infinity;
-    Array.from(this.viewport.querySelectorAll('tbody tr.sc-item'))
-      .find(el => {
-        const thisTop = parseFloat(el.style.top);
-        if ( thisTop < firstTop ) {
-          firstTop = thisTop;
-          first = el;
-        }
-      });
-    console.log('first', first);
-
+    const {firstTop,first} = this.first();
     if ( pool ) {
       pool.classList.remove('sc-pool');
       pool.classList.add('sc-item');
       pool.style.top = `${firstTop-pool.scrollHeight}px`;
       this.#top.observe(pool);
     }
-    //this.#top.observe(first);
   }
 
   poolToBottom(entry) {
     console.log("Pool to bottom", entry);
-    const {bottom} = entry.boundingClientRect;
     const pool = this.viewport.querySelector('.sc-pool');
-    let last, lastTop = -Infinity;
-    Array.from(this.viewport.querySelectorAll('tbody tr.sc-item'))
-      .find(el => {
-        const thisTop = parseFloat(el.style.top);
-        if ( thisTop > lastTop ) {
-          lastTop = thisTop;
-          last = el;
-        }
-      });
+    const {lastTop, last} = this.last();
     if ( pool ) {
       pool.classList.remove('sc-pool');
       pool.classList.add('sc-item');
       pool.style.top = `${lastTop+last.scrollHeight}px`;
       this.#bottom.observe(pool);
     }
-    //this.#bottom.observe(last);
   }
 
   UpdatePosition(scrollEvent) {
@@ -152,7 +134,6 @@ class Infin extends Base {
     let thisScrollTop = target.scrollTop;
     if ( thisScrollTop !== this.#lastScrollTop ) {
       this.#direction = Math.sign(thisScrollTop - this.#lastScrollTop);
-      console.log(this.#direction, this.#lastScrollTop, thisScrollTop);
       this.#lastScrollTop = thisScrollTop;
     }
     //this.nextPop = setTimeout(() => {
