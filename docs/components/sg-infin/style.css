@@ -19,6 +19,7 @@
 
   sg-frame {
     height: var(--max-height);
+    width: var(--max-width);
     user-select: none;
     -webkit-user-select: none;
   }

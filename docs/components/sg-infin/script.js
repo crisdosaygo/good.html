@@ -5,28 +5,33 @@ class Infin extends Base {
       this.#top = new IntersectionObserver(
         entries => entries.forEach(entry => {
           if ( entry.boundingClientRect.y == entry.intersectionRect.y ) return;
-          if ( entry.isIntersecting ) this.poolToTop(entry);
-          else this.topToPool(entry.target);
+          console.log('top', this.#direction);
+          if ( this.#direction >= 0 ) {
+            this.topToPool(entry.target);
+          } else {
+            this.poolToTop(entry);
+          }
         }), 
         {root: this.viewport}
       );
       this.#bottom = new IntersectionObserver(
         entries => entries.forEach(entry => {
           if ( entry.boundingClientRect.height == entry.intersectionRect.height ) return;
-          //if ( entry.isIntersecting ) this.poolToBottom(entry);
-          //else this.bottomToPool(entry.target);
-          this.poolToBottom(entry);
+          console.log('bottom', this.#direction);
+          if ( this.#direction >= 0 ) {
+            this.poolToBottom(entry);
+          } else {
+            this.bottomToPool(entry.target);
+          }
         }), 
         {root: this.viewport}
       );
-
-      console.log(this.viewport);
 
       // so when the first row crosses threshold, put new one on bottom
       // when last row crosses threashold, put one on top
       const first = this.viewport.querySelector('tr.sc-item');
       const last = Array.from(this.viewport.querySelectorAll('tbody tr.sc-item')).pop();
-      console.log(first, last);
+      //console.log(first, last);
       this.#top.observe(first);
       this.#bottom.observe(last);
 
@@ -41,9 +46,12 @@ class Infin extends Base {
   // state 
     // hidden variables
 
+    #updating = false;
     #top;
     #bottom;
     #viewport;
+    #direction = 0;
+    #lastScrollTop = 0;
 
     get viewport() {
       if ( this.#viewport ) return this.#viewport;
@@ -93,12 +101,24 @@ class Infin extends Base {
     console.log("Pool to top", entry);
     const {top} = entry.boundingClientRect;
     const pool = this.viewport.querySelector('.sc-pool');
+    let first, firstTop = Infinity;
+    Array.from(this.viewport.querySelectorAll('tbody tr.sc-item'))
+      .find(el => {
+        const thisTop = parseFloat(el.style.top);
+        if ( thisTop < firstTop ) {
+          firstTop = thisTop;
+          first = el;
+        }
+      });
+    console.log('first', first);
+
     if ( pool ) {
       pool.classList.remove('sc-pool');
       pool.classList.add('sc-item');
-      pool.style.top = `${top-pool.scrollHeight}px`;
+      pool.style.top = `${firstTop-pool.scrollHeight}px`;
       this.#top.observe(pool);
     }
+    //this.#top.observe(first);
   }
 
   poolToBottom(entry) {
@@ -114,7 +134,6 @@ class Infin extends Base {
           last = el;
         }
       });
-    console.log('last', last);
     if ( pool ) {
       pool.classList.remove('sc-pool');
       pool.classList.add('sc-item');
@@ -125,14 +144,23 @@ class Infin extends Base {
   }
 
   UpdatePosition(scrollEvent) {
+    if ( this.#updating ) return;
+    this.#updating = true;
     const {target} = scrollEvent; 
     //console.log('scrolling');
-    if ( this.nextPop ) clearTimeout(this.nextPop);
-    this.nextPop = setTimeout(() => {
+    //if ( this.nextPop ) clearTimeout(this.nextPop);
+    let thisScrollTop = target.scrollTop;
+    if ( thisScrollTop !== this.#lastScrollTop ) {
+      this.#direction = Math.sign(thisScrollTop - this.#lastScrollTop);
+      console.log(this.#direction, this.#lastScrollTop, thisScrollTop);
+      this.#lastScrollTop = thisScrollTop;
+    }
+    //this.nextPop = setTimeout(() => {
       //console.info('setting');
       const rows = target.querySelectorAll('tbody');
       rows.forEach(el => el.style.left = target.scrollLeft+'px');
       //rows.forEach(el => el.style.top = target.scrollTop+'px');
-    }, 50);
+    //}, 50);
+    this.#updating = false;
   }
 }
