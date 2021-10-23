@@ -8,7 +8,18 @@ ${{key}}
         <col name=${name} width=101px>
         `)}
       </colgroup>
-      <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}} <tr>
+      <tbody>
+        <tr class=sc-pool style="top: -100px;">
+          ${schedule(columnNames, async colName => {
+            const cellKey = `${key}:${colName}-pool`;
+            return await F`${{key:cellKey}}
+          <td>
+            Pool
+          </td>
+          `}, {batchSize: 5})}
+        </tr>
+        ${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}} 
+        <tr class=sc-item>
           ${schedule(columnNames, async colName => {
             const cellKey = `${key}:${colName}${rowName}`;
             return await F`${{key:cellKey}}
