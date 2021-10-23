@@ -6,6 +6,7 @@ class Infin extends Base {
         entries => entries.forEach(entry => {
           this.topToPool();
           this.bottomToPool();
+          //console.log(entry);
           if ( this.#direction >= 0 ) {
             this.poolToBottom(entry);
           } else {
@@ -41,6 +42,10 @@ class Infin extends Base {
     });
   }
 
+  Recalculate() {
+    // do nothing
+  }
+
   first() {
     const first = [];
     const start = this.viewport.scrollTop;
@@ -65,6 +70,10 @@ class Infin extends Base {
         }
       });
     return last;
+  }
+
+  all() {
+    return Array.from(this.viewport.querySelectorAll('tbody tr'));
   }
 
   firstTop() {
@@ -105,13 +114,22 @@ class Infin extends Base {
       return this.#viewport;
     }
 
+  allToPool() {
+    this.all().forEach(el => {
+      //this.#top.unobserve(el);
+      el.style.top = `-${el.scrollHeight+10}px`;
+      el.classList.add('sc-pool');
+      el.classList.remove('sc-item');
+    });
+  }
+
   topToPool() {
     this.first().forEach(el => {
       //this.#top.unobserve(el);
       el.style.top = `-${el.scrollHeight+10}px`;
       el.classList.add('sc-pool');
       el.classList.remove('sc-item');
-    })
+    });
   }
 
   bottomToPool() {
@@ -124,23 +142,53 @@ class Infin extends Base {
   }
 
   poolToTop(entry) {
-    const pool = this.viewport.querySelector('.sc-pool');
-    const firstTop = this.firstTop();
-    if ( pool ) {
-      pool.classList.remove('sc-pool');
-      pool.classList.add('sc-item');
-      pool.style.top = `${firstTop-pool.scrollHeight}px`;
+    let BUFFER = Math.max(0, this.viewport.scrollTop - 50);
+    let i = 0, pool, firstTop;
+    firstTop = this.firstTop();
+    if ( firstTop == Infinity ) {
+      //console.info(this.viewport.scrollTop, firstTop);
+      //alert(firstTop);
+      firstTop = this.viewport.scrollTop - this.viewport.clientHeight; 
+      BUFFER -= this.viewport.clientHeight;
+      this.allToPool();
     }
+    do {
+      pool = this.viewport.querySelector('.sc-pool');
+      if ( pool ) {
+        i++;
+        pool.classList.remove('sc-pool');
+        pool.classList.add('sc-item');
+        pool.style.top = `${firstTop-pool.scrollHeight}px`;
+        firstTop -= pool.scrollHeight;
+      }
+    } while( i < 1 && pool && firstTop > BUFFER );
+    console.log(`Added ${i} to top`);
   }
 
   poolToBottom(entry) {
-    const pool = this.viewport.querySelector('.sc-pool');
-    const lastBottom = this.lastBottom();
-    if ( pool ) {
-      pool.classList.remove('sc-pool');
-      pool.classList.add('sc-item');
-      pool.style.top = `${lastBottom}px`;
+    let BUFFER = this.viewport.scrollTop + this.viewport.clientHeight + 50;
+    let i = 0, pool, lastBottom;
+    lastBottom = this.lastBottom();
+    if ( lastBottom == -Infinity ) {
+      //console.info(this.viewport.scrollTop, lastBottom);
+      //alert(lastBottom);
+      lastBottom = BUFFER; 
+      BUFFER += this.viewport.clientHeight;
+      this.allToPool();
+    } else if ( lastBottom < this.viewport.scrollTop ) {
+      alert('problem');
     }
+    do {
+      pool = this.viewport.querySelector('.sc-pool');
+      if ( pool ) {
+        i++;
+        pool.classList.remove('sc-pool');
+        pool.classList.add('sc-item');
+        pool.style.top = `${lastBottom}px`;
+        lastBottom += pool.scrollHeight;
+      }
+    } while ( i < 1 && pool && lastBottom < BUFFER );
+    console.log(`Added ${i} to bottom`);
   }
 
   UpdatePosition(scrollEvent) {
@@ -153,6 +201,7 @@ class Infin extends Base {
       this.#direction = Math.sign(thisScrollTop - this.#lastScrollTop);
       this.#lastScrollTop = thisScrollTop;
     }
+    console.log(this.#direction, this.#lastScrollTop);
     this.nextPop = setTimeout(() => {
       //console.info('setting');
       const rows = target.querySelectorAll('tbody tr');
