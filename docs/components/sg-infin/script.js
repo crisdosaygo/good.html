@@ -31,14 +31,14 @@ class Infin extends Base {
       // when last row crosses threashold, put one on top
       let start = 0;
       Array.from(this.viewport.querySelectorAll('tr.sc-item')).forEach(row => {
-        start += row.scrollHeight;
+        start += row.clientHeight;
         row.style.top = `${start}px`;
         this.#yer.observe(row);
       });
 
       start = 0;
       Array.from(this.viewport.querySelectorAll('td.sc-item')).forEach(cell => {
-        start += cell.scrollWidth;
+        start += cell.clientWidth;
         cell.style.left = `${start}px`;
         this.#xer.observe(cell);
       });
@@ -79,8 +79,60 @@ class Infin extends Base {
     return last;
   }
 
+  cellsLeft() {
+    const left = [];
+    const start = this.viewport.scrollLeft;
+    Array.from(this.viewport.querySelectorAll('tbody td.sc-item'))
+      .find(el => {
+        const thisLeft = parseFloat(el.style.left) + el.clientWidth;
+        if ( thisLeft < start ) {
+          left.push(el);
+        }
+      });
+    return left;
+  }
+
+  cellsRight() {
+    const right = [];
+    const end = this.viewport.scrollLeft + this.viewport.clientWidth;
+    Array.from(this.viewport.querySelectorAll('tbody td.sc-item'))
+      .find(el => {
+        const thisLeft = parseFloat(el.style.left);
+        if ( thisLeft > end ) {
+          right.push(el);
+        }
+      });
+    return right;
+  }
+
   allRows() {
     return Array.from(this.viewport.querySelectorAll('tbody tr'));
+  }
+
+  allCells() {
+    return Array.from(this.viewport.querySelectorAll('td'));
+  }
+
+  leftmostCellLeft() {
+    let leftmostCellLeft = Infinity;
+    Array.from(this.viewport.querySelectorAll('tbody td.sc-item')).forEach(el => {
+      const left = parseFloat(el.style.left);
+      if ( left < leftmostCellLeft ) {
+        leftmostCellLeft = left;
+      }
+    });
+    return leftmostCellLeft;
+  }
+
+  rightmostCellRight() {
+    let rightmostCellRight = -Infinity;
+    Array.from(this.viewport.querySelectorAll('tbody td.sc-item')).forEach(el => {
+      const right = parseFloat(el.style.left) + el.clientWidth;
+      if ( right > rightmostCellRight ) {
+        rightmostCellRight = right;
+      }
+    });
+    return rightmostCellRight;
   }
 
   highestRowTop() {
@@ -127,6 +179,10 @@ class Infin extends Base {
     this.allRows().forEach(this.toPool);
   }
 
+  allCellsToPool() {
+    this.allCells().forEach(this.toPool);
+  }
+
   topToPool() {
     this.rowsAbove().forEach(this.toPool);
   }
@@ -136,23 +192,65 @@ class Infin extends Base {
   }
 
   leftToPool() {
-
+    this.cellsLeft().forEach(this.toPool);
   }
 
   rightToPool() {
-
+    this.cellsRight().forEach(this.toPool);
   }
 
-  poolToLeft() {
-
+  poolToLeft(atST = false) {
+    let BUFFER = Math.max(0, this.viewport.scrollLeft - 150);
+    let i = 0, pool, leftmostCellLeft;
+    leftmostCellLeft = this.leftmostCellLeft();
+    if ( atST || leftmostCellLeft == Infinity ) {
+      if ( atST ) {
+        leftmostCellLeft = this.viewport.scrollLeft + this.viewport.clientWidth;
+      } else {
+        leftmostCellLeft = BUFFER;
+        BUFFER -= this.viewport.clientWidth;
+      }
+      this.allCellsToPool();
+    }
+    do {
+      pool = this.viewport.querySelector('td.sc-pool');
+      if ( pool ) {
+        i++;
+        pool.classList.remove('sc-pool');
+        pool.classList.add('sc-item');
+        pool.style.left = `${leftmostCellLeft-pool.clientWidth}px`;
+        leftmostCellLeft -= pool.clientWidth;
+      }
+    } while( (i < 1 || atST) && pool && leftmostCellLeft > BUFFER );
   }
 
-  poolToRight() {
-
+  poolToRight(atST = false) {
+    let BUFFER = this.viewport.scrollLeft + this.viewport.clientWidth + 150;
+    let i = 0, pool, rightmostCellRight;
+    rightmostCellRight = this.rightmostCellRight();
+    if ( atST || rightmostCellRight == -Infinity ) {
+      if ( atST ) {
+        rightmostCellRight = this.viewport.scrollLeft; 
+      } else {
+        rightmostCellRight = BUFFER; 
+        BUFFER += this.viewport.clientWidth;
+      }
+      this.allCellsToPool();
+    }
+    do {
+      pool = this.viewport.querySelector('td.sc-pool');
+      if ( pool ) {
+        i++;
+        pool.classList.remove('sc-pool');
+        pool.classList.add('sc-item');
+        pool.style.top = `${rightmostCellRight}px`;
+        rightmostCellRight += pool.clientWidth;
+      }
+    } while ( (i < 1 || atST) && pool && rightmostCellRight < BUFFER );
   }
 
   toPool(el) {
-    el.style.top = `-${el.scrollHeight+10}px`;
+    el.style.top = `-${el.clientHeight+10}px`;
     el.classList.add('sc-pool');
     el.classList.remove('sc-item');
   }
@@ -171,13 +269,13 @@ class Infin extends Base {
       this.allToPool();
     }
     do {
-      pool = this.viewport.querySelector('.sc-pool');
+      pool = this.viewport.querySelector('tr.sc-pool');
       if ( pool ) {
         i++;
         pool.classList.remove('sc-pool');
         pool.classList.add('sc-item');
-        pool.style.top = `${highestRowTop-pool.scrollHeight}px`;
-        highestRowTop -= pool.scrollHeight;
+        pool.style.top = `${highestRowTop-pool.clientHeight}px`;
+        highestRowTop -= pool.clientHeight;
       }
     } while( (i < 1 || atST) && pool && highestRowTop > BUFFER );
   }
@@ -196,13 +294,13 @@ class Infin extends Base {
       this.allToPool();
     }
     do {
-      pool = this.viewport.querySelector('.sc-pool');
+      pool = this.viewport.querySelector('tr.sc-pool');
       if ( pool ) {
         i++;
         pool.classList.remove('sc-pool');
         pool.classList.add('sc-item');
         pool.style.top = `${lowestRowBottom}px`;
-        lowestRowBottom += pool.scrollHeight;
+        lowestRowBottom += pool.clientHeight;
       }
     } while ( (i < 1 || atST) && pool && lowestRowBottom < BUFFER );
   }
@@ -236,11 +334,13 @@ class Infin extends Base {
     // are not triggered by intersection anymore
     if ( thisScrollLeft !== this.#lastScrollLeft ) {
       this.#lastScrollLeft = thisScrollLeft;
+      /*
       if ( this.nextPop ) clearTimeout(this.nextPop);
       this.nextPop = setTimeout(() => {
         const rows = target.querySelectorAll('tbody tr');
         rows.forEach(el => el.style.paddingLeft = target.scrollLeft+'px');
       }, 25);
+      */
     }
     this.#updating = false;
   }

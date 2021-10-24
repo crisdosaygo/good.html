@@ -14,7 +14,7 @@ ${{key}}
           ${schedule(columnNames, async colName => {
             const cellKey = `${key}:${colName}${rowName}`;
             return await F`${{key:cellKey}}
-          <td>
+          <td class=sc-item>
             <!sg-cell data-key=${cellKey} state=${cell[cellKey]} />
           </td>
           `}, {batchSize: 5})}
