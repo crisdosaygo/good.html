@@ -6,19 +6,6 @@ class Infin extends Base {
         entries => entries.forEach(entry => {
           this.topToPool();
           this.bottomToPool();
-          //console.log(entry);
-          if ( this.#direction >= 0 ) {
-            this.poolToBottom();
-          } else {
-            this.poolToTop();
-          }
-        }), 
-        {root: this.viewport}
-      );
-      this.#bottom = new IntersectionObserver(
-        entries => entries.forEach(entry => {
-          this.topToPool();
-          this.bottomToPool();
           if ( this.#direction >= 0 ) {
             this.poolToBottom();
           } else {
@@ -35,7 +22,6 @@ class Infin extends Base {
         start += row.scrollHeight;
         row.style.top = `${start}px`;
         this.#top.observe(row);
-        this.#bottom.observe(row);
       });
       this.topToPool();
       this.bottomToPool();
@@ -103,7 +89,6 @@ class Infin extends Base {
 
     #updating = false;
     #top;
-    #bottom;
     #viewport;
     #direction = 0;
     #lastScrollTop = 0;
@@ -135,7 +120,6 @@ class Infin extends Base {
 
   bottomToPool() {
     this.last().forEach(el => {
-      //this.#bottom.unobserve(el);
       el.style.top = `-${el.scrollHeight+10}px`;
       el.classList.add('sc-pool');
       el.classList.remove('sc-item');
@@ -147,8 +131,6 @@ class Infin extends Base {
     let i = 0, pool, firstTop;
     firstTop = this.firstTop();
     if ( atST || firstTop == Infinity ) {
-      //console.info(this.viewport.scrollTop, firstTop);
-      //alert(firstTop);
       if ( atST ) {
         firstTop = this.viewport.scrollTop + this.viewport.clientHeight;
       } else {
@@ -167,7 +149,6 @@ class Infin extends Base {
         firstTop -= pool.scrollHeight;
       }
     } while( (i < 1 || atST) && pool && firstTop > BUFFER );
-    //console.log(`Added ${i} to top`);
   }
 
   poolToBottom(atST = false) {
@@ -175,18 +156,13 @@ class Infin extends Base {
     let i = 0, pool, lastBottom;
     lastBottom = this.lastBottom();
     if ( atST || lastBottom == -Infinity ) {
-      //console.info(this.viewport.scrollTop, lastBottom);
-      //alert(lastBottom);
       if ( atST ) {
         lastBottom = this.viewport.scrollTop; 
-        console.log({lastBottom});
       } else {
         lastBottom = BUFFER; 
         BUFFER += this.viewport.clientHeight;
       }
       this.allToPool();
-    } else if ( lastBottom < this.viewport.scrollTop ) {
-      alert('problem');
     }
     do {
       pool = this.viewport.querySelector('.sc-pool');
@@ -198,7 +174,6 @@ class Infin extends Base {
         lastBottom += pool.scrollHeight;
       }
     } while ( (i < 1 || atST) && pool && lastBottom < BUFFER );
-    //console.log(`Added ${i} to bottom`);
   }
 
   UpdatePosition(scrollEvent) {
@@ -213,7 +188,6 @@ class Infin extends Base {
       this.#direction = Math.sign(dist);
       this.#lastScrollTop = thisScrollTop;
       needRejig = Math.abs(dist) > this.viewport.clientHeight;
-      console.log(dist);
       if ( needRejig ) {
         // we could debounce/throttle this on scroll
         setTimeout(() => {
