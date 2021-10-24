@@ -8,9 +8,9 @@ class Infin extends Base {
           this.bottomToPool();
           //console.log(entry);
           if ( this.#direction >= 0 ) {
-            this.poolToBottom(entry);
+            this.poolToBottom();
           } else {
-            this.poolToTop(entry);
+            this.poolToTop();
           }
         }), 
         {root: this.viewport}
@@ -20,9 +20,9 @@ class Infin extends Base {
           this.topToPool();
           this.bottomToPool();
           if ( this.#direction >= 0 ) {
-            this.poolToBottom(entry);
+            this.poolToBottom();
           } else {
-            this.poolToTop(entry);
+            this.poolToTop();
           }
         }), 
         {root: this.viewport}
@@ -107,6 +107,7 @@ class Infin extends Base {
     #viewport;
     #direction = 0;
     #lastScrollTop = 0;
+    #lastScrollLeft = 0;
 
     get viewport() {
       if ( this.#viewport ) return this.#viewport;
@@ -141,15 +142,19 @@ class Infin extends Base {
     });
   }
 
-  poolToTop(entry) {
+  poolToTop(atST = false) {
     let BUFFER = Math.max(0, this.viewport.scrollTop - 50);
     let i = 0, pool, firstTop;
     firstTop = this.firstTop();
-    if ( firstTop == Infinity ) {
+    if ( atST || firstTop == Infinity ) {
       //console.info(this.viewport.scrollTop, firstTop);
       //alert(firstTop);
-      firstTop = this.viewport.scrollTop - this.viewport.clientHeight; 
-      BUFFER -= this.viewport.clientHeight;
+      if ( atST ) {
+        firstTop = this.viewport.scrollTop + this.viewport.clientHeight;
+      } else {
+        firstTop = BUFFER;
+        BUFFER -= this.viewport.clientHeight;
+      }
       this.allToPool();
     }
     do {
@@ -161,19 +166,24 @@ class Infin extends Base {
         pool.style.top = `${firstTop-pool.scrollHeight}px`;
         firstTop -= pool.scrollHeight;
       }
-    } while( i < 1 && pool && firstTop > BUFFER );
-    console.log(`Added ${i} to top`);
+    } while( (i < 1 || atST) && pool && firstTop > BUFFER );
+    //console.log(`Added ${i} to top`);
   }
 
-  poolToBottom(entry) {
+  poolToBottom(atST = false) {
     let BUFFER = this.viewport.scrollTop + this.viewport.clientHeight + 50;
     let i = 0, pool, lastBottom;
     lastBottom = this.lastBottom();
-    if ( lastBottom == -Infinity ) {
+    if ( atST || lastBottom == -Infinity ) {
       //console.info(this.viewport.scrollTop, lastBottom);
       //alert(lastBottom);
-      lastBottom = BUFFER; 
-      BUFFER += this.viewport.clientHeight;
+      if ( atST ) {
+        lastBottom = this.viewport.scrollTop; 
+        console.log({lastBottom});
+      } else {
+        lastBottom = BUFFER; 
+        BUFFER += this.viewport.clientHeight;
+      }
       this.allToPool();
     } else if ( lastBottom < this.viewport.scrollTop ) {
       alert('problem');
@@ -187,27 +197,48 @@ class Infin extends Base {
         pool.style.top = `${lastBottom}px`;
         lastBottom += pool.scrollHeight;
       }
-    } while ( i < 1 && pool && lastBottom < BUFFER );
-    console.log(`Added ${i} to bottom`);
+    } while ( (i < 1 || atST) && pool && lastBottom < BUFFER );
+    //console.log(`Added ${i} to bottom`);
   }
 
   UpdatePosition(scrollEvent) {
     if ( this.#updating ) return;
     this.#updating = true;
     const {target} = scrollEvent; 
-    if ( this.nextPop ) clearTimeout(this.nextPop);
-    let thisScrollTop = target.scrollTop;
+    const thisScrollTop = target.scrollTop;
+    const thisScrollLeft = target.scrollLeft;
+    let dist = 0, needRejig = false;
     if ( thisScrollTop !== this.#lastScrollTop ) {
-      this.#direction = Math.sign(thisScrollTop - this.#lastScrollTop);
+      dist = thisScrollTop - this.#lastScrollTop;
+      this.#direction = Math.sign(dist);
       this.#lastScrollTop = thisScrollTop;
+      needRejig = Math.abs(dist) > this.viewport.clientHeight;
+      console.log(dist);
+      if ( needRejig ) {
+        // we could debounce/throttle this on scroll
+        setTimeout(() => {
+          this.allToPool();
+          if ( this.#direction > 0 ) {
+            this.poolToBottom(true);
+          } else {
+            this.poolToTop(true);
+          }
+        }, 50);
+      }
     }
-    console.log(this.#direction, this.#lastScrollTop);
-    this.nextPop = setTimeout(() => {
-      //console.info('setting');
-      const rows = target.querySelectorAll('tbody tr');
-      rows.forEach(el => el.style.left = target.scrollLeft+'px');
-      //rows.forEach(el => el.style.top = target.scrollTop+'px');
-    }, 50);
+    // when scrolling diagonal we don't update properly because they go off screen and
+    // fixed by making the rows 100% width
+    // are not triggered by intersection anymore
+    if ( thisScrollLeft !== this.#lastScrollLeft ) {
+      this.#lastScrollLeft = thisScrollLeft;
+      if ( this.nextPop ) clearTimeout(this.nextPop);
+      this.nextPop = setTimeout(() => {
+        //console.info('setting');
+        const rows = target.querySelectorAll('tbody tr');
+        rows.forEach(el => el.style.left = target.scrollLeft+'px');
+        //rows.forEach(el => el.style.top = target.scrollTop+'px');
+      }, 50);
+    }
     this.#updating = false;
   }
 }
