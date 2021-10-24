@@ -233,11 +233,9 @@ class Infin extends Base {
       this.#lastScrollLeft = thisScrollLeft;
       if ( this.nextPop ) clearTimeout(this.nextPop);
       this.nextPop = setTimeout(() => {
-        //console.info('setting');
         const rows = target.querySelectorAll('tbody tr');
-        rows.forEach(el => el.style.left = target.scrollLeft+'px');
-        //rows.forEach(el => el.style.top = target.scrollTop+'px');
-      }, 50);
+        rows.forEach(el => el.style.paddingLeft = target.scrollLeft+'px');
+      }, 25);
     }
     this.#updating = false;
   }
