@@ -206,13 +206,14 @@ class Infin extends Base {
     this.allCells(i).forEach(cell => this.toPoolCell(cell));
   }
 
-  poolToLeft(r, atST = false) {
-    let BUFFER = Math.max(0, this.viewport.scrollLeft - 150);
+  poolToLeft(r, atST = false, lockScroll = this.viewport.scrollLeft) {
+    //lockScroll = this.viewport.scrollLeft;
+    let BUFFER = Math.max(0, lockScroll - 150);
     let i = 0, pool, leftmostCellLeft;
     leftmostCellLeft = this.leftmostCellLeft(r);
     if ( atST || leftmostCellLeft == Infinity ) {
       if ( atST ) {
-        leftmostCellLeft = this.viewport.scrollLeft + this.viewport.clientWidth;
+        leftmostCellLeft = lockScroll + this.viewport.clientWidth;
       } else {
         leftmostCellLeft = BUFFER;
         BUFFER -= this.viewport.clientWidth;
@@ -233,13 +234,14 @@ class Infin extends Base {
     } while( (i < 1 || atST) && pool && leftmostCellLeft > BUFFER );
   }
 
-  poolToRight(r, atST = false) {
-    let BUFFER = this.viewport.scrollLeft + this.viewport.clientWidth + 150;
+  poolToRight(r, atST = false, lockScroll = this.viewport.scrollLeft) {
+    //lockScroll = this.viewport.scrollLeft;
+    let BUFFER = lockScroll + this.viewport.clientWidth + 150;
     let i = 0, pool, rightmostCellRight;
     rightmostCellRight = this.rightmostCellRight(r);
     if ( atST || rightmostCellRight == -Infinity ) {
       if ( atST ) {
-        rightmostCellRight = this.viewport.scrollLeft; 
+        rightmostCellRight = lockScroll; 
       } else {
         rightmostCellRight = BUFFER; 
         BUFFER += this.viewport.clientWidth;
@@ -354,11 +356,22 @@ class Infin extends Base {
       let span = 0, needRejigX = false;
       if ( thisScrollLeft !== this.#lastScrollLeft ) {
         span = thisScrollLeft - this.#lastScrollLeft;
-        this.#ydirection = Math.sign(span);
+        this.#xdirection = Math.sign(span);
         this.#lastScrollLeft = thisScrollLeft;
         needRejigX = Math.abs(span) > this.viewport.clientWidth;
         if ( needRejigX ) {
-          console.log('Rejig X');
+          // we could debounce/throttle this on scroll
+          setTimeout(() => {
+            this.#xer.forEach((_,i) => {
+              this.allCellsToPool(i);
+              const lockScroll = this.viewport.scrollLeft;
+              if ( this.#ydirection > 0 ) {
+                this.poolToRight(i, true, lockScroll);
+              } else {
+                this.poolToLeft(i, true, lockScroll);
+              }
+            });
+          }, 50);
         }
       }
     }
