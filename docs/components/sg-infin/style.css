@@ -54,10 +54,6 @@
         border: 0;
       }
 
-      tr, tr td, tr td {
-        height: var(--row-height);
-      }
-
     /* cells */
       table, tbody, tr, thead, th, .label {
         user-select: none;
@@ -268,3 +264,9 @@
     position: absolute;
     width: 100%;
   }
+
+  tr, tr th, tr td {
+    position: absolute;
+    height: var(--row-height);
+  }
+

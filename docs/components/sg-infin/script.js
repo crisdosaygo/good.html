@@ -14,38 +14,45 @@ class Infin extends Base {
         }), 
         {root: this.viewport}
       );
-      this.#xer = new IntersectionObserver(
-        entries => entries.forEach(entry => {
-          this.leftToPool();
-          this.rightToPool();
-          if ( this.#xdirection >= 0 ) {
-            this.poolToRight();
-          } else {
-            this.poolToLeft();
-          }
-        }), 
-        {root: this.viewport}
-      );
-
+      this.#xer = [];
       // so when the first row crosses threshold, put new one on bottom
       // when last row crosses threashold, put one on top
       let start = 0;
       Array.from(this.viewport.querySelectorAll('tr.sc-item')).forEach(row => {
-        start += row.clientHeight;
         row.style.top = `${start}px`;
         this.#yer.observe(row);
+        start += row.clientHeight;
+
+        {
+          const i = this.#xer.length;
+          const cellObserver = new IntersectionObserver(
+            entries => entries.forEach(entry => {
+              this.leftToPool(i);
+              this.rightToPool(i);
+              if ( this.#xdirection >= 0 ) {
+                this.poolToRight(i);
+              } else {
+                this.poolToLeft(i);
+              }
+            }), 
+            {root: this.viewport}
+          );
+          let cellStart = parseFloat(row.style.left || this.viewport.scrollLeft);
+          this.#xer[i] = cellObserver;
+          cellObserver.row = row;
+
+          Array.from(row.querySelectorAll('td')).forEach(cell => {
+            cell.style.left = `${cellStart}px`;
+            cellStart += cell.clientWidth;
+            this.#xer[i].observe(cell);
+          });
+          this.leftToPool(i);
+          this.rightToPool(i);
+        }
       });
 
-      start = 0;
-      Array.from(this.viewport.querySelectorAll('td.sc-item')).forEach(cell => {
-        start += cell.clientWidth;
-        cell.style.left = `${start}px`;
-        this.#xer.observe(cell);
-      });
       this.topToPool();
       this.bottomToPool();
-      this.leftToPool();
-      this.rightToPool();
     });
   }
 
@@ -79,10 +86,10 @@ class Infin extends Base {
     return last;
   }
 
-  cellsLeft() {
+  cellsLeft(i) {
     const left = [];
     const start = this.viewport.scrollLeft;
-    Array.from(this.viewport.querySelectorAll('tbody td.sc-item'))
+    Array.from(this.#xer[i].row.querySelectorAll('td.sc-item'))
       .find(el => {
         const thisLeft = parseFloat(el.style.left) + el.clientWidth;
         if ( thisLeft < start ) {
@@ -92,10 +99,10 @@ class Infin extends Base {
     return left;
   }
 
-  cellsRight() {
+  cellsRight(i) {
     const right = [];
     const end = this.viewport.scrollLeft + this.viewport.clientWidth;
-    Array.from(this.viewport.querySelectorAll('tbody td.sc-item'))
+    Array.from(this.#xer[i].row.querySelectorAll('td.sc-item'))
       .find(el => {
         const thisLeft = parseFloat(el.style.left);
         if ( thisLeft > end ) {
@@ -109,13 +116,13 @@ class Infin extends Base {
     return Array.from(this.viewport.querySelectorAll('tbody tr'));
   }
 
-  allCells() {
-    return Array.from(this.viewport.querySelectorAll('td'));
+  allCells(i) {
+    return Array.from(this.#xer[i].row.querySelectorAll('td'));
   }
 
-  leftmostCellLeft() {
+  leftmostCellLeft(i) {
     let leftmostCellLeft = Infinity;
-    Array.from(this.viewport.querySelectorAll('tbody td.sc-item')).forEach(el => {
+    Array.from(this.#xer[i].row.querySelectorAll('td.sc-item')).forEach(el => {
       const left = parseFloat(el.style.left);
       if ( left < leftmostCellLeft ) {
         leftmostCellLeft = left;
@@ -124,9 +131,9 @@ class Infin extends Base {
     return leftmostCellLeft;
   }
 
-  rightmostCellRight() {
+  rightmostCellRight(i) {
     let rightmostCellRight = -Infinity;
-    Array.from(this.viewport.querySelectorAll('tbody td.sc-item')).forEach(el => {
+    Array.from(this.#xer[i].row.querySelectorAll('td.sc-item')).forEach(el => {
       const right = parseFloat(el.style.left) + el.clientWidth;
       if ( right > rightmostCellRight ) {
         rightmostCellRight = right;
@@ -179,10 +186,6 @@ class Infin extends Base {
     this.allRows().forEach(this.toPool);
   }
 
-  allCellsToPool() {
-    this.allCells().forEach(this.toPool);
-  }
-
   topToPool() {
     this.rowsAbove().forEach(this.toPool);
   }
@@ -191,18 +194,22 @@ class Infin extends Base {
     this.rowsBelow().forEach(this.toPool);
   }
 
-  leftToPool() {
-    this.cellsLeft().forEach(this.toPool);
+  leftToPool(i) {
+    this.cellsLeft(i).forEach(cell => this.toPoolCell(cell));
   }
 
-  rightToPool() {
-    this.cellsRight().forEach(this.toPool);
+  rightToPool(i) {
+    this.cellsRight(i).forEach(cell => this.toPoolCell(cell));
   }
 
-  poolToLeft(atST = false) {
+  allCellsToPool(i) {
+    this.allCells(i).forEach(cell => this.toPoolCell(cell));
+  }
+
+  poolToLeft(r, atST = false) {
     let BUFFER = Math.max(0, this.viewport.scrollLeft - 150);
     let i = 0, pool, leftmostCellLeft;
-    leftmostCellLeft = this.leftmostCellLeft();
+    leftmostCellLeft = this.leftmostCellLeft(r);
     if ( atST || leftmostCellLeft == Infinity ) {
       if ( atST ) {
         leftmostCellLeft = this.viewport.scrollLeft + this.viewport.clientWidth;
@@ -210,24 +217,26 @@ class Infin extends Base {
         leftmostCellLeft = BUFFER;
         BUFFER -= this.viewport.clientWidth;
       }
-      this.allCellsToPool();
+      this.allCellsToPool(r);
     }
+    const row = this.#xer[r].row;
     do {
-      pool = this.viewport.querySelector('td.sc-pool');
+      pool = row.querySelector('td.sc-pool');
       if ( pool ) {
         i++;
         pool.classList.remove('sc-pool');
         pool.classList.add('sc-item');
+        pool.style.top = 0;
         pool.style.left = `${leftmostCellLeft-pool.clientWidth}px`;
         leftmostCellLeft -= pool.clientWidth;
       }
     } while( (i < 1 || atST) && pool && leftmostCellLeft > BUFFER );
   }
 
-  poolToRight(atST = false) {
+  poolToRight(r, atST = false) {
     let BUFFER = this.viewport.scrollLeft + this.viewport.clientWidth + 150;
     let i = 0, pool, rightmostCellRight;
-    rightmostCellRight = this.rightmostCellRight();
+    rightmostCellRight = this.rightmostCellRight(r);
     if ( atST || rightmostCellRight == -Infinity ) {
       if ( atST ) {
         rightmostCellRight = this.viewport.scrollLeft; 
@@ -235,15 +244,17 @@ class Infin extends Base {
         rightmostCellRight = BUFFER; 
         BUFFER += this.viewport.clientWidth;
       }
-      this.allCellsToPool();
+      this.allCellsToPool(r);
     }
+    const row = this.#xer[r].row;
     do {
-      pool = this.viewport.querySelector('td.sc-pool');
+      pool = row.querySelector('td.sc-pool');
       if ( pool ) {
         i++;
         pool.classList.remove('sc-pool');
         pool.classList.add('sc-item');
-        pool.style.top = `${rightmostCellRight}px`;
+        pool.style.top = 0;
+        pool.style.left = `${rightmostCellRight}px`;
         rightmostCellRight += pool.clientWidth;
       }
     } while ( (i < 1 || atST) && pool && rightmostCellRight < BUFFER );
@@ -251,6 +262,12 @@ class Infin extends Base {
 
   toPool(el) {
     el.style.top = `-${el.clientHeight+10}px`;
+    el.classList.add('sc-pool');
+    el.classList.remove('sc-item');
+  }
+
+  toPoolCell(el) {
+    el.style.top = `-${this.viewport.scrollTop+this.viewport.clientHeight+el.clientHeight+10}px`;
     el.classList.add('sc-pool');
     el.classList.remove('sc-item');
   }
@@ -309,38 +326,41 @@ class Infin extends Base {
     if ( this.#updating ) return;
     this.#updating = true;
     const {target} = scrollEvent; 
-    const thisScrollTop = target.scrollTop;
-    const thisScrollLeft = target.scrollLeft;
-    let dist = 0, needRejig = false;
-    if ( thisScrollTop !== this.#lastScrollTop ) {
-      dist = thisScrollTop - this.#lastScrollTop;
-      this.#ydirection = Math.sign(dist);
-      this.#lastScrollTop = thisScrollTop;
-      needRejig = Math.abs(dist) > this.viewport.clientHeight;
-      if ( needRejig ) {
-        // we could debounce/throttle this on scroll
-        setTimeout(() => {
-          this.allToPool();
-          if ( this.#ydirection > 0 ) {
-            this.poolToBottom(true);
-          } else {
-            this.poolToTop(true);
-          }
-        }, 50);
+
+    {
+      const thisScrollTop = target.scrollTop;
+      let dist = 0, needRejig = false;
+      if ( thisScrollTop !== this.#lastScrollTop ) {
+        dist = thisScrollTop - this.#lastScrollTop;
+        this.#ydirection = Math.sign(dist);
+        this.#lastScrollTop = thisScrollTop;
+        needRejig = Math.abs(dist) > this.viewport.clientHeight;
+        if ( needRejig ) {
+          // we could debounce/throttle this on scroll
+          setTimeout(() => {
+            this.allToPool();
+            if ( this.#ydirection > 0 ) {
+              this.poolToBottom(true);
+            } else {
+              this.poolToTop(true);
+            }
+          }, 50);
+        }
       }
     }
-    // when scrolling diagonal we don't update properly because they go off screen and
-    // fixed by making the rows 100% width
-    // are not triggered by intersection anymore
-    if ( thisScrollLeft !== this.#lastScrollLeft ) {
-      this.#lastScrollLeft = thisScrollLeft;
-      /*
-      if ( this.nextPop ) clearTimeout(this.nextPop);
-      this.nextPop = setTimeout(() => {
-        const rows = target.querySelectorAll('tbody tr');
-        rows.forEach(el => el.style.paddingLeft = target.scrollLeft+'px');
-      }, 25);
-      */
+
+    {
+      const thisScrollLeft = target.scrollLeft;
+      let span = 0, needRejigX = false;
+      if ( thisScrollLeft !== this.#lastScrollLeft ) {
+        span = thisScrollLeft - this.#lastScrollLeft;
+        this.#ydirection = Math.sign(span);
+        this.#lastScrollLeft = thisScrollLeft;
+        needRejigX = Math.abs(span) > this.viewport.clientWidth;
+        if ( needRejigX ) {
+          console.log('Rejig X');
+        }
+      }
     }
     this.#updating = false;
   }
