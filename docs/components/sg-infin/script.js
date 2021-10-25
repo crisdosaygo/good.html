@@ -27,12 +27,17 @@ class Infin extends Base {
           const i = this.#xer.length;
           const cellObserver = new IntersectionObserver(
             entries => entries.forEach(entry => {
+              const thisX = this.viewport.scrollLeft;
               this.leftToPool(i);
               this.rightToPool(i);
-              if ( this.#xdirection >= 0 ) {
-                this.poolToRight(i);
-              } else {
-                this.poolToLeft(i);
+              const start = this.#xdirection < 0 ? this.rightmostCellRight(i) - this.viewport.clientWidth : this.leftmostCellLeft(i);
+              if ( (this.#xdirection >= 0 && thisX > this.#lastX) || (this.#xdirection < 0 && thisX < this.#lastX) ) {
+                this.#lastX = thisX;
+                if ( this.#xdirection >= 0 ) {
+                  this.#xer.forEach((_,j) => (this.leftToPool(j), this.rightToPool(j), this.poolToRight(j, true, start)));
+                } else {
+                  this.#xer.forEach((_,j) => (this.leftToPool(j), this.rightToPool(j), this.poolToLeft(j, true, start)));
+                }
               }
             }), 
             {root: this.viewport}
@@ -175,6 +180,10 @@ class Infin extends Base {
     #ydirection = 0;
     #lastScrollTop = 0;
     #lastScrollLeft = 0;
+    #yrejig;
+    #xrejig;
+    #lastX = 0;
+    #lastY = 0;
 
     get viewport() {
       if ( this.#viewport ) return this.#viewport;
@@ -339,7 +348,9 @@ class Infin extends Base {
         needRejig = Math.abs(dist) > this.viewport.clientHeight;
         if ( needRejig ) {
           // we could debounce/throttle this on scroll
-          setTimeout(() => {
+          if ( this.#yrejig ) clearTimeout(this.#yrejig );
+          this.#yrejig = setTimeout(() => {
+            this.#yrejig = false;
             this.allToPool();
             if ( this.#ydirection > 0 ) {
               this.poolToBottom(true);
@@ -361,7 +372,9 @@ class Infin extends Base {
         needRejigX = Math.abs(span) > this.viewport.clientWidth;
         if ( needRejigX ) {
           // we could debounce/throttle this on scroll
-          setTimeout(() => {
+          if ( this.#xrejig ) clearTimeout(this.#xrejig );
+          this.#xrejig = setTimeout(() => {
+            this.#xrejig = false;
             this.#xer.forEach((_,i) => {
               this.allCellsToPool(i);
               const lockScroll = this.viewport.scrollLeft;
