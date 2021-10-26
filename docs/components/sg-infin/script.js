@@ -4,7 +4,7 @@ class Infin extends Base {
 
     #updating = false;
     #yer;
-    #xer;
+    #xer = [];
     #viewport;
     #xdirection = 0;
     #ydirection = 0;
@@ -14,8 +14,9 @@ class Infin extends Base {
     #lastXDirection = 0;
     #mostRight = new Map();
     #mostLeft = new Map();
-    #yrejig;
-    #xrejig;
+    #yrejig = false;
+    #xrejig = false;
+    #cols = [];
     #lastX = 0;
     #lastY = 0;
 
@@ -40,7 +41,6 @@ class Infin extends Base {
         }), 
         {root: this.viewport}
       );
-      this.#xer = [];
       // so when the first row crosses threshold, put new one on bottom
       // when last row crosses threashold, put one on top
       let start = 0;
@@ -51,38 +51,33 @@ class Infin extends Base {
 
         {
           const i = this.#xer.length;
-          const cellObserver = new IntersectionObserver(
-            entries => entries.forEach(entry => {
-              this.leftToPool(i);
-              this.rightToPool(i);
-              if ( this.#xdirection >= 0 ) {
-                this.poolToRight(i);
-              } else {
-                this.poolToLeft(i);
-              }
-              /*
-                const thisX = this.viewport.scrollLeft;
-                const start = this.#xdirection < 0 ? this.rightmostCellRight(i) - this.viewport.clientWidth : this.leftmostCellLeft(i);
-                if ( (this.#xdirection >= 0 && thisX > this.#lastX) || (this.#xdirection < 0 && thisX < this.#lastX) ) {
-                  this.#lastX = thisX;
-                  if ( this.#xdirection >= 0 ) {
-                    this.#xer.forEach((_,j) => (this.leftToPool(j), this.rightToPool(j), this.poolToRight(j, true, start)));
-                  } else {
-                    this.#xer.forEach((_,j) => (this.leftToPool(j), this.rightToPool(j), this.poolToLeft(j, true, start)));
-                  }
-                }
-              */
-            }), 
-            {root: this.viewport}
-          );
           let cellStart = parseFloat(row.style.left || this.viewport.scrollLeft);
-          this.#xer[i] = cellObserver;
-          cellObserver.row = row;
 
-          Array.from(row.querySelectorAll('td')).forEach(cell => {
+          Array.from(row.querySelectorAll('td')).forEach((cell,j) => {
+            let col = this.#cols[j];
+            if ( ! col ) {
+              col = {
+                left: cellStart,
+                observer: new IntersectionObserver(
+                  entries => entries.forEach(entry => {
+                    this.leftToPool(i);
+                    this.rightToPool(i);
+                    if ( this.#xdirection >= 0 ) {
+                      this.poolToRight(i);
+                    } else {
+                      this.poolToLeft(i);
+                    }
+                  }), 
+                  {root: this.viewport}
+                ),
+                cells: []
+              };
+              this.#cols[j] = col;
+            }
+            col.cells.push(cell);
             cell.style.left = `${cellStart}px`;
             cellStart += cell.clientWidth;
-            this.#xer[i].observe(cell);
+            this.#cols[j].observer.observe(cell);
           });
           this.leftToPool(i);
           this.rightToPool(i);
