@@ -1,4 +1,30 @@
 class Infin extends Base {
+  // state 
+    // hidden variables
+
+    #updating = false;
+    #yer;
+    #xer;
+    #viewport;
+    #xdirection = 0;
+    #ydirection = 0;
+    #lastScrollTop = 0;
+    #lastScrollLeft = 0;
+    #lastYDirection = 0;
+    #lastXDirection = 0;
+    #mostRight = new Map();
+    #mostLeft = new Map();
+    #yrejig;
+    #xrejig;
+    #lastX = 0;
+    #lastY = 0;
+
+    get viewport() {
+      if ( this.#viewport ) return this.#viewport;
+      this.#viewport = this.shadowRoot.querySelector('.box');
+      return this.#viewport;
+    }
+
   constructor() {
     super();
     this.untilVisible().then(() => {
@@ -27,18 +53,25 @@ class Infin extends Base {
           const i = this.#xer.length;
           const cellObserver = new IntersectionObserver(
             entries => entries.forEach(entry => {
-              const thisX = this.viewport.scrollLeft;
               this.leftToPool(i);
               this.rightToPool(i);
-              const start = this.#xdirection < 0 ? this.rightmostCellRight(i) - this.viewport.clientWidth : this.leftmostCellLeft(i);
-              if ( (this.#xdirection >= 0 && thisX > this.#lastX) || (this.#xdirection < 0 && thisX < this.#lastX) ) {
-                this.#lastX = thisX;
-                if ( this.#xdirection >= 0 ) {
-                  this.#xer.forEach((_,j) => (this.leftToPool(j), this.rightToPool(j), this.poolToRight(j, true, start)));
-                } else {
-                  this.#xer.forEach((_,j) => (this.leftToPool(j), this.rightToPool(j), this.poolToLeft(j, true, start)));
-                }
+              if ( this.#xdirection >= 0 ) {
+                this.poolToRight(i);
+              } else {
+                this.poolToLeft(i);
               }
+              /*
+                const thisX = this.viewport.scrollLeft;
+                const start = this.#xdirection < 0 ? this.rightmostCellRight(i) - this.viewport.clientWidth : this.leftmostCellLeft(i);
+                if ( (this.#xdirection >= 0 && thisX > this.#lastX) || (this.#xdirection < 0 && thisX < this.#lastX) ) {
+                  this.#lastX = thisX;
+                  if ( this.#xdirection >= 0 ) {
+                    this.#xer.forEach((_,j) => (this.leftToPool(j), this.rightToPool(j), this.poolToRight(j, true, start)));
+                  } else {
+                    this.#xer.forEach((_,j) => (this.leftToPool(j), this.rightToPool(j), this.poolToLeft(j, true, start)));
+                  }
+                }
+              */
             }), 
             {root: this.viewport}
           );
@@ -168,28 +201,6 @@ class Infin extends Base {
     });
     return lowestRowBottom;
   }
-
-  // state 
-    // hidden variables
-
-    #updating = false;
-    #yer;
-    #xer;
-    #viewport;
-    #xdirection = 0;
-    #ydirection = 0;
-    #lastScrollTop = 0;
-    #lastScrollLeft = 0;
-    #yrejig;
-    #xrejig;
-    #lastX = 0;
-    #lastY = 0;
-
-    get viewport() {
-      if ( this.#viewport ) return this.#viewport;
-      this.#viewport = this.shadowRoot.querySelector('.box');
-      return this.#viewport;
-    }
 
   allToPool() {
     this.allRows().forEach(this.toPool);
@@ -345,7 +356,8 @@ class Infin extends Base {
         dist = thisScrollTop - this.#lastScrollTop;
         this.#ydirection = Math.sign(dist);
         this.#lastScrollTop = thisScrollTop;
-        needRejig = Math.abs(dist) > this.viewport.clientHeight;
+        needRejig = Math.abs(dist) > this.viewport.clientHeight || (this.#lastYDirection !== this.#ydirection);
+        this.#lastYDirection = this.#ydirection;
         if ( needRejig ) {
           // we could debounce/throttle this on scroll
           if ( this.#yrejig ) clearTimeout(this.#yrejig );
@@ -369,7 +381,8 @@ class Infin extends Base {
         span = thisScrollLeft - this.#lastScrollLeft;
         this.#xdirection = Math.sign(span);
         this.#lastScrollLeft = thisScrollLeft;
-        needRejigX = Math.abs(span) > this.viewport.clientWidth;
+        needRejigX = Math.abs(span) > this.viewport.clientWidth || (this.#lastXDirection !== this.#xdirection);
+        this.#lastXDirection = this.#xdirection;
         if ( needRejigX ) {
           // we could debounce/throttle this on scroll
           if ( this.#xrejig ) clearTimeout(this.#xrejig );
