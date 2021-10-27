@@ -75,7 +75,6 @@ class Infin extends Base {
                 cells: []
               };
               this.#cols[j] = col;
-
             }
             cell.style.left = `${cellStart}px`;
             col.cells.push(cell);
