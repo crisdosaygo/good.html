@@ -20,6 +20,8 @@
   sg-frame {
     height: var(--max-height);
     width: var(--max-width);
+    max-width: 90vw;
+    max-height: 90vh;
     user-select: none;
     -webkit-user-select: none;
   }

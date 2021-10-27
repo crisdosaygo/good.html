@@ -312,7 +312,7 @@ class Infin extends Base {
 
   toPoolCol(col) {
     const top = this.viewport.scrollTop + this.viewport.clientHeight;
-    col.cells.forEach(cell => this.toPoolCell(cell));
+    col.cells.forEach(cell => this.toPoolCell(cell, top));
     this.#colPool.push(col);
   }
 
