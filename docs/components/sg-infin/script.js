@@ -4,7 +4,6 @@ class Infin extends Base {
 
     #updating = false;
     #yer;
-    #xer = [];
     #viewport;
     #xdirection = 0;
     #ydirection = 0;
@@ -12,14 +11,10 @@ class Infin extends Base {
     #lastScrollLeft = 0;
     #lastYDirection = 0;
     #lastXDirection = 0;
-    #mostRight = new Map();
-    #mostLeft = new Map();
     #yrejig = false;
     #xrejig = false;
     #cols = [];
     #colPool = [];
-    #lastX = 0;
-    #lastY = 0;
 
     get viewport() {
       if ( this.#viewport ) return this.#viewport;
@@ -51,7 +46,6 @@ class Infin extends Base {
         start += row.clientHeight;
 
         {
-          const i = this.#xer.length;
           let cellStart = parseFloat(row.style.left || this.viewport.scrollLeft);
 
           Array.from(row.querySelectorAll('td')).forEach((cell,j) => {
@@ -164,10 +158,6 @@ class Infin extends Base {
 
   allRows() {
     return Array.from(this.viewport.querySelectorAll('tbody tr'));
-  }
-
-  allCells(i) {
-    return Array.from(this.#xer[i].row.querySelectorAll('td'));
   }
 
   leftmostCellLeft() {
