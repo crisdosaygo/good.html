@@ -409,22 +409,20 @@ class Infin extends Base {
         span = thisScrollLeft - this.#lastScrollLeft;
         this.#xdirection = Math.sign(span);
         this.#lastScrollLeft = thisScrollLeft;
-        needRejigX = Math.abs(span) > this.viewport.clientWidth || (this.#lastXDirection !== this.#xdirection);
-        this.#lastXDirection = this.#xdirection;
+        needRejigX = Math.abs(span) > this.viewport.clientWidth || (this.#lastXDirection !== this.#xdirection && this.#xdirection !== 0);
         if ( needRejigX ) {
+          this.#lastXDirection = this.#xdirection;
           // we could debounce/throttle this on scroll
           if ( this.#xrejig ) clearTimeout(this.#xrejig );
           this.#xrejig = setTimeout(() => {
             this.#xrejig = false;
-            this.#xer.forEach((_,i) => {
-              this.allCellsToPool();
-              const lockScroll = this.viewport.scrollLeft;
-              if ( this.#ydirection > 0 ) {
-                this.poolToRight(true, lockScroll);
-              } else {
-                this.poolToLeft(true, lockScroll);
-              }
-            });
+            this.allCellsToPool();
+            const lockScroll = this.viewport.scrollLeft;
+            if ( this.#xdirection > 0 ) {
+              this.poolToRight(true, lockScroll);
+            } else {
+              this.poolToLeft(true, lockScroll);
+            }
           }, 50);
         }
       }
