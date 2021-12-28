@@ -13,6 +13,49 @@
 
 Get it here, [or on NPM at https://npmjs.com/package/bang.html](https://npmjs.com/package/bang.html)
 
+-----------------------------
+## Table of Contents
+
+  * [Demos](#demos)
+  * [Introducing: self-closing tags for Web Components](#introducing-self-closing-tags-for-web-components)
+  * [Regular tags](#regular-tags)
+  * [Templates, and with async values](#templates-and-with-async-values)
+  * [Minimal DOM diffing with minimal granular updates](#minimal-dom-diffing-with-minimal-granular-updates)
+  * [Lazy loading](#lazy-loading)
+  * [More Goodies](#more-goodies)
+  * [More info on templating ](#more-info-on-templating)
+    + [A note on scope](#a-note-on-scope)
+    + [The `F` tag function](#the-f-tag-function)
+  * [The big picture: defining custom element bang components: markup, script and style](#the-big-picture-defining-custom-element-bang-components-markup-script-and-style)
+  * [Get started in 5 simple steps](#get-started-in-5-simple-steps)
+    + [Step 1: Make your directory structure:](#step-1-make-your-directory-structure)
+    + [Step 2: Use a custom element.](#step-2-use-a-custom-element)
+    + [Step 3: Add markup](#step-3-add-markup)
+    + [Step 4: Make some variable and state](#step-4-make-some-variable-and-state)
+    + [Step 5: Make it interactive](#step-5-make-it-interactive)
+  * [Slots and variables](#slots-and-variables)
+    + [1. Save the state to the store](#1-save-the-state-to-the-store)
+    + [2. Pass state to components](#2-pass-state-to-components)
+    + [3. Template the properties](#3-template-the-properties)
+  * [The `state=` attribute, nested objects and template replacement slots](#the-state-attribute-nested-objects-and-template-replacement-slots)
+  * [Async templating](#async-templating)
+  * [More information](#more-information)
+- [Q&A ](#qa)
+    + [Why use *BANG!* and not just a `<custom-self-closing-tag />` or a single `<custom-tag>`? ](#why-use-bang-and-not-just-a-custom-self-closing-tag-or-a-single-custom-tag)
+    + [How do I add event handlers or event listeners to elements?](#how-do-i-add-event-handlers-or-event-listeners-to-elements)
+      - [A second slightly different syntax to add event handlers not currently supported](#a-second-slightly-different-syntax-to-add-event-handlers-not-currently-supported)
+    + [What are some gotchas or syntax I need to beware of?](#what-are-some-gotchas-or-syntax-i-need-to-beware-of)
+      - [`use(<name: string>)`](#usename-string)
+      - [Self-closing syntax](#self-closing-syntax)
+      - [Component classes](#component-classes)
+      - [Top-level element](#top-level-element)
+      - [Config](#config)
+      - [Programmatic state-keys](#programmatic-state-keys)
+  * [Contributions](#contributions)
+  * [Roadmap](#roadmap)
+- [HTML ***but with a BANG!***](#html-but-with-a-bang)
+
+
 ## Demos
 
 - [7GUIs](https://i5ik.github.io/_____/7guis/)
