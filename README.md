@@ -11,7 +11,7 @@
 
 ***BANG!*** is a view library that prints custom elements, so you get style encapsulation, and component-powered reusability baked-in. It also has minimal DOM diffing, JavaScript templating syntax, zero dependences and needs to transpiler. Built with the power of the web, in HTML.
 
-Get it here, [or on NPM at https://npmjs.com/package/bang.html](https://npmjs.com/package/bang.html)
+Get it here, [or on NPM @bang.html](https://npmjs.com/package/bang.html)
 
 -----------------------------
 ## Table of Contents
