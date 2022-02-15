@@ -727,7 +727,7 @@ These are just ideas, and I might not do them. :)
 
 ------------
 
-# HTML ***but with a BANG!***
+# HTML ***aber mit einem BANG!***
 
 <p align=center>
   <img width=80% 
