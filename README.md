@@ -58,9 +58,9 @@ Holen Sie es hier, [or on NPM @bang.html](https://npmjs.com/package/bang.html)
 
 ## Demos
 
-- [7GUIs](https://i5ik.github.io/_____/7guis/)
-- [Spreadsheet Component (*a work in progress*)](https://i5ik.github.io/_____/cellophane/)
-- [Simple Counter Demo](https://i5ik.github.io/_____/ctr/)
+- [7GUIs](https://i5ik.github.io/das.bang.froomwek/7guis/)
+- [Spreadsheet Component (*a work in progress*)](https://i5ik.github.io/das.bang.froomwerk/cellophane/)
+- [Simple Counter Demo](https://i5ik.github.io/das.bang.froomwerk/ctr/)
 
 The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse manages to love it, anyway. How is this possible? Mostly through the use of the `lazy` and `super lazy` attributes, particularly on the large 'Cells' spreadsheet component.
 
