@@ -731,7 +731,7 @@ These are just ideas, and I might not do them. :)
 
 <p align=center>
   <img width=80% 
-    src=https://github.com/crisdosyago/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+    src=https://github.com/crisdosyago/der.Knall.Gerust/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
 </p>
 
