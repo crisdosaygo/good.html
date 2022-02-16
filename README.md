@@ -9,7 +9,7 @@
 
 # ***[:gem: BANG!](https://github.com/crisdosyago/_____/)*** ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcrisdosyago%2F_____&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%208%202021&edge_flat=false)](https://hits.seeyoufarm.com)  [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcrisdosyago%2F_____.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcrisdosyago%2F_____?ref=badge_shield)
 
-Das konzeptionelle „Knall“-Gerüst ist eine Ansichtsbibliothek, die benutzerdefinierte Elemente druckt, sodass Sie Stilkapselung und komponentenbasierte Wiederverwendbarkeit integriert erhalten. Es hat auch minimale DOM-Unterschiede, JavaScript-Vorlagensyntax, keine Abhängigkeiten und muss transpiliert werden. Entwickelt mit der Leistungsfähigkeit des Webs in HTML.
+Das konzeptionelle „Knall“-Gerüst ist eine Ansichtsbibliothek, die benutzerdefinierte Elemente druckt, sodass Sie Stilkapselung und komponentenbasierte Wiederverwendbarkeit integriert erhalten. Es hat auch minimale DOM-Unterschiede, JavaScript-Vorlagensyntax, keine Abhängigkeiten und muss querübersetzt werden. Entwickelt mit der Leistungsfähigkeit des Webs in HTML.
 
 Holen Sie es hier, [or on NPM @bang.html](https://npmjs.com/package/bang.html)
 
