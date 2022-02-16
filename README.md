@@ -58,9 +58,9 @@ Holen Sie es hier, [or on NPM @bang.html](https://npmjs.com/package/bang.html)
 
 ## Demos
 
-- [7GUIs](https://crisdosyago.github.io/das.bang.froomwek/7guis/)
-- [Spreadsheet Component (*a work in progress*)](https://crisdosyago.github.io/das.bang.froomwerk/cellophane/)
-- [Simple Counter Demo](https://crisdosyago.github.io/das.bang.froomwerk/ctr/)
+- [7GUIs](https://crisdosyago.github.io/der.Knall.Gerust/7guis/)
+- [Spreadsheet Component (*a work in progress*)](https://crisdosyago.github.io/der.Knall.Gerust/cellophane/)
+- [Simple Counter Demo](https://crisdosyago.github.io/der.Knall.Gerust/ctr/)
 
 The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse manages to love it, anyway. How is this possible? Mostly through the use of the `lazy` and `super lazy` attributes, particularly on the large 'Cells' spreadsheet component.
 
@@ -68,7 +68,7 @@ The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse 
 
 This is ***BANG!***, making a component:
 
-[`components/sg-counter/markup.html`](https://github.com/crisdosyago/_____/blob/main/docs/7guis/components/sg-counter/markup.html)
+[`components/sg-counter/markup.html`](https://github.com/crisdosyago/der.Knall.Gerust/blob/main/docs/7guis/components/sg-counter/markup.html)
 ```jsx
 <sg-frame state=${_self}> 
   <button id=counter onclick=Increment>Count</button>
@@ -76,7 +76,7 @@ This is ***BANG!***, making a component:
 </sg-frame>
 ```
 
-[`components/sg-counter/script.js`](https://github.com/crisdosyago/_____/blob/main/docs/7guis/components/sg-counter/script.js):
+[`components/sg-counter/script.js`](https://github.com/crisdosyago/der.Knall.Gerust/blob/main/docs/7guis/components/sg-counter/script.js):
 ```jsx
 class Counter extends Base {
   Increment() {
@@ -87,7 +87,7 @@ class Counter extends Base {
 }
 ```
 
-[`components/sg-counter/style.css`](https://github.com/crisdosyago/_____/blob/main/docs/7guis/components/sg-counter/style.css):
+[`components/sg-counter/style.css`](https://github.com/crisdosyago/der.Knall.Gerust/blob/main/docs/7guis/components/sg-counter/style.css):
 ```css
 label {
   min-width: 4.5ch;
