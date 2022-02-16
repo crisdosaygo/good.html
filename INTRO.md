@@ -1,6 +1,6 @@
 <p align=center>
   <img width=80% 
-    src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+    src=https://github.com/crisdosyago/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
 </p>
 
@@ -40,7 +40,7 @@ Normally using web components you need to use the `<slot></slot>` tag to pull in
 
 ## Minimal DOM diffing with minimal granular updates
 
-Minimal diffing is all the rage these days. It ensures that you don't do more work than you need to do to reflect the changes in your state into the DOM. Other frameworks use concepts like VDOM, which has a large overhead, as well as a large amount of code. ***BANG!*** uses the high-tech granular, linear-time updating technology from [vanillaview](https://github.com/i5ik/vanillaview), but builds on it and adds improvements to make the updates even more minimal in the case of lists (only items inserted or delete are the ones that change). In all other cases, only the text, attribute names or values, that contain templated state values that have changed, are the things that change. 
+Minimal diffing is all the rage these days. It ensures that you don't do more work than you need to do to reflect the changes in your state into the DOM. Other frameworks use concepts like VDOM, which has a large overhead, as well as a large amount of code. ***BANG!*** uses the high-tech granular, linear-time updating technology from [vanillaview](https://github.com/crisdosyago/vanillaview), but builds on it and adds improvements to make the updates even more minimal in the case of lists (only items inserted or delete are the ones that change). In all other cases, only the text, attribute names or values, that contain templated state values that have changed, are the things that change. 
 
 It really is optimally minimal. 
 
@@ -65,7 +65,7 @@ You can jump in right away and get it on the npm:
 
 <p align=center>
   <img width=80% 
-       src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20tomato-whitesmoke%20(1).png
+       src=https://github.com/crisdosyago/bang/raw/main/.github/BANG!%20logo%20tomato-whitesmoke%20(1).png
   >
 </p>
 
@@ -185,7 +185,7 @@ For this mini-tutorial we'll be building a simple greeter component:
 <!warm-greeter />
 ```
 
-Follow along with the below steps to learn how to create your very own greeter component. Or just [jump straight to a work demo](https://i5ik.github.io/BANG/) if you prefer to have something to play with.
+Follow along with the below steps to learn how to create your very own greeter component. Or just [jump straight to a work demo](https://crisdosyago.github.io/BANG/) if you prefer to have something to play with.
 
 First, to get you setup for the tutorial, install the **BANG!** package from NPM: 
 
@@ -452,7 +452,7 @@ Plans may change, but right now, some aims for the future are:
 
 - re-render function in the base class
 - improve documentation
-- add minimal DOM diffing using [vanillaview](https://github.com/i5ik/vanillaview) granular DOM updator function technology
+- add minimal DOM diffing using [vanillaview](https://github.com/crisdosyago/vanillaview) granular DOM updator function technology
 - add **state-queries** with automatic data binding, to fully decouple state objects from components, and decouple components from each other, and enables dependent components to be automatically re-rendered when data they use in the store changes.
 
 -----------------
@@ -600,6 +600,6 @@ These are just ideas, and I might not do them. :)
 
 <p align=center>
   <img width=80% 
-    src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+    src=https://github.com/crisdosyago/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
 </p>

@@ -1,13 +1,13 @@
 <p align=center>
   <img width=80% 
-    src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+    src=https://github.com/crisdosyago/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
   <img width=80% 
     src=https://user-images.githubusercontent.com/22254235/135863650-a0a44bbd-414e-4606-aaf4-64e43f5abcc9.PNG
   >
 </p>
 
-# ***[:gem: BANG!](https://github.com/i5ik/_____/)*** ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fi5ik%2F_____&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%208%202021&edge_flat=false)](https://hits.seeyoufarm.com)  [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fi5ik%2F_____.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fi5ik%2F_____?ref=badge_shield)
+# ***[:gem: BANG!](https://github.com/crisdosyago/_____/)*** ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcrisdosyago%2F_____&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%208%202021&edge_flat=false)](https://hits.seeyoufarm.com)  [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcrisdosyago%2F_____.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcrisdosyago%2F_____?ref=badge_shield)
 
 Das konzeptionelle „Bang“-Gerüst ist eine Ansichtsbibliothek, die benutzerdefinierte Elemente druckt, sodass Sie Stilkapselung und komponentenbasierte Wiederverwendbarkeit integriert erhalten. Es hat auch minimale DOM-Unterschiede, JavaScript-Vorlagensyntax, keine Abhängigkeiten und muss transpiliert werden. Entwickelt mit der Leistungsfähigkeit des Webs in HTML.
 
@@ -58,9 +58,9 @@ Holen Sie es hier, [or on NPM @bang.html](https://npmjs.com/package/bang.html)
 
 ## Demos
 
-- [7GUIs](https://i5ik.github.io/das.bang.froomwek/7guis/)
-- [Spreadsheet Component (*a work in progress*)](https://i5ik.github.io/das.bang.froomwerk/cellophane/)
-- [Simple Counter Demo](https://i5ik.github.io/das.bang.froomwerk/ctr/)
+- [7GUIs](https://crisdosyago.github.io/das.bang.froomwek/7guis/)
+- [Spreadsheet Component (*a work in progress*)](https://crisdosyago.github.io/das.bang.froomwerk/cellophane/)
+- [Simple Counter Demo](https://crisdosyago.github.io/das.bang.froomwerk/ctr/)
 
 The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse manages to love it, anyway. How is this possible? Mostly through the use of the `lazy` and `super lazy` attributes, particularly on the large 'Cells' spreadsheet component.
 
@@ -68,7 +68,7 @@ The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse 
 
 This is ***BANG!***, making a component:
 
-[`components/sg-counter/markup.html`](https://github.com/i5ik/_____/blob/main/docs/7guis/components/sg-counter/markup.html)
+[`components/sg-counter/markup.html`](https://github.com/crisdosyago/_____/blob/main/docs/7guis/components/sg-counter/markup.html)
 ```jsx
 <sg-frame state=${_self}> 
   <button id=counter onclick=Increment>Count</button>
@@ -76,7 +76,7 @@ This is ***BANG!***, making a component:
 </sg-frame>
 ```
 
-[`components/sg-counter/script.js`](https://github.com/i5ik/_____/blob/main/docs/7guis/components/sg-counter/script.js):
+[`components/sg-counter/script.js`](https://github.com/crisdosyago/_____/blob/main/docs/7guis/components/sg-counter/script.js):
 ```jsx
 class Counter extends Base {
   Increment() {
@@ -87,7 +87,7 @@ class Counter extends Base {
 }
 ```
 
-[`components/sg-counter/style.css`](https://github.com/i5ik/_____/blob/main/docs/7guis/components/sg-counter/style.css):
+[`components/sg-counter/style.css`](https://github.com/crisdosyago/_____/blob/main/docs/7guis/components/sg-counter/style.css):
 ```css
 label {
   min-width: 4.5ch;
@@ -131,11 +131,11 @@ For more, the best way is just read the code for the 7GUIs implementation. But y
 
 <p id=intro align=center>
   <img width=80% 
-    src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+    src=https://github.com/crisdosyago/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
 </p>
 
-# 🌱 *BANG!* *A zero-dependency, no build-step, no transpilation, JSX-free, good old fashioned HTML and JavaScript Custom Element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fi5ik%2F_____&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com)
+# 🌱 *BANG!* *A zero-dependency, no build-step, no transpilation, JSX-free, good old fashioned HTML and JavaScript Custom Element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcrisdosyago%2F_____&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com)
 
 ***BANG!*** makes your UI work easy, and your syntax beautiful, by pairing **Web Components** with smooth template syntax, minimal DOM updates (*and without VDOM*), lazy loading, async values and **[empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** (*a.k.a void elements / self-closing tags*).
 
@@ -171,7 +171,7 @@ Normally using web components you need to use the `<slot></slot>` tag to pull in
 
 ## Minimal DOM diffing with minimal granular updates
 
-Minimal diffing is all the rage these days. It ensures that you don't do more work than you need to do to reflect the changes in your state into the DOM. Other frameworks use concepts like VDOM, which has a large overhead, as well as a large amount of code. ***BANG!*** uses the high-tech granular, linear-time updating technology from [vanillaview](https://github.com/i5ik/vanillaview), but builds on it and adds improvements to make the updates even more minimal in the case of lists (only items inserted or delete are the ones that change). In all other cases, only the text, attribute names or values, that contain templated state values that have changed, are the things that change. 
+Minimal diffing is all the rage these days. It ensures that you don't do more work than you need to do to reflect the changes in your state into the DOM. Other frameworks use concepts like VDOM, which has a large overhead, as well as a large amount of code. ***BANG!*** uses the high-tech granular, linear-time updating technology from [vanillaview](https://github.com/crisdosyago/vanillaview), but builds on it and adds improvements to make the updates even more minimal in the case of lists (only items inserted or delete are the ones that change). In all other cases, only the text, attribute names or values, that contain templated state values that have changed, are the things that change. 
 
 It really is optimally minimal. 
 
@@ -196,7 +196,7 @@ You can jump in right away and get it on the npm:
 
 <p align=center>
   <img width=80% 
-       src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20tomato-whitesmoke%20(1).png
+       src=https://github.com/crisdosyago/bang/raw/main/.github/BANG!%20logo%20tomato-whitesmoke%20(1).png
   >
 </p>
 
@@ -316,7 +316,7 @@ For this mini-tutorial we'll be building a simple greeter component:
 <!warm-greeter />
 ```
 
-Follow along with the below steps to learn how to create your very own greeter component. Or just [jump straight to a work demo](https://i5ik.github.io/BANG/) if you prefer to have something to play with.
+Follow along with the below steps to learn how to create your very own greeter component. Or just [jump straight to a work demo](https://crisdosyago.github.io/BANG/) if you prefer to have something to play with.
 
 First, to get you setup for the tutorial, install the **BANG!** package from NPM: 
 
@@ -583,7 +583,7 @@ Plans may change, but right now, some aims for the future are:
 
 - re-render function in the base class
 - improve documentation
-- add minimal DOM diffing using [vanillaview](https://github.com/i5ik/vanillaview) granular DOM updator function technology
+- add minimal DOM diffing using [vanillaview](https://github.com/crisdosyago/vanillaview) granular DOM updator function technology
 - add **state-queries** with automatic data binding, to fully decouple state objects from components, and decouple components from each other, and enables dependent components to be automatically re-rendered when data they use in the store changes.
 
 -----------------
@@ -731,7 +731,7 @@ These are just ideas, and I might not do them. :)
 
 <p align=center>
   <img width=80% 
-    src=https://github.com/i5ik/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+    src=https://github.com/crisdosyago/bang/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
 </p>
 

@@ -1,4 +1,4 @@
-# [VanillaView](https://github.com/i5ik/vanillaview/) &middot; [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/i5ik/vanillaview/blob/main/LICENSE) [![npm version](https://img.shields.io/npm/v/vanillaviewjs.svg?style=flat)](https://www.npmjs.com/package/vanillaviewjs) 
+# [VanillaView](https://github.com/crisdosyago/vanillaview/) &middot; [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/crisdosyago/vanillaview/blob/main/LICENSE) [![npm version](https://img.shields.io/npm/v/vanillaviewjs.svg?style=flat)](https://www.npmjs.com/package/vanillaviewjs) 
 
 VanillaView is a JavaScript library for building user interfaces.
 
@@ -160,11 +160,11 @@ The main purpose of this repository is to continue evolving VanillaView core, ma
 
 ### Code of Conduct
 
-Dosyago has adopted a Code of Conduct that we expect project participants to adhere to. Please read [the full text](https://github.com/i5ik/vanillaviewjs/blob/main/docs/coc.md) so that you can understand what actions will and will not be tolerated.
+Dosyago has adopted a Code of Conduct that we expect project participants to adhere to. Please read [the full text](https://github.com/crisdosyago/vanillaviewjs/blob/main/docs/coc.md) so that you can understand what actions will and will not be tolerated.
 
 ### Contributing Guide
 
-Open a issue to propose a PR, get it approved, sign the [CLA](https://github.com/i5ik/vanillaviewjs/blob/main/docs/CLA.md), and submit a PR.
+Open a issue to propose a PR, get it approved, sign the [CLA](https://github.com/crisdosyago/vanillaviewjs/blob/main/docs/CLA.md), and submit a PR.
 
 ### License
 
