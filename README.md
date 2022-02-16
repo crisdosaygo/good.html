@@ -135,7 +135,7 @@ For more, the best way is just read the code for the 7GUIs implementation. But y
   >
 </p>
 
-# 🌱 *BANG!* *A zero-dependency, no build-step, no transpilation, JSX-free, good old fashioned HTML and JavaScript Custom Element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcrisdosyago%2F_____&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com)
+# 🌱 *BANG!* *A zero-dependency, no build-step, no transpilation, JSX-free, good old fashioned HTML and JavaScript Custom Element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcrisdosyago%2Fder.Knall.Gerust&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com)
 
 ***BANG!*** makes your UI work easy, and your syntax beautiful, by pairing **Web Components** with smooth template syntax, minimal DOM updates (*and without VDOM*), lazy loading, async values and **[empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** (*a.k.a void elements / self-closing tags*).
 
