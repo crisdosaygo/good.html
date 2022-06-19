@@ -679,7 +679,7 @@ You can configure the following properties:
 To override the above defaults, pass in a new config object, like so:
 
 ```js
-bangfig({
+bangFig({
   markupFile: 'html.html`,
   componentsPath: `coco`
 });
