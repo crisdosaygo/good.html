@@ -38,11 +38,12 @@
       componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}../components`,
       allowUnset: true,
       unsetPlaceholder: EMPTY,
-      EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
+      EVENTS: `bond error load click pointerdown pointerup pointermove mousedown mouseup submit
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
-        input change compositionstart compositionend text paste beforepast select cut copy
-        contextmenu
+        input change compositionstart compositionend text paste beforepaste select cut copy
+        keydown keyup keypress compositionupdate
+        contextmenu wheel
       `.split(/\s+/g).filter(s => s.length).map(e => `[on${e}]`).join(','),
       delayFirstPaintUntilLoaded: false,
       capBangRatioAtUnity: false,
@@ -120,6 +121,10 @@
           const cooked = await cook.call(this, markup, state);
           if ( !this.shadowRoot ) {
             const shadow = this.attachShadow(SHADOW_OPTS);
+            state._tasks.forEach(t => {
+              const funcName = t(this);
+              DEBUG && console.log(`Applied automatic event handler function ${funcName} to component ${this}`);
+            });
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
             cookListeners(shadow);
@@ -384,6 +389,16 @@
       Object.assign(CONFIG, newConfig);
     }
 
+    function immediate(f) {
+      if ( !(f instanceof Function) ) {
+        throw new TypeError(`immediate can only be called on a function. Recieved: ${f}`);
+      }
+
+      if ( f[IMMEDIATE] ) return;
+
+      Object.defineProperty(f, IMMEDIATE, {value: true, configurable: false, enumerable: false, writable: false});
+    }
+
     function runCode(context, str) {
       with(context) {
         return eval(str); 
@@ -537,6 +552,7 @@
 
   // helpers
     function handleAttribute(name, value, {node, originals, state} = {}) {
+      DEBUG && console.log({name, value, node, originals, state});
       if ( name === 'state' ) {
         const stateKey = value.trim(); 
         const stateObject = cloneState(stateKey);
@@ -563,6 +579,7 @@
       } else if ( originals ) { // set event handlers to custom element class instance methods
         if ( ! name.startsWith('on') ) return;
         value = value.trim();
+        value = value.replace(/\(event\)$/, '');
         if ( ! value ) return;
 
         // Perf note:
@@ -570,12 +587,31 @@
           // getAncestor function call, which saves us a couple seconds in large documents
         const Local = node[value] instanceof Function;
         const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+        DEBUG && console.log({Local, Parent});
+        const Func = Local ? node[value] :
+          Parent ? node.getRootNode().host[value] :
+          null;
         const path = Local ? LOCAL_PATH :
           Parent ? PARENT_PATH : 
           getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
         ;
 
         if ( !path || value.startsWith(path) ) return;
+
+        if ( name === 'onbond' ) {
+          if ( Func ) {
+            try {
+              Func(node);
+              //FIXME: should this actually be removed ? 
+              node.removeAttribute(name);
+            } catch(error) {
+              console.warn(`bond function error`, {error, name, value, node, originals, state, Func});
+            }
+          } else {
+            console.warn(`bond function Not dereferencable`, {name, value, node, originals, state});
+          }
+          return;
+        }
 
         // Conditional logic explained:
           // don't add a function call bracket if
@@ -599,6 +635,7 @@
         // getAncestor function call, which saves us a couple seconds in large documents
       const Local = node[value] instanceof Function;
       const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+      console.log({name, value, node, Local, Parent});
       const path = Local ? LOCAL_PATH :
         Parent ? PARENT_PATH : 
         getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
@@ -648,7 +685,8 @@
           }
           return results;
         } else {
-          return context.querySelectorAll(selector);
+          DEBUG && console.log('non xpath', selector);
+          return context.querySelectorAll ? context.querySelectorAll(selector) : [];
         }
       } catch(e) {
         console.warn(e);
@@ -668,6 +706,7 @@
         isUnset,  EMPTY, 
         dateString,
         runCode, schedule,
+        immediate,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
 
@@ -834,37 +873,46 @@
           } else return NodeFilter.FILTER_SKIP;
         }
       };
-      const iterator = document.createTreeWalker(root, Filter, Acceptor);
+      // FIXME: do we need to walk through shadows here?
+      const iterators = [];
       const replacements = [];
       const dependents = [];
 
-      // handle root node
-        // Note:
-          // it's a special case because it will be present in the iteration even if
-          // the NodeFilter would filter it out if it were not the root
-        let current = iterator.currentNode;
+      let iterator = document.createTreeWalker(root, Filter, Acceptor);
+      let current;
 
-        // Note:
-          // we need isBangTag here because a node that doesn't pass 
-          // Acceptor.accept will stop show up as the first currentNode
-          // in a tree iterator
-        if ( isBangTag(current) ) {
-          if ( !TRANSFORMING.has(current) ) {
-            TRANSFORMING.add(current);
-            const target = current;
-            replacements.push(() => transformBang(target));
-          }
-        }
+      iterators.push(iterator);
 
       // handle any descendents
         while (true) {
-          current = iterator.nextNode();
-          if ( ! current ) break;
+          current = iterator?.nextNode();
+          if ( ! current ) {
+            if ( iterators.length ) {
+              iterator = iterators.shift();
+              current = iterator.currentNode;
+              // Note:
+                // we need isBangTag here because a node that doesn't pass 
+                // Acceptor.accept will stop show up as the first currentNode
+                // in a tree iterator
+              if ( isBangTag(current) ) {
+                if ( !TRANSFORMING.has(current) ) {
+                  TRANSFORMING.add(current);
+                  const target = current;
+                  replacements.push(() => transformBang(target));
+                }
+              }
+              continue;
+            } else break;
+          }
 
-          // Note:
-            // a small optimization is replace isBangTag by the following check
-            // we don't need isBangTag here because it's already passed the 
-            // equivalent check in Acceptor.acceptNode
+          // handle root node
+            // Note:
+              // it's a special case because it will be present in the iteration even if
+              // the NodeFilter would filter it out if it were not the root
+            // Note:
+              // a small optimization is replace isBangTag by the following check
+              // we don't need isBangTag here because it's already passed the 
+              // equivalent check in Acceptor.acceptNode
           if ( current.nodeType === Node.COMMENT_NODE ) {
             if ( !TRANSFORMING.has(current) ) {
               TRANSFORMING.add(current);
@@ -872,7 +920,12 @@
               replacements.push(() => transformBang(target));
             }
           }
+
           dependents.push(current);
+
+          if ( current.shadowRoot instanceof ShadowRoot ) {
+            iterators.push(document.createTreeWalker(current.shadowRoot, Filter, Acceptor)); 
+          }
         }
 
       let i = 0;
@@ -900,7 +953,9 @@
 
     function cookListeners(root) {
       const that = root.getRootNode().host;
+      DEBUG && console.log({root, that});
       const listening = select(root, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
+      DEBUG && console.log({listening});
       if ( USE_XPATH ) {
         listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true}));
       } else {
@@ -925,6 +980,9 @@
       return el;
     }
 
+    // NOTE: I'll have to add auto-detected functions to the node
+    // before this point, so they can be found here
+    // but after (I think) vv does it's processing. (I hope we can do this with current flow)
     function getAncestor(node, value) {
       if ( node ) {
         const currentPath = [PARENT_PATH + ONE_HIGHER];

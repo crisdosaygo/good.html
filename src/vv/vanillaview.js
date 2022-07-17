@@ -3,6 +3,8 @@
 // vanillaview.js
   // imports
     const CODE = Math.random().toFixed(18);
+    console.log({CODE});
+    const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
 
   // backwards compatible alias
     const skip = markup;
@@ -19,7 +21,7 @@
     const KEYLEN            = 20;
     const XSS               = () => `Possible XSS / object forgery attack detected. ` +
                               `Object code could not be verified.`;
-    const OBJ               = () => `Object values not allowed here.`;
+    const OBJ               = x => ({message:`Object values not allowed here.`, x});
     const UNSET             = () => `Unset values not allowed here.`;
     const INSERT            = () => `Error inserting template into DOM. ` +
       `Position must be one of: ` +
@@ -41,7 +43,8 @@
     const EMPTY = '';
     const {stringify:_STR} = JSON;
     const JS = o => _STR(o, null, EMPTY);
-    const isVV  = x => x.code === CODE && Array.isArray(x.nodes);
+    const isVV  = x => x?.code === CODE && Array.isArray(x.nodes);
+    const NextFunc          = () => `f${FuncCounter++}` + (Math.random()*10).toString(36).replace('.', '_');
 
   // logging
     globalThis.onerror = (...v) => (console.log(v, v[0]+EMPTY, v[4] && v[4].message, v[4] && v[4].stack), true);
@@ -49,8 +52,12 @@
   // type functions
     const isKey             = v => !!v && (typeof v.key === 'string' || typeof v.key === 'number') && Object.getOwnPropertyNames(v).length <= 2;
 
+  // state
+    let FuncCounter = 10;
+
   // cache 
     const cache = {};
+    let _CONFIG;
     // deux
 
   // main exports 
@@ -61,6 +68,10 @@
       const that = this;
       let SystemCall = false;
       let state;
+
+      if ( that?.CONFIG ) {
+        _CONFIG = that.CONFIG;
+      }
 
       if ( p[0].length === 0 && v[0].state ) {
         // by convention (see how we construct the template that we tag with FUNC)
@@ -74,14 +85,17 @@
         v = await Promise.all(v.map(val => process(that, val, state)));
         const xyz = vanillaview(p,v);
         //xyz[Symbol.for('BANG-VV')] = true;
+        DEBUG && console.log({state}, self.__state = state);
         return xyz;
       } else {
         const laterFunc = async state => {
+          DEBUG && console.log({state}, self.__state = state);
           v = await Promise.all(v.map(val => process(that, val, state)));
           const xyz = vanillaview(p,v);
           //xyz[Symbol.for('BANG-VV')] = true;
           return xyz;
         };
+        laterFunc[IMMEDIATE] = true;
         //laterFunc[Symbol.for('BANG-VV')] = true;
         return laterFunc;
       }
@@ -125,6 +139,7 @@
       str += p.shift();
 
       const frag = toDOM(str);
+      // FIXME: do we need to walk through shadows here?
       const walker = document.createTreeWalker(frag, NodeFilter.SHOW_ALL);
 
       do {
@@ -185,6 +200,11 @@
       else
 
       if ( x instanceof Node ) return x.textContent;
+      else 
+
+      if ( isVV(x) ) {
+        return {code:CODE, externals: x.externals, nodes: x.nodes};
+      }
 
       const isArray     = Array.isArray(x);
       const isVVArray   = isArray && (x.length === 0 || isVV(x[0]));
@@ -192,6 +212,31 @@
       if ( isIterable(x) ) {
         if ( isVVArray ) {
           return join(x);
+        // is a func array ?
+        } else if ( (x[0] instanceof Function) && ! x[0][IMMEDIATE] ) {
+          const randomName = NextFunc();
+          DEBUG && console.log({definedFunction: randomName, source: 1});
+          if ( ! state._funcs ) state._funcs = {};
+          if ( ! state._tasks ) state._tasks = [];
+
+          const func = (
+            function(ev) {
+              for( const fun of x ) {
+                try {
+                  fun(ev);
+                } catch(e) {
+                  console.warn(`Handler in func array failed`, {fun, e, ev});
+                }
+              }
+            }
+          );
+
+          state._funcs[randomName] = func;
+          state._tasks.push(component => (component[randomName] = func, randomName));
+          // return "console.log(event)";
+          return `${randomName}(event)`;
+        } else if ( x[0] instanceof Element || x[0] instanceof Node ) {
+          return {code:CODE, externals: [], nodes: x};
         } else {
           // if an Array or iterable is given then
           // its values are recursively processed via this same function
@@ -211,14 +256,27 @@
 
       else 
 
-      if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
+      if ( x[IMMEDIATE] && Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
         return await process(that, await x(state), state);
       }
       else
 
-      if ( x instanceof Function ) return x(state);
+      if ( x[IMMEDIATE] && (x instanceof Function) ) return x(state);
       else // it's an object, of some type 
 
+      if ( x instanceof Function ) {
+        const name = NextFunc();
+        DEBUG && console.log({definedFunction:name, source: 2});
+        if ( ! state._funcs ) state._funcs = {};
+        if ( ! state._tasks ) state._tasks = [];
+        state._funcs[name] = x;
+        state._tasks.push(component => (component[name] = x, name)); 
+        //console.log({name, x:x+''}, state._tasks);
+        //return "console.log(event)";
+        return `${name}(event)`;
+      }
+
+      else
       {
         // State store     
           /* so we assume an object is state and save it */
@@ -306,6 +364,9 @@
   // update functions
     function makeUpdaters({walker,vmap,externals}) {
       const node = walker.currentNode;
+      if ( node.shadowRoot instanceof ShadowRoot ) {
+        throw new TypeError(`Shadow not supported here currently`);
+      }
       switch( node.nodeType ) {
         case Node.ELEMENT_NODE:
           handleElement({node,vmap,externals}); break;
@@ -314,6 +375,13 @@
           handleNode({node,vmap,externals}); break;
       }
     }
+
+  // debug stuff
+    const Replacers = new Map();
+    if ( DEBUG ) {
+      window.Replacers = Replacers;
+    }
+  // end debug stuff
 
     function handleNode({node,vmap,externals}) {
       const lengths = [];
@@ -324,7 +392,19 @@
         const key = result[1];
         const val = vmap[key];
         const replacer = makeNodeUpdater({node,index,lengths,val});
-        externals.push(() => replacer(val.val));
+        const wrappedReplacer = () => {
+          DEBUG && console.group(`Replacer calling for ${key}`);
+          try {
+            replacer(val.val);
+          } catch(error) {
+            console.warn(`Error in replacer for key ${key}`, {val, error});
+          }
+          DEBUG && console.log(`Replacer called for ${key}`);
+          Replacers.delete(key);
+          DEBUG && console.groupEnd();
+        };
+        externals.push(wrappedReplacer);
+        Replacers.set(key, wrappedReplacer);
         val.replacers.push( replacer );
         result = KEYMATCH.exec(text);
       }
@@ -407,14 +487,22 @@
             }
             if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\d+/) ) return;
             const kill = REMOVE_MAP.get(n);
-            killSet.add(JS(kill));
+            if ( kill ) {
+              killSet.add(JS(kill));
+            } else {
+              console.warn(`No kill signature for`, n, REMOVE_MAP);
+            }
           });
           killSet.forEach(kill => {
             const {ck: cacheKey, ik: instanceKey} = JSON.parse(kill);
-            if ( cacheKey && instanceKey ) {
-              cache[cacheKey].instances[instanceKey] = null;
-            } else if ( cacheKey ) {
-              cache[cacheKey] = null;
+            try {
+              if ( cacheKey && instanceKey && instanceKey !== "undefined" ) {
+                cache[cacheKey].instances[instanceKey] = null;
+              } else if ( cacheKey ) {
+                cache[cacheKey] = null;
+              }
+            } catch(e) {
+              console.warn(`Error in kill for`, {kill, cacheKey, instanceKey});
             }
           });
         }
@@ -460,6 +548,7 @@
       function updateLinkedCustomElement(node) {
         const lce = node.linkedCustomElement;
         const span = toDOM(`<span ${node.textContent}></span>`).firstChild;
+        //FIXME: may have to look at this for the combination of vv and bang, may not need to remove these
         const toRemove = new Set(
           getAttributes(lce)
             .filter(({name}) => !name.startsWith('on'))
@@ -751,16 +840,31 @@
       scope.oldAttrVal = newAttrValue;
     }
 
-    function reliablySetAttribute(node, name, value ) {
+    function reliablySetAttribute(node, name, value, {funcValue} = {}) {
       if (  name == "class" ) {
         value = formatClassListValue(value);
       }
 
+      const oName = name;
+      let modifiers;
+      if ( name.includes(':') ) {
+        ([name, ...modifiers] = name.split(':'));
+      }
+
+      if ( modifiers ) {
+        modifiers = modifiers.map(m => ([m, true]));
+        console.warn("not handling modifiers currently", {node, name, value, modifiers});
+        //node.addEventListener(name, funcValue, Object.fromEntries(modifiers));
+      }
+
+      if ( _CONFIG.EVENTS.includes('on'+name) ) {
+        node.removeAttribute(oName);
+        name = 'on'+name;
+      }
       try {
         node.setAttribute(name,isUnset(value) ? name : value);
       } catch(e) {
       }
-
       // if you set style like this is fucks it up
       if ( name in node && name !== 'style' ) {
         try {
@@ -768,6 +872,7 @@
         } catch(e) {
         }
       }
+
     }
 
     function getType(val) {
@@ -914,7 +1019,7 @@
       }
 
       function guardAndTransformVal(v) {
-        const isVVArray   = Array.isArray(v) && (v.length === 0 || isVV(v));
+        const isVVArray   = Array.isArray(v) && (v.length === 0 || isVV(v[0]));
         const isNotSet         = isUnset(v);
         const isForgery = v.code !== CODE && Array.isArray(v.nodes);
         const isObject        = typeof v === 'object';
@@ -926,7 +1031,15 @@
         if ( isNotSet )            die({error: UNSET()});
         if ( isForgery )          die({error: XSS()});
 
-        if ( isObject ) die({error: OBJ()});
+        if ( Array.isArray(v) && v[0] instanceof Node ) {
+          return {code:CODE, nodes: v, externals: []};
+        }
+
+        if ( Array.isArray(v) && v[0] instanceof Function ) {
+          return v;
+        }
+
+        if ( isObject ) die({error: OBJ(v)});
 
         return v+EMPTY;
       }
@@ -1007,5 +1120,5 @@
   // reporting and error helpers 
     function die(msg,err) {
       msg.stack = ((DEBUG && err) || new Error()).stack.split(/\s*\n\s*/g);
-      throw JS(msg);
+      throw msg;
     }
