@@ -3,7 +3,6 @@
 // vanillaview.js
   // imports
     const CODE = Math.random().toFixed(18);
-    console.log({CODE});
     const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
 
   // backwards compatible alias
@@ -840,7 +839,7 @@
       scope.oldAttrVal = newAttrValue;
     }
 
-    function reliablySetAttribute(node, name, value, {funcValue} = {}) {
+    function reliablySetAttribute(node, name, value, /*{funcValue} = {}*/) {
       if (  name == "class" ) {
         value = formatClassListValue(value);
       }

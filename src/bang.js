@@ -2,11 +2,13 @@
 (function () {
   // constants, classes, config and state
     const DEBUG = false;
+    const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
+    const NAMESPACE = 'b';
     const PIPELINE_REQUESTS = true;
     const RANDOM_SLEEP_ON_FIRST_PRINT = true;
     const RESPONSIVE_MEDIATION = true;
     const USE_XPATH = true;
-    const X_NS_ATTRS = `.//@*[starts-with(name(), 'b:')]`;
+    const X_NS_ATTRS = `.//@*[starts-with(name(), '${NAMESPACE}:')]`;
     const X_NEWLISTENING = document.createExpression(X_NS_ATTRS);
     const XON_EVENT_ATTRS = `.//@*[starts-with(local-name(), 'on')]`;
     const X_LISTENING = document.createExpression(XON_EVENT_ATTRS);
@@ -14,7 +16,7 @@
     const GET_ONLY = true;
     const MOBILE = isMobile();
     const GC_TIMEOUT = 10000;
-    const GENERATOR = (function*(){yield}()).constructor;
+    //const GENERATOR = (function*(){yield}()).constructor;
     const EMPTY = '';
     const {stringify:_STR} = JSON;
     const JS = o => _STR(o, null, EMPTY);
@@ -627,6 +629,11 @@
       if ( ! value ) return;
 
       const [nameSpace, ...flags] = name.split(':');
+
+      if ( nameSpace !== NAMESPACE ) {
+        throw new TypeError(`Irregular namespace ${nameSpace}`);
+      }
+
       const eventName = flags.pop();
       const flagObj = flags.reduce((o, name) => (o[name] = true, o), {});
 
@@ -668,9 +675,11 @@
                 xresult = document.evaluate(selector, elContext, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
               }
               let node;
+              /* eslint-disable no-cond-assign */
               while(node = xresult.iterateNext()) {
                 results.push(node);
-              }
+              } 
+              /* eslint-enable no-cond-assign */
             }
           } else {
             if ( selector instanceof XPathExpression ) {
@@ -679,9 +688,11 @@
               xresult = document.evaluate(selector, context, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
             }
             let node;
+            /* eslint-disable no-cond-assign */
             while(node = xresult.iterateNext()) {
               results.push(node);
             }
+            /* eslint-enable no-cond-assign */
           }
           return results;
         } else {
