@@ -123,7 +123,7 @@
           const cooked = await cook.call(this, markup, state);
           if ( !this.shadowRoot ) {
             const shadow = this.attachShadow(SHADOW_OPTS);
-            state._tasks.forEach(t => {
+            state._tasks && state._tasks.forEach(t => {
               const funcName = t(this);
               DEBUG && console.log(`Applied automatic event handler function ${funcName} to component ${this}`);
             });
@@ -156,7 +156,6 @@
         this.visibleCheck = () => this.classList?.contains('bang-styled');
         this.loadKey = Math.random().toString(36);
         this.visibleLoadKey = Math.random().toString(36);
-
       }
 
       get name() {

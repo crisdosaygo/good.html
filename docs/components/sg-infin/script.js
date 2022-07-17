@@ -24,6 +24,39 @@ class Infin extends Base {
 
   constructor() {
     super();
+    // API sketches / ideas
+      // setWidth(x)
+      // setHeight(y)
+      // set the width and height CSS variable properties
+      // to set the size of the table element
+
+      // setRowCount(p)
+      // setColumnCount(q)
+
+      // setRowHeight(height, index = ALL)
+      // setColumnWidth(width, index = ALL)
+
+      // setRowLabels(labels = [1, 2, 3, ...])
+      // setColumnLabels(labels = ['A', 'B', ...., 'AA', 'AB', ...])
+
+      // setScrollLeft(x)
+      // setScrollTop(y)
+      
+      // scrollToColumn(c: string Label | number index)
+      // scrollToRow(r: string Label | number index)
+
+      // setCellValue(x, y, {value, formula, ...etc})
+      // getCellValue
+
+      // getViewportDimensions() : {rows, columns, startRow, startColumn}
+
+      // setViewportData(<[cellLabel]: cellData> data) : true | throws 
+      // if data not big enough or has incorrect labels
+
+      // setDataSource({labelTranslator, dataTransformer}) 
+      // sets logical data source for entire table
+      // automatically sets viewport with correct data after scroll
+
     this.untilVisible().then(() => {
       this.#yer = new IntersectionObserver(
         entries => entries.forEach(entry => {
