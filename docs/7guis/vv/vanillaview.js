@@ -10,7 +10,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = true;
+    const DEBUG             = false;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key0.\d+)(?:\-\->)?/gm;
@@ -67,10 +67,6 @@
       const that = this;
       let SystemCall = false;
       let state;
-
-      if ( that?.CONFIG ) {
-        _CONFIG = that.CONFIG;
-      }
 
       if ( p[0].length === 0 && v[0].state ) {
         // by convention (see how we construct the template that we tag with FUNC)
@@ -185,7 +181,7 @@
       else
 
       if ( isUnset(x) ) {
-        if ( that.CONFIG.allowUnset ) return that.CONFIG.unsetPlaceholder || EMPTY;
+        if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || EMPTY;
         else {
           throw new TypeError(`Value cannot be unset, was: ${x}`);
         }
@@ -289,8 +285,8 @@
           // to provide a single logical identity for a piece of state that may
           // be represented by many objects
 
-        if ( Object.prototype.hasOwnProperty.call(x, that.CONFIG.bangKey) ) {
-          stateKey = new that.StateKey(x[that.CONFIG.bangKey])+EMPTY;
+        if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {
+          stateKey = new that.StateKey(x[CONFIG.bangKey])+EMPTY;
           // in that case, replace the previously saved object with the same logical identity
           const oldX = that.STATE.get(stateKey);
           that.STATE.delete(oldX);
@@ -856,7 +852,7 @@
         //node.addEventListener(name, funcValue, Object.fromEntries(modifiers));
       }
 
-      if ( _CONFIG.EVENTS.includes('on'+name) ) {
+      if ( CONFIG.EVENTS.includes('on'+name) ) {
         node.removeAttribute(oName);
         name = 'on'+name;
       }
@@ -871,7 +867,6 @@
         } catch(e) {
         }
       }
-
     }
 
     function getType(val) {
