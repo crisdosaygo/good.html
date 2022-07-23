@@ -19,7 +19,7 @@
     //const GENERATOR = (function*(){yield}()).constructor;
     const EMPTY = '';
     const {stringify:_STR} = JSON;
-    const JS = o => _STR(o, null, EMPTY);
+    const JS = o => _STR(o, Replacer, EMPTY);
     const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
     const POS = 'beforeend';
@@ -230,7 +230,7 @@
 
       get state() {
         const key = this.getAttribute('state');
-        return cloneState(key);
+        return getState(key); //(key);
       }
 
       set state(newValue) {
@@ -270,7 +270,7 @@
 
       // private methods
       handleAttrs(attrs, {node, originals} = {}) {
-        const state = {};
+        const stateHolder = {};
 
         if ( ! node ) node = this;
 
@@ -279,10 +279,12 @@
         // this is a lot more performant
         for( const {name,value} of attrs ) {
           if ( isUnset(value) ) continue;
-          handleAttribute(name, value, {node, originals, state});
+          handleAttribute(name, value, {node, originals, stateHolder});
         }
 
-        return state;
+        self._states.push(stateHolder.state);
+
+        return stateHolder.state;
       }
 
       printShadow(state) {
@@ -454,6 +456,7 @@
       save: save = false
     } = {}) {
       const jss = JS(state);
+      console.log({jss, state});
       let lk = key+'.json.last';
       if ( GET_ONLY ) {
         if ( !STATE.has(key) ) {
@@ -486,6 +489,10 @@
       }
       
       return true;
+    }
+
+    function getState(key) {
+      return STATE.get(key);
     }
 
     function patchState(key, state) {
@@ -552,11 +559,11 @@
     }
 
   // helpers
-    function handleAttribute(name, value, {node, originals, state} = {}) {
-      DEBUG && console.log({name, value, node, originals, state});
+    function handleAttribute(name, value, {node, originals, stateHolder} = {}) {
+      DEBUG && console.log({name, value, node, originals, stateHolder});
       if ( name === 'state' ) {
         const stateKey = value.trim(); 
-        const stateObject = cloneState(stateKey);
+        const stateObject = getState(stateKey); // cloneState(stateKey);
         
         if ( isUnset(stateObject) ) {
           console.warn(node);
@@ -567,7 +574,7 @@
           return;
         }
         
-        Object.assign(state, stateObject);
+        stateHolder.state = stateObject;
 
         if ( originals ) {
           let acquirers = Dependents.get(stateKey);
@@ -606,10 +613,10 @@
               //FIXME: should this actually be removed ? 
               node.removeAttribute(name);
             } catch(error) {
-              console.warn(`bond function error`, {error, name, value, node, originals, state, Func});
+              console.warn(`bond function error`, {error, name, value, node, originals, stateHolder, Func});
             }
           } else {
-            console.warn(`bond function Not dereferencable`, {name, value, node, originals, state});
+            console.warn(`bond function Not dereferencable`, {name, value, node, originals, stateHolder});
           }
           return;
         }
@@ -708,9 +715,11 @@
       new Counter(document);
       LoadChecker = () => document.counts.check();
 
+      self._states = [];
       Object.assign(globalThis, {
+        CONFIG,
         F,
-        use, setState, patchState, cloneState, loaded, 
+        use, setState, getState, patchState, cloneState, loaded, 
         sleep, bangFig, bangLoaded, isMobile, trace,
         undoState, redoState, stateChanged, getViews, updateState,
         isUnset,  EMPTY, 
@@ -1167,6 +1176,15 @@
 
     function clone(o) {
       return JSON.parse(JS(o));
+    }
+
+    function Replacer(key, value) {
+      const obj = this;
+      if ( typeof obj[key] === "function" ) {
+        return value.toString();
+      } else if ( value instanceof Node ) {
+        return `${value.nodeName}//${value.nodeValue || value.outerHTML || value.textContent}`;
+      } else return value;
     }
 }());
 
