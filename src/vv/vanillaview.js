@@ -46,7 +46,7 @@
     const NextFunc          = () => `f${FuncCounter++}` + (Math.random()*10).toString(36).replace('.', '_');
 
   // logging
-    globalThis.onerror = (...v) => (console.log(v, v[0]+EMPTY, v[4] && v[4].message, v[4] && v[4].stack), true);
+    //globalThis.onerror = (...v) => (console.log(v, v[0]+EMPTY, v[4] && v[4].message, v[4] && v[4].stack), true);
 
   // type functions
     const isKey             = v => !!v && (typeof v.key === 'string' || typeof v.key === 'number') && Object.getOwnPropertyNames(v).length <= 2;
@@ -211,8 +211,7 @@
         } else if ( (x[0] instanceof Function) && ! x[0][IMMEDIATE] ) {
           const randomName = NextFunc();
           DEBUG && console.log({definedFunction: randomName, source: 1});
-          if ( ! state._funcs ) state._funcs = {};
-          if ( ! state._tasks ) state._tasks = [];
+          if ( ! self._funcs ) self._funcs = new Set();
 
           const func = (
             function(ev) {
@@ -220,15 +219,14 @@
                 try {
                   fun(ev);
                 } catch(e) {
-                  console.warn(`Handler in func array failed`, {fun, e, ev});
+                  console.warn(`Handler in func array failed`, {fun, e, ev, x});
                 }
               }
             }
           );
 
-          state._funcs[randomName] = func;
-          state._tasks.push(component => (component[randomName] = func, randomName));
-          // return "console.log(event)";
+          self._funcs.add(component => (component[randomName] = func, randomName));
+          DEBUG && console.log('name', randomName, func);
           return `${randomName}(event)`;
         } else if ( x[0] instanceof Element || x[0] instanceof Node ) {
           return {code:CODE, externals: [], nodes: x};
@@ -262,12 +260,9 @@
       if ( x instanceof Function ) {
         const name = NextFunc();
         DEBUG && console.log({definedFunction:name, source: 2});
-        if ( ! state._funcs ) state._funcs = {};
-        if ( ! state._tasks ) state._tasks = [];
-        state._funcs[name] = x;
-        state._tasks.push(component => (component[name] = x, name)); 
-        //console.log({name, x:x+''}, state._tasks);
-        //return "console.log(event)";
+        if ( ! self._funcs ) self._funcs = new Set();
+        self._funcs.add(component => (component[name] = x, name)); 
+        DEBUG && console.log('name', name, x);
         return `${name}(event)`;
       }
 
@@ -299,22 +294,37 @@
 
         {
           const jsx = JS(x)
-          if ( that.STATE.has(x) ) {
-            stateKey = that.STATE.get(x);
+          if ( that.STATE.has(x) || that.STATE.has(jsx) ) {
+            stateKey = (that.STATE.get(x) || that.STATE.get(jsx)).replace(/.json.last$/,'');
             const lastXJSON = that.STATE.get(stateKey+'.json.last');
             if ( jsx !== lastXJSON ) {
               that.STATE.delete(lastXJSON); 
               if ( stateKey.startsWith('system-key') ) {
                 that.STATE.delete(stateKey);
+                const oKey = stateKey;
                 stateKey = new that.StateKey()+EMPTY;
+                console.log({oKey, stateKey});
               }
               that.STATE.set(stateKey, x);
               that.STATE.set(x, stateKey);
             }
           } else {
+            const oKey = stateKey;
             stateKey = new that.StateKey()+EMPTY;
+            //console.log({oKey, stateKey, block2:true, jsx});
             that.STATE.set(stateKey, x);
             that.STATE.set(x, stateKey);
+            /*
+              if ( ! self._funcs ) self._funcs = new Set();
+              self._funcs.add(component => {
+                let aq = Dependents.get(stateKey);
+                if ( ! aq ) {
+                  aq = new Set();
+                  Dependents.set(stateKey, aq);
+                }
+                aq.add(component);
+              });
+            */
           }
           that.STATE.set(jsx, stateKey+'.json.last');
           that.STATE.set(stateKey+'.json.last', jsx);
@@ -485,7 +495,7 @@
             if ( kill ) {
               killSet.add(JS(kill));
             } else {
-              console.warn(`No kill signature for`, n, REMOVE_MAP);
+              DEBUG && console.warn(`No kill signature for`, n, REMOVE_MAP);
             }
           });
           killSet.forEach(kill => {
@@ -848,14 +858,21 @@
 
       if ( modifiers ) {
         modifiers = modifiers.map(m => ([m, true]));
-        console.warn("not handling modifiers currently", {node, name, value, modifiers});
+        DEBUG && console.warn("not handling modifiers currently", {node, name, value, modifiers});
         //node.addEventListener(name, funcValue, Object.fromEntries(modifiers));
       }
 
       if ( CONFIG.EVENTS.includes('on'+name) ) {
         node.removeAttribute(oName);
         name = 'on'+name;
+
+        const existingValue = node.getAttribute(name);
+        if ( existingValue?.startsWith('this.') ) {
+          DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
+          return;
+        }
       }
+
       try {
         node.setAttribute(name,isUnset(value) ? name : value);
       } catch(e) {

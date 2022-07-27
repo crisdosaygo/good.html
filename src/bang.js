@@ -19,6 +19,7 @@
     //const GENERATOR = (function*(){yield}()).constructor;
     const EMPTY = '';
     const {stringify:_STR} = JSON;
+    const Reserved = new Set(['_self', '_host', '_top']);
     const JS = o => _STR(o, Replacer, EMPTY);
     const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
@@ -97,7 +98,7 @@
         this.finished++;
       }
     }
-    const SHADOW_OPTS = {mode:'open'};
+    const SHADOW_OPTS = {mode:'open', delegatesFocus: true};
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
     const INSERT = 'insert';
     const ALL_DEPS = {allDependents: true};
@@ -107,6 +108,7 @@
     let observer; // global mutation observer
     let systemKeys = 1;
     let _c$;
+    let firstState;
 
     const BangBase = (name) => class Base extends HTMLElement {
       static #activeAttrs = ['state']; // we listen for changes to these attributes only
@@ -123,9 +125,19 @@
           const cooked = await cook.call(this, markup, state);
           if ( !this.shadowRoot ) {
             const shadow = this.attachShadow(SHADOW_OPTS);
-            state._tasks && state._tasks.forEach(t => {
-              const funcName = t(this);
-              DEBUG && console.log(`Applied automatic event handler function ${funcName} to component ${this}`);
+            if ( !self._completed ) {
+              self._completed = new Map();
+            }
+            self._funcs.forEach(t => {
+              try {
+                const funcName = t(this);
+                //console.log(`Applied automatic event handler function ${funcName} to component`, this);
+                //console.log(self._funcs.size, self._completed.size);
+                self._funcs.delete(t);
+                self._completed.set(funcName, {component: this, func: t});
+              } catch(e) {
+                console.warn(e);
+              }
             });
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
@@ -133,6 +145,8 @@
             // add dependents
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
             this.#dependents = deps.map(node => node.untilVisible());
+          } else {
+            DEBUG && console.log('already has shadow', this);
           }
         }
         this.markLoaded = async () => {
@@ -218,8 +232,12 @@
       updateIfChanged(state) {
         const {didChange} = stateChanged(state);
         if ( didChange ) {
-          const views = getViews(state);
+          const oKey = this.getAttribute('state');
           const newKey = updateState(state);
+          DEBUG && console.log({didChange, oKey, newKey}, this);
+          const views = Dependents.get(this) || new Set();
+          views.add(this);
+          Dependents.set(newKey, views);
           views.forEach(view => view.setAttribute('state', newKey));
         }
       }
@@ -288,6 +306,7 @@
       }
 
       printShadow(state) {
+        if ( ! state ) throw new TypeError(`No state`);
         return fetchMarkup(this.#name).then(markup => this.cookMarkup(markup, state))
         .catch(err => DEBUG && say('warn!',err))
         .finally(this.markLoaded);
@@ -426,17 +445,28 @@
       const stateJSON = JS(state);
       STATE.delete(oStateJSON);
       STATE.set(key, state);
+      DEBUG && console.log({key});
+      const views = Dependents.get(oKey);
       if ( key.startsWith('system-key:') ) {
-        STATE.delete(key);
-        STATE.delete(key+'.json.last');
-        key = new StateKey()+'';
-        STATE.set(key, state);
-        STATE.set(state, key);
+        try {
+          STATE.delete(key);
+          STATE.delete(key+'.json.last');
+          key = new StateKey()+'';
+          STATE.set(key, state);
+          STATE.set(state, key);
+          if ( views ) {
+            views.forEach(view => view.setAttribute('state', key));
+          }
+          DEBUG && console.log({key, oKey});
+        } catch(e) {
+          console.warn(e);
+        }
+      }
+      if ( views ) {
+        Dependents.set(key, views);
       }
       STATE.set(key+'.json.last', stateJSON);
       STATE.set(stateJSON, key+'.json.last');
-      const views = Dependents.get(oKey);
-      Dependents.set(key, views);
       return key;
     }
 
@@ -456,7 +486,7 @@
       save: save = false
     } = {}) {
       const jss = JS(state);
-      console.log({jss, state});
+      DEBUG && console.log({jss, state});
       let lk = key+'.json.last';
       if ( GET_ONLY ) {
         if ( !STATE.has(key) ) {
@@ -469,6 +499,7 @@
           /*if ( stateChanged(oState).didChange ) {*/
           if ( oStateJSON !== jss ) {
             key = updateState(state, key);
+            console.log({key}, 'no where to put');
           }
         }
       } else {
@@ -486,6 +517,11 @@
       if ( rerender ) { // re-render only those components depending on that key
         const acquirers = Dependents.get(key);
         if ( acquirers ) acquirers.forEach(host => host.update());
+      }
+
+      if ( ! firstState ) {
+        firstState = state; 
+        console.log(`Set first state at key ${key}`, state);
       }
       
       return true;
@@ -583,6 +619,7 @@
             Dependents.set(stateKey, acquirers);
           }
           acquirers.add(node);
+          Dependents.set(node, acquirers);
         } else return;
       } else if ( originals ) { // set event handlers to custom element class instance methods
         if ( ! name.startsWith('on') ) return;
@@ -590,24 +627,31 @@
         value = value.replace(/\(event\)$/, '');
         if ( ! value ) return;
 
-        // Perf note:
-          // Local and Parent are just optimizations to avoid if we can the
-          // getAncestor function call, which saves us a couple seconds in large documents
-        const Local = node[value] instanceof Function;
-        const Parent = node.getRootNode()?.host?.[value] instanceof Function;
-        DEBUG && console.log({Local, Parent});
-        const Func = Local ? node[value] :
-          Parent ? node.getRootNode().host[value] :
-          null;
-        const path = Local ? LOCAL_PATH :
-          Parent ? PARENT_PATH : 
-          getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
-        ;
+        /*
+          // Perf note:
+            // Local and Parent are just optimizations to avoid if we can the
+            // getAncestor function call, which saves us a couple seconds in large documents
+          const Local = node[value] instanceof Function;
+          const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+          DEBUG && console.log({Local, Parent});
+          const Func = Local ? node[value] :
+            Parent ? node.getRootNode().host[value] :
+            null;
+          const path = Local ? LOCAL_PATH :
+            Parent ? PARENT_PATH : 
+            getAncestor(node, value)
+          ;
+        */
 
-        if ( !path || value.startsWith(path) ) return;
+        if ( value.startsWith('this.') ) return;
+
+        const {Func,path} = getAncestor(node, value);
+
+        //console.log(node, {value, path});
 
         if ( name === 'onbond' ) {
           if ( Func ) {
+            DEBUG && console.log(`Dereference bond function`, Func, node);
             try {
               Func(node);
               //FIXME: should this actually be removed ? 
@@ -620,6 +664,8 @@
           }
           return;
         }
+
+        if ( !path || value.startsWith(path) ) return;
 
         // Conditional logic explained:
           // don't add a function call bracket if
@@ -643,16 +689,23 @@
       const eventName = flags.pop();
       const flagObj = flags.reduce((o, name) => (o[name] = true, o), {});
 
-      // Perf note:
-        // Local and Parent are just optimizations to avoid if we can the
-        // getAncestor function call, which saves us a couple seconds in large documents
-      const Local = node[value] instanceof Function;
-      const Parent = node.getRootNode()?.host?.[value] instanceof Function;
-      console.log({name, value, node, Local, Parent});
-      const path = Local ? LOCAL_PATH :
-        Parent ? PARENT_PATH : 
-        getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
-      ;
+      /*
+        // Perf note:
+          // Local and Parent are just optimizations to avoid if we can the
+          // getAncestor function call, which saves us a couple seconds in large documents
+        const Local = node[value] instanceof Function;
+        const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+        const path = Local ? LOCAL_PATH :
+          Parent ? PARENT_PATH : 
+          getAncestor(node, value)
+        ;
+      */
+
+      if ( value.startsWith('this') ) return;
+
+      const {Func,path} = getAncestor(node, value);
+
+      console.log(node, {value, path});
 
       if ( !path || value.startsWith(path) ) return;
 
@@ -717,6 +770,8 @@
 
       self._states = [];
       Object.assign(globalThis, {
+        Dependents,
+        STATE,
         CONFIG,
         F,
         use, setState, getState, patchState, cloneState, loaded, 
@@ -1003,16 +1058,26 @@
     // before this point, so they can be found here
     // but after (I think) vv does it's processing. (I hope we can do this with current flow)
     function getAncestor(node, value) {
+      const oNode = node;
       if ( node ) {
-        const currentPath = [PARENT_PATH + ONE_HIGHER];
+        const currentPath = ['this.'];
         while( node ) {
-          if ( node[value] instanceof Function ) return currentPath.join(EMPTY);
+          if ( node[value] instanceof Function ) {
+            const retVal = {Func: node[value], path: currentPath.join(EMPTY), oNode};
+            /*
+            if ( oNode.matches('.tab-selector :is(button, a)') ) {
+              console.log({retVal});
+            }
+            */
+            return retVal;
+          }
+          currentPath.push( ONE_HIGHER );
 
           node = node.getRootNode().host;
-          currentPath.push( 'getRootNode().host.' );
         }
       }
-      return null;
+      console.warn(`Error could not dereference function ${value} starting at original node:`, oNode);
+      return {};
     }
 
     function isBangTag(node) {
@@ -1042,6 +1107,16 @@
 
     async function cook(markup, state) {
       let cooked = EMPTY;
+      if ( !state._top ) {
+        try {
+          Object.defineProperty(state, '_top', {value: firstState});
+        } catch(e) {
+          say('warn!',
+            `Cannot add '_top' self-reference property to state. 
+              This enables a component to inspect the top-level state object it is passed.`
+          );
+        }
+      }
       if ( !state._self ) {
         try {
           Object.defineProperty(state, '_self', {value: state});
@@ -1070,6 +1145,7 @@
         }
         return cooked;
       } catch(error) {
+        DEBUG && console.warn(error);
         say('error!', 'Template error', {markup, state, error});
         throw error;
       }
@@ -1187,5 +1263,4 @@
       } else return value;
     }
 }());
-
 
