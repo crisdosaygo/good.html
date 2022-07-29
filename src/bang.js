@@ -120,25 +120,32 @@
 
       constructor() {
         super();
+        if ( !self._funcs ) {
+          self._funcs = new Set();
+        }
+        if ( !self._completed ) {
+          self._completed = new Map();
+        }
         new Counter(this);
         this.cookMarkup = async (markup, state) => {
+          console.group(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state);
+          // i think we can fix by providing a certain code that funcs added are given 
+          // that is linked to the component
+          self._funcs.forEach(t => {
+            try {
+              const funcName = t(this);
+              console.log(`Applied automatic event handler function ${funcName} to component`, this);
+              console.log(self._funcs.size, self._completed.size);
+              self._funcs.delete(t);
+              self._completed.set(funcName, {component: this, func: t});
+            } catch(e) {
+              console.warn(e);
+            }
+          });
+          console.groupEnd();
           if ( !this.shadowRoot ) {
             const shadow = this.attachShadow(SHADOW_OPTS);
-            if ( !self._completed ) {
-              self._completed = new Map();
-            }
-            self._funcs.forEach(t => {
-              try {
-                const funcName = t(this);
-                //console.log(`Applied automatic event handler function ${funcName} to component`, this);
-                //console.log(self._funcs.size, self._completed.size);
-                self._funcs.delete(t);
-                self._completed.set(funcName, {component: this, func: t});
-              } catch(e) {
-                console.warn(e);
-              }
-            });
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
             cookListeners(shadow);
@@ -216,8 +223,24 @@
       async untilLoaded() {
         const myDependentsLoaded = (await Promise.all(this.#dependents)).every(visible => visible);
         const myContentLoaded = await becomesTrue(this.loadCheck, this.loadKey);
+        const styleCheck = await becomesTrue(() => this.styleSheetsImported());
         DEBUG && console.log(new Date - self.Start);
-        return myContentLoaded && myDependentsLoaded;
+        return myContentLoaded && myDependentsLoaded && styleCheck;
+      }
+
+      async styleSheetsImported() {     
+        // just a very basic version that works with the way we write components now
+        // a single style import and a single stylesheet per component
+
+        const styleSheets = this.shadowRoot.styleSheets;
+        const ss = styleSheets[0];
+        const rules = [...ss.cssRules];
+        const iRule = rules.find(rule => rule instanceof CSSImportRule);
+        if ( !iRule ) {
+          return true;
+        }
+        await becomesTrue(() => !!iRule?.styleSheet?.rules?.length);
+        return true;
       }
 
       async untilVisible() {
@@ -1186,7 +1209,8 @@
       return new Promise(async res => {
         while(true) {
           await nextFrame();
-          if ( check() ) break;
+          const v = await check();
+          if ( v ) break;
         }
         res(true);
       });

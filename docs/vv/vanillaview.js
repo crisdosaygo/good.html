@@ -10,7 +10,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = false
+    const DEBUG             = true;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key0.\d+)(?:\-\->)?/gm;
@@ -41,12 +41,12 @@
     const POS               = 'beforeend';
     const EMPTY = '';
     const {stringify:_STR} = JSON;
-    const JS = o => _STR(o, Replacer, EMPTY);
+    const JS = o => _STR(o, null, EMPTY);
     const isVV  = x => x?.code === CODE && Array.isArray(x.nodes);
     const NextFunc          = () => `f${FuncCounter++}` + (Math.random()*10).toString(36).replace('.', '_');
 
   // logging
-    //globalThis.onerror = (...v) => (console.log(v, v[0]+EMPTY, v[4] && v[4].message, v[4] && v[4].stack), true);
+    globalThis.onerror = (...v) => (console.log(v, v[0]+EMPTY, v[4] && v[4].message, v[4] && v[4].stack), true);
 
   // type functions
     const isKey             = v => !!v && (typeof v.key === 'string' || typeof v.key === 'number') && Object.getOwnPropertyNames(v).length <= 2;
@@ -68,18 +68,20 @@
       let SystemCall = false;
       let state;
 
+      if ( that?.CONFIG ) {
+        _CONFIG = that.CONFIG;
+      }
+
       if ( p[0].length === 0 && v[0].state ) {
         // by convention (see how we construct the template that we tag with FUNC)
         // the first value is the state object when our system calls it
         SystemCall = true;
       }
 
-      const {key} = v.find(isKey) || {};
-
       if ( SystemCall ) {
         ({state} = v.shift());
         p.shift();
-        v = await Promise.all(v.map(val => process(that, val, state, key)));
+        v = await Promise.all(v.map(val => process(that, val, state)));
         const xyz = vanillaview(p,v);
         //xyz[Symbol.for('BANG-VV')] = true;
         DEBUG && console.log({state}, self.__state = state);
@@ -87,7 +89,7 @@
       } else {
         const laterFunc = async state => {
           DEBUG && console.log({state}, self.__state = state);
-          v = await Promise.all(v.map(val => process(that, val, state, key)));
+          v = await Promise.all(v.map(val => process(that, val, state)));
           const xyz = vanillaview(p,v);
           //xyz[Symbol.for('BANG-VV')] = true;
           return xyz;
@@ -169,7 +171,7 @@
     }
 
   // bang integration functions (modified from bang versions)
-    async function process(that, x, state, key) {
+    async function process(that, x, state) {
       if ( typeof x === 'string' ) return x;
       else 
 
@@ -183,14 +185,14 @@
       else
 
       if ( isUnset(x) ) {
-        if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || EMPTY;
+        if ( that.CONFIG.allowUnset ) return that.CONFIG.unsetPlaceholder || EMPTY;
         else {
           throw new TypeError(`Value cannot be unset, was: ${x}`);
         }
       }
       else
 
-      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state, key);
+      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state);
       else
 
       if ( x instanceof Element ) return x.outerHTML;
@@ -211,19 +213,10 @@
           return join(x);
         // is a func array ?
         } else if ( (x[0] instanceof Function) && ! x[0][IMMEDIATE] ) {
-          if ( ! self._names ) self._names = new Map();
-          if ( ! self._funcs ) self._funcs = new Set();
-          const character = funcCharacter(key, ...x);
-          if ( self._names.has(character) ) {
-            const {func: existingFunc, name: existingName} = self._names.get(character);
-            if ( existingName ) {
-              DEBUG && console.log(`Name exists!`, x, existingName);
-              self._funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
-              return existingName;
-            }
-          }
           const randomName = NextFunc();
           DEBUG && console.log({definedFunction: randomName, source: 1});
+          if ( ! state._funcs ) state._funcs = {};
+          if ( ! state._tasks ) state._tasks = [];
 
           const func = (
             function(ev) {
@@ -231,15 +224,15 @@
                 try {
                   fun(ev);
                 } catch(e) {
-                  console.warn(`Handler in func array failed`, {fun, e, ev, x});
+                  console.warn(`Handler in func array failed`, {fun, e, ev});
                 }
               }
             }
           );
 
-          self._names.set(character, {name:randomName, func});
-          self._funcs.add(component => (component[randomName] = func, randomName));
-          DEBUG && console.log('name', randomName, func);
+          state._funcs[randomName] = func;
+          state._tasks.push(component => (component[randomName] = func, randomName));
+          // return "console.log(event)";
           return `${randomName}(event)`;
         } else if ( x[0] instanceof Element || x[0] instanceof Node ) {
           return {code:CODE, externals: [], nodes: x};
@@ -250,7 +243,7 @@
             (
               await Promise.all(Array.from(x)).catch(e => e+EMPTY)
             ).map(v => process(that, v, state))
-          ), state, key);
+          ), state);
         }
       }
 
@@ -263,7 +256,7 @@
       else 
 
       if ( x[IMMEDIATE] && Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
-        return await process(that, await x(state), state, key);
+        return await process(that, await x(state), state);
       }
       else
 
@@ -271,22 +264,14 @@
       else // it's an object, of some type 
 
       if ( x instanceof Function ) {
-        if ( ! self._names ) self._names = new Map();
-        if ( ! self._funcs ) self._funcs = new Set();
-        const character = funcCharacter(key, x);
-        if ( self._names.has(character) ) {
-          const {func: existingFunc, name: existingName} = self._names.get(character);
-          if ( existingName ) {
-            DEBUG && console.log(`Name exists!`, x, existingName);
-            self._funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
-            return existingName;
-          }
-        }
         const name = NextFunc();
-        self._names.set(character, {name, func:x});
-        self._funcs.add(component => (component[name] = x, name)); 
         DEBUG && console.log({definedFunction:name, source: 2});
-        DEBUG && console.log('name', name, x);
+        if ( ! state._funcs ) state._funcs = {};
+        if ( ! state._tasks ) state._tasks = [];
+        state._funcs[name] = x;
+        state._tasks.push(component => (component[name] = x, name)); 
+        //console.log({name, x:x+''}, state._tasks);
+        //return "console.log(event)";
         return `${name}(event)`;
       }
 
@@ -304,8 +289,8 @@
           // to provide a single logical identity for a piece of state that may
           // be represented by many objects
 
-        if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {
-          stateKey = new that.StateKey(x[CONFIG.bangKey])+EMPTY;
+        if ( Object.prototype.hasOwnProperty.call(x, that.CONFIG.bangKey) ) {
+          stateKey = new that.StateKey(x[that.CONFIG.bangKey])+EMPTY;
           // in that case, replace the previously saved object with the same logical identity
           const oldX = that.STATE.get(stateKey);
           that.STATE.delete(oldX);
@@ -318,37 +303,22 @@
 
         {
           const jsx = JS(x)
-          if ( that.STATE.has(x) || that.STATE.has(jsx) ) {
-            stateKey = (that.STATE.get(x) || that.STATE.get(jsx)).replace(/.json.last$/,'');
+          if ( that.STATE.has(x) ) {
+            stateKey = that.STATE.get(x);
             const lastXJSON = that.STATE.get(stateKey+'.json.last');
             if ( jsx !== lastXJSON ) {
               that.STATE.delete(lastXJSON); 
               if ( stateKey.startsWith('system-key') ) {
                 that.STATE.delete(stateKey);
-                const oKey = stateKey;
                 stateKey = new that.StateKey()+EMPTY;
-                console.log({oKey, stateKey});
               }
               that.STATE.set(stateKey, x);
               that.STATE.set(x, stateKey);
             }
           } else {
-            const oKey = stateKey;
             stateKey = new that.StateKey()+EMPTY;
-            //console.log({oKey, stateKey, block2:true, jsx});
             that.STATE.set(stateKey, x);
             that.STATE.set(x, stateKey);
-            /*
-              if ( ! self._funcs ) self._funcs = new Set();
-              self._funcs.add(component => {
-                let aq = Dependents.get(stateKey);
-                if ( ! aq ) {
-                  aq = new Set();
-                  Dependents.set(stateKey, aq);
-                }
-                aq.add(component);
-              });
-            */
           }
           that.STATE.set(jsx, stateKey+'.json.last');
           that.STATE.set(stateKey+'.json.last', jsx);
@@ -357,10 +327,6 @@
         stateKey += EMPTY;
         return stateKey;
       }
-    }
-
-    function funcCharacter(key, ...x) {
-      return `${key||'nokey'}//${x.map(f => f.toString()).join(';')}`; 
     }
 
     function isIterable(y) {
@@ -523,7 +489,7 @@
             if ( kill ) {
               killSet.add(JS(kill));
             } else {
-              DEBUG && console.warn(`No kill signature for`, n, REMOVE_MAP);
+              console.warn(`No kill signature for`, n, REMOVE_MAP);
             }
           });
           killSet.forEach(kill => {
@@ -693,15 +659,6 @@
       }
 
   // helpers
-    function Replacer(key, value) {
-      const obj = this;
-      if ( typeof obj[key] === "function" ) {
-        return value.toString();
-      } else if ( value instanceof Node ) {
-        return `${value.nodeName}//${value.nodeValue || value.outerHTML || value.textContent}`;
-      } else return value;
-    }
-
     function getAttributes(node) {
       if ( ! node.hasAttribute ) return [];
 
@@ -895,20 +852,14 @@
 
       if ( modifiers ) {
         modifiers = modifiers.map(m => ([m, true]));
-        DEBUG && console.warn("not handling modifiers currently", {node, name, value, modifiers});
+        console.warn("not handling modifiers currently", {node, name, value, modifiers});
         //node.addEventListener(name, funcValue, Object.fromEntries(modifiers));
       }
 
-      if ( CONFIG.EVENTS.includes('on'+name) ) {
+      if ( _CONFIG.EVENTS.includes('on'+name) ) {
+        node.removeAttribute(oName);
         name = 'on'+name;
-
-        const existingValue = node.getAttribute(name);
-        if ( existingValue?.startsWith('this.') ) {
-          DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
-          return;
-        }
       }
-
       try {
         node.setAttribute(name,isUnset(value) ? name : value);
       } catch(e) {
@@ -920,6 +871,7 @@
         } catch(e) {
         }
       }
+
     }
 
     function getType(val) {
