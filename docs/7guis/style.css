@@ -15,10 +15,6 @@ body .bang-el:first-of-type:not(.bang-styled)::before,
   background-image: url(loader.gif);
   background-size: contain;
   background-repeat: no-repeat;
-  /*
-  background-color: red;
-  color: blue;
-  */
   color: transparent;
   visibility: visible;
 }
