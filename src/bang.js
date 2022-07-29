@@ -499,7 +499,7 @@
           /*if ( stateChanged(oState).didChange ) {*/
           if ( oStateJSON !== jss ) {
             key = updateState(state, key);
-            console.log({key}, 'no where to put');
+            DEBUG && console.log({key}, 'no where to put');
           }
         }
       } else {
@@ -655,7 +655,7 @@
             try {
               Func(node);
               //FIXME: should this actually be removed ? 
-              node.removeAttribute(name);
+              //node.removeAttribute(name);
             } catch(error) {
               console.warn(`bond function error`, {error, name, value, node, originals, stateHolder, Func});
             }
@@ -1145,7 +1145,7 @@
         }
         return cooked;
       } catch(error) {
-        DEBUG && console.warn(error);
+        console.warn(error);
         say('error!', 'Template error', {markup, state, error});
         throw error;
       }

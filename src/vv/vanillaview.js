@@ -10,7 +10,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = false;
+    const DEBUG             = false
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key0.\d+)(?:\-\->)?/gm;
@@ -41,7 +41,7 @@
     const POS               = 'beforeend';
     const EMPTY = '';
     const {stringify:_STR} = JSON;
-    const JS = o => _STR(o, null, EMPTY);
+    const JS = o => _STR(o, Replacer, EMPTY);
     const isVV  = x => x?.code === CODE && Array.isArray(x.nodes);
     const NextFunc          = () => `f${FuncCounter++}` + (Math.random()*10).toString(36).replace('.', '_');
 
@@ -74,10 +74,12 @@
         SystemCall = true;
       }
 
+      const {key} = v.find(isKey) || {};
+
       if ( SystemCall ) {
         ({state} = v.shift());
         p.shift();
-        v = await Promise.all(v.map(val => process(that, val, state)));
+        v = await Promise.all(v.map(val => process(that, val, state, key)));
         const xyz = vanillaview(p,v);
         //xyz[Symbol.for('BANG-VV')] = true;
         DEBUG && console.log({state}, self.__state = state);
@@ -85,7 +87,7 @@
       } else {
         const laterFunc = async state => {
           DEBUG && console.log({state}, self.__state = state);
-          v = await Promise.all(v.map(val => process(that, val, state)));
+          v = await Promise.all(v.map(val => process(that, val, state, key)));
           const xyz = vanillaview(p,v);
           //xyz[Symbol.for('BANG-VV')] = true;
           return xyz;
@@ -167,7 +169,7 @@
     }
 
   // bang integration functions (modified from bang versions)
-    async function process(that, x, state) {
+    async function process(that, x, state, key) {
       if ( typeof x === 'string' ) return x;
       else 
 
@@ -188,7 +190,7 @@
       }
       else
 
-      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state);
+      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state, key);
       else
 
       if ( x instanceof Element ) return x.outerHTML;
@@ -209,9 +211,19 @@
           return join(x);
         // is a func array ?
         } else if ( (x[0] instanceof Function) && ! x[0][IMMEDIATE] ) {
+          if ( ! self._names ) self._names = new Map();
+          if ( ! self._funcs ) self._funcs = new Set();
+          const character = funcCharacter(key, ...x);
+          if ( self._names.has(character) ) {
+            const {func: existingFunc, name: existingName} = self._names.get(character);
+            if ( existingName ) {
+              DEBUG && console.log(`Name exists!`, x, existingName);
+              self._funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
+              return existingName;
+            }
+          }
           const randomName = NextFunc();
           DEBUG && console.log({definedFunction: randomName, source: 1});
-          if ( ! self._funcs ) self._funcs = new Set();
 
           const func = (
             function(ev) {
@@ -225,6 +237,7 @@
             }
           );
 
+          self._names.set(character, {name:randomName, func});
           self._funcs.add(component => (component[randomName] = func, randomName));
           DEBUG && console.log('name', randomName, func);
           return `${randomName}(event)`;
@@ -237,7 +250,7 @@
             (
               await Promise.all(Array.from(x)).catch(e => e+EMPTY)
             ).map(v => process(that, v, state))
-          ), state);
+          ), state, key);
         }
       }
 
@@ -250,7 +263,7 @@
       else 
 
       if ( x[IMMEDIATE] && Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
-        return await process(that, await x(state), state);
+        return await process(that, await x(state), state, key);
       }
       else
 
@@ -258,10 +271,21 @@
       else // it's an object, of some type 
 
       if ( x instanceof Function ) {
-        const name = NextFunc();
-        DEBUG && console.log({definedFunction:name, source: 2});
+        if ( ! self._names ) self._names = new Map();
         if ( ! self._funcs ) self._funcs = new Set();
+        const character = funcCharacter(key, x);
+        if ( self._names.has(character) ) {
+          const {func: existingFunc, name: existingName} = self._names.get(character);
+          if ( existingName ) {
+            DEBUG && console.log(`Name exists!`, x, existingName);
+            self._funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
+            return existingName;
+          }
+        }
+        const name = NextFunc();
+        self._names.set(character, {name, func:x});
         self._funcs.add(component => (component[name] = x, name)); 
+        DEBUG && console.log({definedFunction:name, source: 2});
         DEBUG && console.log('name', name, x);
         return `${name}(event)`;
       }
@@ -333,6 +357,10 @@
         stateKey += EMPTY;
         return stateKey;
       }
+    }
+
+    function funcCharacter(key, ...x) {
+      return `${key||'nokey'}//${x.map(f => f.toString()).join(';')}`; 
     }
 
     function isIterable(y) {
@@ -665,6 +693,15 @@
       }
 
   // helpers
+    function Replacer(key, value) {
+      const obj = this;
+      if ( typeof obj[key] === "function" ) {
+        return value.toString();
+      } else if ( value instanceof Node ) {
+        return `${value.nodeName}//${value.nodeValue || value.outerHTML || value.textContent}`;
+      } else return value;
+    }
+
     function getAttributes(node) {
       if ( ! node.hasAttribute ) return [];
 
@@ -863,7 +900,6 @@
       }
 
       if ( CONFIG.EVENTS.includes('on'+name) ) {
-        node.removeAttribute(oName);
         name = 'on'+name;
 
         const existingValue = node.getAttribute(name);
