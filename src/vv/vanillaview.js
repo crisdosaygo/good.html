@@ -10,7 +10,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = false
+    const DEBUG             = false;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key0.\d+)(?:\-\->)?/gm;
@@ -66,7 +66,7 @@
     export async function s(p,...v) {
       const that = this;
       let SystemCall = false;
-      let state;
+      let state, _host;
 
       if ( p[0].length === 0 && v[0].state ) {
         // by convention (see how we construct the template that we tag with FUNC)
@@ -77,17 +77,17 @@
       const {key} = v.find(isKey) || {};
 
       if ( SystemCall ) {
-        ({state} = v.shift());
+        ({state,_host} = v.shift());
         p.shift();
-        v = await Promise.all(v.map(val => process(that, val, state, key)));
+        v = await Promise.all(v.map(val => process(that, val, state, _host)));
         const xyz = vanillaview(p,v);
         //xyz[Symbol.for('BANG-VV')] = true;
         DEBUG && console.log({state}, self.__state = state);
         return xyz;
       } else {
-        const laterFunc = async state => {
+        const laterFunc = async (state, _host) => {
           DEBUG && console.log({state}, self.__state = state);
-          v = await Promise.all(v.map(val => process(that, val, state, key)));
+          v = await Promise.all(v.map(val => process(that, val, state, _host)));
           const xyz = vanillaview(p,v);
           //xyz[Symbol.for('BANG-VV')] = true;
           return xyz;
@@ -169,7 +169,7 @@
     }
 
   // bang integration functions (modified from bang versions)
-    async function process(that, x, state, key) {
+    async function process(that, x, state, _host) {
       if ( typeof x === 'string' ) return x;
       else 
 
@@ -190,7 +190,7 @@
       }
       else
 
-      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state, key);
+      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state, _host);
       else
 
       if ( x instanceof Element ) return x.outerHTML;
@@ -211,14 +211,13 @@
           return join(x);
         // is a func array ?
         } else if ( (x[0] instanceof Function) && ! x[0][IMMEDIATE] ) {
-          if ( ! self._names ) self._names = new Map();
-          if ( ! self._funcs ) self._funcs = new Set();
-          const character = funcCharacter(key, ...x);
-          if ( self._names.has(character) ) {
-            const {func: existingFunc, name: existingName} = self._names.get(character);
+          const character = funcCharacter(...x);
+          if ( _host.names.has(character) ) {
+            const {func: existingFunc, name: existingName} = _host.names.get(character);
             if ( existingName ) {
               DEBUG && console.log(`Name exists!`, x, existingName);
-              self._funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
+              DEBUG && console.log(`Adding ${existingName} adder`, existingFunc);
+              _host.funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
               return existingName;
             }
           }
@@ -237,8 +236,9 @@
             }
           );
 
-          self._names.set(character, {name:randomName, func});
-          self._funcs.add(component => (component[randomName] = func, randomName));
+          _host.names.set(character, {name:randomName, func});
+          DEBUG && console.log(`Adding ${randomName} adder`, func, _host);
+          _host.funcs.add(component => (component[randomName] = func, randomName));
           DEBUG && console.log('name', randomName, func);
           return `${randomName}(event)`;
         } else if ( x[0] instanceof Element || x[0] instanceof Node ) {
@@ -249,8 +249,8 @@
           return process(that, await Promise.all(
             (
               await Promise.all(Array.from(x)).catch(e => e+EMPTY)
-            ).map(v => process(that, v, state))
-          ), state, key);
+            ).map(v => process(that, v, state, _host))
+          ), state, _host);
         }
       }
 
@@ -263,28 +263,28 @@
       else 
 
       if ( x[IMMEDIATE] && Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
-        return await process(that, await x(state), state, key);
+        return await process(that, await x(state, _host), state, _host);
       }
       else
 
-      if ( x[IMMEDIATE] && (x instanceof Function) ) return x(state);
+      if ( x[IMMEDIATE] && (x instanceof Function) ) return x(state, _host);
       else // it's an object, of some type 
 
       if ( x instanceof Function ) {
-        if ( ! self._names ) self._names = new Map();
-        if ( ! self._funcs ) self._funcs = new Set();
-        const character = funcCharacter(key, x);
-        if ( self._names.has(character) ) {
-          const {func: existingFunc, name: existingName} = self._names.get(character);
+        const character = funcCharacter(x);
+        if ( _host.names.has(character) ) {
+          const {func: existingFunc, name: existingName} = _host.names.get(character);
           if ( existingName ) {
             DEBUG && console.log(`Name exists!`, x, existingName);
-            self._funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
+            DEBUG && console.log(`Adding ${existingName} adder`, existingFunc);
+            _host.funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
             return existingName;
           }
         }
         const name = NextFunc();
-        self._names.set(character, {name, func:x});
-        self._funcs.add(component => (component[name] = x, name)); 
+        _host.names.set(character, {name, func:x});
+        DEBUG && console.log(`Adding ${name} adder`, x, _host);
+        _host.funcs.add(component => (component[name] = x, name)); 
         DEBUG && console.log({definedFunction:name, source: 2});
         DEBUG && console.log('name', name, x);
         return `${name}(event)`;
@@ -339,8 +339,7 @@
             that.STATE.set(stateKey, x);
             that.STATE.set(x, stateKey);
             /*
-              if ( ! self._funcs ) self._funcs = new Set();
-              self._funcs.add(component => {
+              _host.funcs.add(component => {
                 let aq = Dependents.get(stateKey);
                 if ( ! aq ) {
                   aq = new Set();
@@ -359,8 +358,8 @@
       }
     }
 
-    function funcCharacter(key, ...x) {
-      return `${key||'nokey'}//${x.map(f => f.toString()).join(';')}`; 
+    function funcCharacter(...x) {
+      return `${x.map(f => f.toString()).join(';')}`; 
     }
 
     function isIterable(y) {
@@ -903,9 +902,19 @@
         name = 'on'+name;
 
         const existingValue = node.getAttribute(name);
-        if ( existingValue?.startsWith('this.') ) {
-          DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
-          return;
+        if ( node.getRootNode().host ) {
+          //console.log(node, [...node.getRootNode().host.paths.keys()]);
+          if ( node.getRootNode().host.paths.has(existingValue) ) {
+            DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
+            return;
+          }
+        } else {
+          console.warn(`No host exists yet`);
+          if ( existingValue?.startsWith('this.') ) {
+            console.log('Not running replacement again for', {node, name, oName, value, existingValue});
+            DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
+            return;
+          }
         }
       }
 

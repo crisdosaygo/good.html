@@ -28,6 +28,8 @@
     const PARENT_PATH = 'this.getRootNode().host.';
     const ONE_HIGHER = 'getRootNode().host.';
     const CALL_WITH_EVENT = '(event)';
+    let comp = 0;
+    const NextComponent = () => `b${comp++}${Math.random().toString(36)}`;
     const F = _FUNC; 
     const FUNC_CALL = /\);?$/;
     const MirrorNode = Symbol.for('[[MN]]');
@@ -117,43 +119,49 @@
       }
       #name = name;
       #dependents = [];
+      #funcs = new Set();
+      #names = new Map();
+      #paths = new Map();
+      #destructors = new Set();
+      key;
 
       constructor() {
         super();
-        if ( !self._funcs ) {
-          self._funcs = new Set();
-        }
-        if ( !self._completed ) {
-          self._completed = new Map();
-        }
-        new Counter(this);
         this.cookMarkup = async (markup, state) => {
+          const _host = this;
           console.group(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state);
-          // i think we can fix by providing a certain code that funcs added are given 
-          // that is linked to the component
-          self._funcs.forEach(t => {
+          console.log(`Component : ${this.#name}`);
+          console.log(`State host: ${_host.name}`);
+          console.log(`Will add ${this.#funcs.size} event handler functions`);
+          if ( _host.name !== this.#name ) {
+            console.info(`\tComponent and _host value differ`);
+          }
+          this.#funcs.forEach(t => {
             try {
               const funcName = t(this);
-              console.log(`Applied automatic event handler function ${funcName} to component`, this);
-              console.log(self._funcs.size, self._completed.size);
-              self._funcs.delete(t);
-              self._completed.set(funcName, {component: this, func: t});
+              DEBUG && console.log(`Applied automatic event handler function ${funcName} to component`, this);
+              this.#funcs.delete(t);
             } catch(e) {
               console.warn(e);
             }
           });
           console.groupEnd();
-          if ( !this.shadowRoot ) {
+          let shadow = this.shadowRoot;
+          if ( ! shadow ) {
             const shadow = this.attachShadow(SHADOW_OPTS);
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
-            cookListeners(shadow);
             // add dependents
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
             this.#dependents = deps.map(node => node.untilVisible());
+            this.cookListeners(shadow);
           } else {
-            DEBUG && console.log('already has shadow', this);
+            console.log('already has shadow', this);
+            if ( this.needsRefresh ) {
+              this.cookListeners(shadow);
+              this.needsRefresh = false;
+            }
           }
         }
         this.markLoaded = async () => {
@@ -173,10 +181,22 @@
             }
           }
         }
-        this.loadCheck = () => this.counts.check();
-        this.visibleCheck = () => this.classList?.contains('bang-styled');
-        this.loadKey = Math.random().toString(36);
-        this.visibleLoadKey = Math.random().toString(36);
+      }
+
+      get destructors() {
+        return this.#destructors;
+      }
+
+      get paths() {
+        return this.#paths;
+      }
+
+      get names() {
+        return this.#names;
+      }
+
+      get funcs() {
+        return this.#funcs;
       }
 
       get name() {
@@ -232,14 +252,18 @@
         // just a very basic version that works with the way we write components now
         // a single style import and a single stylesheet per component
 
-        const styleSheets = this.shadowRoot.styleSheets;
-        const ss = styleSheets[0];
-        const rules = [...ss.cssRules];
-        const iRule = rules.find(rule => rule instanceof CSSImportRule);
-        if ( !iRule ) {
+        // always first stylesheet is inserted by system (at top of markup template) 
+        // I think we can count on the above being true but not sure
+
+        const rules = this?.shadowRoot?.styleSheets?.[0]?.cssRules;
+        if ( rules ) {
+          const iRule = [...rules].find(rule => rule instanceof CSSImportRule);
+          if ( !iRule ) {
+            return true;
+          }
+          await becomesTrue(() => !!iRule?.styleSheet?.rules?.length);
           return true;
         }
-        await becomesTrue(() => !!iRule?.styleSheet?.rules?.length);
         return true;
       }
 
@@ -290,6 +314,11 @@
       }
 
       connectedCallback() {
+        new Counter(this);
+        this.loadCheck = () => this.counts.check();
+        this.visibleCheck = () => this.classList?.contains('bang-styled');
+        this.loadKey = Math.random().toString(36);
+        this.visibleLoadKey = Math.random().toString(36);
         say('log',name, 'connected');
         this.handleAttrs(this.attributes, {originals: true});
         if ( this.hasAttribute('lazy') ) {
@@ -309,7 +338,26 @@
         }
       }
 
+      disconnectedCallback() {
+        console.log(`${this.name} disconnecting...`);
+        this.alreadyPrinted = false;
+        this.loaded = false;
+        this.destructors.forEach(d => {
+          try {
+            console.log(`Running destructor`, d.toString());
+            d();
+          } catch(e) {
+            console.warn(`Destructor for ${this.name} failed`, e, d);
+          }
+        });
+        this.needsRefresh = true;
+      }
+
       // private methods
+      cookListeners(root) {
+        return cookListeners(root);
+      }
+
       handleAttrs(attrs, {node, originals} = {}) {
         const stateHolder = {};
 
@@ -320,7 +368,7 @@
         // this is a lot more performant
         for( const {name,value} of attrs ) {
           if ( isUnset(value) ) continue;
-          handleAttribute(name, value, {node, originals, stateHolder});
+          handleAttribute(name, value, {node, originals, stateHolder, host: this});
         }
 
         self._states.push(stateHolder.state);
@@ -359,6 +407,7 @@
           try {
             component = eval(Compose);
           } catch(e) {
+            DEBUG && console.warn('use', e);
             say('warn!',e, Compose, component)
           }
         }).catch(err => {  // otherwise if there is no such extension script, just use the Base class
@@ -618,7 +667,25 @@
     }
 
   // helpers
-    function handleAttribute(name, value, {node, originals, stateHolder} = {}) {
+    function cookListeners(root) {
+      const that = root.getRootNode().host;
+      DEBUG && console.log({root, that});
+      const listening = select(root, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
+      DEBUG && console.log({listening});
+      if ( USE_XPATH ) {
+        listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true, host: that}));
+      } else {
+        listening.forEach(node => that.handleAttrs(node.attributes, {node, originals: true}));
+      }
+
+      if ( USE_XPATH ) {
+        // new style event listeners (only with XPath)
+        const newListening = select(root, X_NEWLISTENING);
+        newListening.forEach(({name, value, ownerElement:node}) => handleNewAttribute(name, value, {node, originals: true, host: that}));
+      }
+    }
+
+    function handleAttribute(name, value, {node, originals, stateHolder, host: Host} = {}) {
       DEBUG && console.log({name, value, node, originals, stateHolder});
       if ( name === 'state' ) {
         const stateKey = value.trim(); 
@@ -647,30 +714,16 @@
       } else if ( originals ) { // set event handlers to custom element class instance methods
         if ( ! name.startsWith('on') ) return;
         value = value.trim();
+
+        if ( node.getRootNode().host.paths.has(value) ) return;
+        //console.log('1', value, [...node.getRootNode().host.paths.keys()]);
+
         value = value.replace(/\(event\)$/, '');
         if ( ! value ) return;
 
-        /*
-          // Perf note:
-            // Local and Parent are just optimizations to avoid if we can the
-            // getAncestor function call, which saves us a couple seconds in large documents
-          const Local = node[value] instanceof Function;
-          const Parent = node.getRootNode()?.host?.[value] instanceof Function;
-          DEBUG && console.log({Local, Parent});
-          const Func = Local ? node[value] :
-            Parent ? node.getRootNode().host[value] :
-            null;
-          const path = Local ? LOCAL_PATH :
-            Parent ? PARENT_PATH : 
-            getAncestor(node, value)
-          ;
-        */
+        //if ( value.startsWith('this.') ) return;
 
-        if ( value.startsWith('this.') ) return;
-
-        const {Func,path} = getAncestor(node, value);
-
-        //console.log(node, {value, path});
+        const {Func,host,path} = getAncestor(node, value);
 
         if ( name === 'onbond' ) {
           if ( Func ) {
@@ -695,11 +748,17 @@
           // 1. it already has one
           // 2. the reference is not a function
         const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
-        node.setAttribute(name, `${path}${value}${ender}`);
+        const val = `${path}${value}${ender}`;
+        host.paths.set(val, Func); 
+        node.setAttribute(name, val);
+        DEBUG && console.log(`Adding destructor`, host, name);
+        if ( value.match(/^f\d+_/) ) {
+          host.destructors.add(() => node.removeAttribute(name));
+        }
       }
     }
 
-    function handleNewAttribute(name, value, {node}) {
+    function handleNewAttribute(name, value, {node, Host}) {
       value = value.trim();
       if ( ! value ) return;
 
@@ -712,21 +771,12 @@
       const eventName = flags.pop();
       const flagObj = flags.reduce((o, name) => (o[name] = true, o), {});
 
-      /*
-        // Perf note:
-          // Local and Parent are just optimizations to avoid if we can the
-          // getAncestor function call, which saves us a couple seconds in large documents
-        const Local = node[value] instanceof Function;
-        const Parent = node.getRootNode()?.host?.[value] instanceof Function;
-        const path = Local ? LOCAL_PATH :
-          Parent ? PARENT_PATH : 
-          getAncestor(node, value)
-        ;
-      */
+      //if ( value.startsWith('this') ) return;
 
-      if ( value.startsWith('this') ) return;
+      if ( node.getRootNode().host.paths.has(value) ) return;
+      //console.log('2', value, [...node.getRootNode().host.paths.keys()]);
 
-      const {Func,path} = getAncestor(node, value);
+      const {Func,host,path} = getAncestor(node, value);
 
       console.log(node, {value, path});
 
@@ -737,11 +787,23 @@
         // 1. it already has one
         // 2. the reference is not a function
       const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
+      const val = `${path}${value}${ender}`;
+      host.paths.set(val, Func); 
+      const handler = new Function('event', `return ${val}`);
       node.addEventListener(
         eventName, 
-        new Function('event', `return ${path}${value}${ender}`), 
+        handler,
         flagObj
       );
+      if ( value.match(/^f\d+_/) ) {
+        host.destructors.add(() => {
+          node.removeEventListener(
+            eventName, 
+            handler,
+            flagObj
+          );
+        });
+      }
     }
 
     function select(context, selector) {
@@ -1048,23 +1110,6 @@
     }
 
 
-    function cookListeners(root) {
-      const that = root.getRootNode().host;
-      DEBUG && console.log({root, that});
-      const listening = select(root, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
-      DEBUG && console.log({listening});
-      if ( USE_XPATH ) {
-        listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true}));
-      } else {
-        listening.forEach(node => that.handleAttrs(node.attributes, {node, originals: true}));
-      }
-
-      if ( USE_XPATH ) {
-        // new style event listeners (only with XPath)
-        const newListening = select(root, X_NEWLISTENING);
-        newListening.forEach(({name, value, ownerElement:node}) => handleNewAttribute(name, value, {node, originals: true}));
-      }
-    }
 
 
     function actualElement(node) {
@@ -1082,24 +1127,26 @@
     // but after (I think) vv does it's processing. (I hope we can do this with current flow)
     function getAncestor(node, value) {
       const oNode = node;
+      let lastNode;
       if ( node ) {
         const currentPath = ['this.'];
         while( node ) {
           if ( node[value] instanceof Function ) {
-            const retVal = {Func: node[value], path: currentPath.join(EMPTY), oNode};
-            /*
-            if ( oNode.matches('.tab-selector :is(button, a)') ) {
-              console.log({retVal});
-            }
-            */
+            const retVal = {Func: node[value], path: currentPath.join(EMPTY), oNode, host: node};
             return retVal;
           }
+          if ( node?.paths?.has(value) ) {
+            return { host: node, Func: node?.paths?.get(value), path: value };
+          }
           currentPath.push( ONE_HIGHER );
+
+          lastNode = node;
 
           node = node.getRootNode().host;
         }
       }
       console.warn(`Error could not dereference function ${value} starting at original node:`, oNode);
+      console.warn(`Got as high as`, lastNode);
       return {};
     }
 
@@ -1130,45 +1177,21 @@
 
     async function cook(markup, state) {
       let cooked = EMPTY;
-      if ( !state._top ) {
-        try {
-          Object.defineProperty(state, '_top', {value: firstState});
-        } catch(e) {
-          say('warn!',
-            `Cannot add '_top' self-reference property to state. 
-              This enables a component to inspect the top-level state object it is passed.`
-          );
-        }
-      }
-      if ( !state._self ) {
-        try {
-          Object.defineProperty(state, '_self', {value: state});
-        } catch(e) {
-          say('warn!',
-            `Cannot add '_self' self-reference property to state. 
-              This enables a component to inspect the top-level state object it is passed.`
-          );
-        }
-      }
-      if ( !state._host ) {
-        const _host = this;
-        try {
-          Object.defineProperty(state, '_host', {value: _host});
-        } catch(e) {
-          say('warn!',
-            `Cannot add '_host' self-reference property to component host. 
-              This enables a component to inspect its Shadow Host element`
-          );
-        }
+      const _top = firstState;
+      const _self = state;
+      const _host = this;
+
+      if ( ! state._top ) {
+        Object.defineProperty(state, '_top', { value: _top });
       }
 
       try {
         with(state) {
-          cooked = await eval("(async function () { return await _FUNC`${{state}}"+markup+"`; }())");  
+          cooked = await eval("(async function () { return await _FUNC`${{state,_host}}"+markup+"`; }())");  
         }
         return cooked;
       } catch(error) {
-        console.warn(error);
+        console.warn('cook', error);
         say('error!', 'Template error', {markup, state, error});
         throw error;
       }
