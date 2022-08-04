@@ -377,7 +377,16 @@
       }
 
       printShadow(state) {
-        if ( ! state ) throw new TypeError(`No state`);
+        if ( ! state ) {
+          DEBUG && console.warn(`No state on component ${this.name}. Will pass empty state`);
+          DEBUG && console.dir(this);
+          //throw new TypeError(`No state`);
+          const stateKey = new StateKey()+''; 
+          state = {};
+          setState(stateKey, state);
+          this.setAttribute('state', stateKey);
+          DEBUG && console.log(`Assigned empty state to key ${stateKey}`);
+        }
         return fetchMarkup(this.#name).then(markup => this.cookMarkup(markup, state))
         .catch(err => DEBUG && say('warn!',err))
         .finally(this.markLoaded);

@@ -8,6 +8,7 @@
   // vanillaview.js
     // imports
       const CODE = Math.random().toFixed(18);
+      const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
 
     // backwards compatible alias
       const skip = markup;
@@ -21,7 +22,7 @@
       const KEYLEN            = 20;
       const XSS               = () => `Possible XSS / object forgery attack detected. ` +
                                 `Object code could not be verified.`;
-      const OBJ               = () => `Object values not allowed here.`;
+      const OBJ               = x => ({message:`Object values not allowed here.`, x});
       const UNSET             = () => `Unset values not allowed here.`;
       const INSERT            = () => `Error inserting template into DOM. ` +
         `Position must be one of: ` +
@@ -43,12 +44,17 @@
       const EMPTY = '';
       const {stringify:_STR} = JSON;
       const JS = o => _STR(o, null, EMPTY);
+      const isVV  = x => x?.code === CODE && Array.isArray(x.nodes);
+      const NextFunc          = () => `f${FuncCounter++}` + (Math.random()*10).toString(36).replace('.', '_');
 
     // logging
       globalThis.onerror = (...v) => (console.log(v, v[0]+EMPTY, v[4] && v[4].message, v[4] && v[4].stack), true);
 
     // type functions
       const isKey             = v => !!v && (typeof v.key === 'string' || typeof v.key === 'number') && Object.getOwnPropertyNames(v).length <= 2;
+
+    // state
+      let FuncCounter = 10;
 
     // cache 
       const cache = {};
@@ -74,7 +80,6 @@
           p.shift();
           v = await Promise.all(v.map(val => process(that, val, state)));
           const xyz = vanillaview(p,v);
-          //xyz[Symbol.for('BANG-VV')] = true;
           return xyz;
         } else {
           const laterFunc = async state => {
@@ -83,6 +88,7 @@
             //xyz[Symbol.for('BANG-VV')] = true;
             return xyz;
           };
+          laterFunc[IMMEDIATE] = true;
           //laterFunc[Symbol.for('BANG-VV')] = true;
           return laterFunc;
         }
@@ -126,6 +132,7 @@
         str += p.shift();
 
         const frag = toDOM(str);
+        // FIXME: do we need to walk through shadows here?
         const walker = document.createTreeWalker(frag, NodeFilter.SHOW_ALL);
 
         do {
@@ -172,7 +179,7 @@
         else
 
         if ( isUnset(x) ) {
-          if ( that.CONFIG.allowUnset ) return that.CONFIG.unsetPlaceholder || EMPTY;
+          if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || EMPTY;
           else {
             throw new TypeError(`Value cannot be unset, was: ${x}`);
           }
@@ -186,37 +193,81 @@
         else
 
         if ( x instanceof Node ) return x.textContent;
+        else 
 
-        const isVVArray   = Array.isArray(x) && (x.length === 0 || Array.isArray(x[0].nodes));
-
-        if ( isIterable(x) && ! isVVArray ) {
-          // if an Array or iterable is given then
-          // its values are recursively processed via this same function
-          return process(that, (await Promise.all(
-            (
-              await Promise.all(Array.from(x)).catch(e => e+EMPTY)
-            ).map(v => process(that, v, state))
-          )), state);
+        if ( isVV(x) ) {
+          return {code:CODE, externals: x.externals, nodes: x.nodes};
         }
 
+        const isArray     = Array.isArray(x);
+        const isVVArray   = isArray && (x.length === 0 || isVV(x[0]));
+
+        if ( isIterable(x) ) {
+          if ( isVVArray ) {
+            return join(x);
+          // is a func array ?
+          } else if ( (x[0] instanceof Function) && ! x[0][IMMEDIATE] ) {
+            const randomName = NextFunc();
+            if ( ! state._funcs ) state._funcs = {};
+            if ( ! state._tasks ) state._tasks = [];
+
+            const func = (
+              function(ev) {
+                for( const fun of x ) {
+                  try {
+                    fun(ev);
+                  } catch(e) {
+                    console.warn(`Handler in func array failed`, {fun, e, ev, x});
+                  }
+                }
+              }
+            );
+
+            state._funcs[randomName] = func;
+            state._tasks.push(component => (component[randomName] = func, randomName));
+            // return "console.log(event)";
+            return `${randomName}(event)`;
+          } else if ( x[0] instanceof Element || x[0] instanceof Node ) {
+            return {code:CODE, externals: [], nodes: x};
+          } else {
+            // if an Array or iterable is given then
+            // its values are recursively processed via this same function
+            return process(that, await Promise.all(
+              (
+                await Promise.all(Array.from(x)).catch(e => e+EMPTY)
+              ).map(v => process(that, v, state))
+            ), state);
+          }
+        }
 
         const isVVK = isKey(x);
-        const isVV      = x.code === CODE && Array.isArray(x.nodes);
         const isMAO = x.code === CODE && typeof x.str === "string";
-        if ( isVVArray || isVVK || isMAO || isVV ) {
-          return isVVArray ? join(x) : x; // let vanillaview guardAndTransformVal handle
+        if ( isVVK || isMAO || isVV(x) ) {
+          return x; // let vanillaview guardAndTransformVal handle
         }
 
         else 
 
-        if ( Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
+        if ( x[IMMEDIATE] && Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
           return await process(that, await x(state), state);
         }
         else
 
-        if ( x instanceof Function ) return x(state);
+        if ( x[IMMEDIATE] && (x instanceof Function) ) return x(state);
         else // it's an object, of some type 
 
+        if ( x instanceof Function ) {
+          const name = NextFunc();
+          if ( ! state._funcs ) state._funcs = {};
+          if ( ! state._tasks ) state._tasks = [];
+          state._funcs[name] = x;
+          state._tasks.push(component => (component[name] = x, name)); 
+          //console.log({name, x:x+''}, state._tasks);
+          //return "console.log(event)";
+          return `${name}(event)`;
+        }
+
+        else
         {
           // State store     
             /* so we assume an object is state and save it */
@@ -230,8 +281,8 @@
             // to provide a single logical identity for a piece of state that may
             // be represented by many objects
 
-          if ( Object.prototype.hasOwnProperty.call(x, that.CONFIG.bangKey) ) {
-            stateKey = new that.StateKey(x[that.CONFIG.bangKey])+EMPTY;
+          if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {
+            stateKey = new that.StateKey(x[CONFIG.bangKey])+EMPTY;
             // in that case, replace the previously saved object with the same logical identity
             const oldX = that.STATE.get(stateKey);
             that.STATE.delete(oldX);
@@ -244,20 +295,24 @@
 
           {
             const jsx = JS(x);
-            if ( that.STATE.has(x) ) {
-              stateKey = that.STATE.get(x);
+            if ( that.STATE.has(x) || that.STATE.has(jsx) ) {
+              stateKey = (that.STATE.get(x) || that.STATE.get(jsx)).replace(/.json.last$/,'');
               const lastXJSON = that.STATE.get(stateKey+'.json.last');
               if ( jsx !== lastXJSON ) {
                 that.STATE.delete(lastXJSON); 
                 if ( stateKey.startsWith('system-key') ) {
                   that.STATE.delete(stateKey);
+                  const oKey = stateKey;
                   stateKey = new that.StateKey()+EMPTY;
+                  console.log({oKey, stateKey});
                 }
                 that.STATE.set(stateKey, x);
                 that.STATE.set(x, stateKey);
               }
             } else {
+              const oKey = stateKey;
               stateKey = new that.StateKey()+EMPTY;
+              console.log({oKey, stateKey, block2:true, jsx});
               that.STATE.set(stateKey, x);
               that.STATE.set(x, stateKey);
             }
@@ -303,6 +358,9 @@
     // update functions
       function makeUpdaters({walker,vmap,externals}) {
         const node = walker.currentNode;
+        if ( node.shadowRoot instanceof ShadowRoot ) {
+          throw new TypeError(`Shadow not supported here currently`);
+        }
         switch( node.nodeType ) {
           case Node.ELEMENT_NODE:
             handleElement({node,vmap,externals}); break;
@@ -311,6 +369,10 @@
             handleNode({node,vmap,externals}); break;
         }
       }
+
+    // debug stuff
+      const Replacers = new Map();
+    // end debug stuff
 
       function handleNode({node,vmap,externals}) {
         const lengths = [];
@@ -321,7 +383,16 @@
           const key = result[1];
           const val = vmap[key];
           const replacer = makeNodeUpdater({node,index,lengths,val});
-          externals.push(() => replacer(val.val));
+          const wrappedReplacer = () => {
+            try {
+              replacer(val.val);
+            } catch(error) {
+              console.warn(`Error in replacer for key ${key}`, {val, error});
+            }
+            Replacers.delete(key);
+          };
+          externals.push(wrappedReplacer);
+          Replacers.set(key, wrappedReplacer);
           val.replacers.push( replacer );
           result = KEYMATCH.exec(text);
         }
@@ -389,14 +460,22 @@
               }
               if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\d+/) ) return;
               const kill = REMOVE_MAP.get(n);
-              killSet.add(JS(kill));
+              if ( kill ) {
+                killSet.add(JS(kill));
+              } else {
+                console.warn(`No kill signature for`, n, REMOVE_MAP);
+              }
             });
             killSet.forEach(kill => {
               const {ck: cacheKey, ik: instanceKey} = JSON.parse(kill);
-              if ( cacheKey && instanceKey ) {
-                cache[cacheKey].instances[instanceKey] = null;
-              } else if ( cacheKey ) {
-                cache[cacheKey] = null;
+              try {
+                if ( cacheKey && instanceKey && instanceKey !== "undefined" ) {
+                  cache[cacheKey].instances[instanceKey] = null;
+                } else if ( cacheKey ) {
+                  cache[cacheKey] = null;
+                }
+              } catch(e) {
+                console.warn(`Error in kill for`, {kill, cacheKey, instanceKey});
               }
             });
           }
@@ -442,6 +521,7 @@
         function updateLinkedCustomElement(node) {
           const lce = node.linkedCustomElement;
           const span = toDOM(`<span ${node.textContent}></span>`).firstChild;
+          //FIXME: may have to look at this for the combination of vv and bang, may not need to remove these
           const toRemove = new Set(
             getAttributes(lce)
               .filter(({name}) => !name.startsWith('on'))
@@ -733,16 +813,37 @@
         scope.oldAttrVal = newAttrValue;
       }
 
-      function reliablySetAttribute(node, name, value ) {
+      function reliablySetAttribute(node, name, value, /*{funcValue} = {}*/) {
         if (  name == "class" ) {
           value = formatClassListValue(value);
+        }
+
+        const oName = name;
+        let modifiers;
+        if ( name.includes(':') ) {
+          ([name, ...modifiers] = name.split(':'));
+        }
+
+        if ( modifiers ) {
+          modifiers = modifiers.map(m => ([m, true]));
+          console.warn("not handling modifiers currently", {node, name, value, modifiers});
+          //node.addEventListener(name, funcValue, Object.fromEntries(modifiers));
+        }
+
+        if ( CONFIG.EVENTS.includes('on'+name) ) {
+          node.removeAttribute(oName);
+          name = 'on'+name;
+
+          const existingValue = node.getAttribute(name);
+          if ( existingValue?.startsWith('this.') ) {
+            return;
+          }
         }
 
         try {
           node.setAttribute(name,isUnset(value) ? name : value);
         } catch(e) {
         }
-
         // if you set style like this is fucks it up
         if ( name in node && name !== 'style' ) {
           try {
@@ -896,7 +997,7 @@
         }
 
         function guardAndTransformVal(v) {
-          const isVVArray   = Array.isArray(v) && (v.length === 0 || Array.isArray(v[0].nodes));
+          const isVVArray   = Array.isArray(v) && (v.length === 0 || isVV(v[0]));
           const isNotSet         = isUnset(v);
           const isForgery = v.code !== CODE && Array.isArray(v.nodes);
           const isObject        = typeof v === 'object';
@@ -908,7 +1009,15 @@
           if ( isNotSet )            die({error: UNSET()});
           if ( isForgery )          die({error: XSS()});
 
-          if ( isObject ) die({error: OBJ()});
+          if ( Array.isArray(v) && v[0] instanceof Node ) {
+            return {code:CODE, nodes: v, externals: []};
+          }
+
+          if ( Array.isArray(v) && v[0] instanceof Function ) {
+            return v;
+          }
+
+          if ( isObject ) die({error: OBJ(v)});
 
           return v+EMPTY;
         }
@@ -989,7 +1098,7 @@
     // reporting and error helpers 
       function die(msg,err) {
         msg.stack = (new Error()).stack.split(/\s*\n\s*/g);
-        throw JS(msg);
+        throw msg;
       }
 
   exports.c = c;
@@ -1002,16 +1111,24 @@
 (function () {
   // constants, classes, config and state
     const DEBUG = false;
+    const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
+    const NAMESPACE = 'b';
     const PIPELINE_REQUESTS = true;
     const RANDOM_SLEEP_ON_FIRST_PRINT = true;
     const RESPONSIVE_MEDIATION = true;
+    const USE_XPATH = true;
+    const X_NS_ATTRS = `.//@*[starts-with(name(), '${NAMESPACE}:')]`;
+    const X_NEWLISTENING = document.createExpression(X_NS_ATTRS);
+    const XON_EVENT_ATTRS = `.//@*[starts-with(local-name(), 'on')]`;
+    const X_LISTENING = document.createExpression(XON_EVENT_ATTRS);
     const OPTIMIZE = true;
     const GET_ONLY = true;
     const MOBILE = isMobile();
     const GC_TIMEOUT = 10000;
+    //const GENERATOR = (function*(){yield}()).constructor;
     const EMPTY = '';
     const {stringify:_STR} = JSON;
-    const JS = o => _STR(o, null, EMPTY);
+    const JS = o => _STR(o, Replacer, EMPTY);
     const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
     const POS = 'beforeend';
@@ -1029,14 +1146,15 @@
       scriptFile: 'script.js',
       styleFile: 'style.css',
       bangKey: '_bang_key',
-      componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}components`,
-      allowUnset: false,
+      componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}../components`,
+      allowUnset: true,
       unsetPlaceholder: EMPTY,
-      EVENTS: `error load click pointerdown pointerup pointermove mousedown mouseup 
+      EVENTS: `bond error load click pointerdown pointerup pointermove mousedown mouseup submit
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
-        input change compositionstart compositionend text paste beforepast select cut copy
-        contextmenu
+        input change compositionstart compositionend text paste beforepaste select cut copy
+        keydown keyup keypress compositionupdate
+        contextmenu wheel
       `.split(/\s+/g).filter(s => s.length).map(e => `[on${e}]`).join(','),
       delayFirstPaintUntilLoaded: false,
       capBangRatioAtUnity: false,
@@ -1055,14 +1173,44 @@
     class Counter {
       started = 0;
       finished = 0;
+
+      constructor(root) {
+        root.counts = this;
+        this.root = root;
+      }
+
+      check() {
+        const {root} = this;
+        const isTopLevel = root === document;
+        let loaded = false;
+
+        if ( isTopLevel ) {
+          const noSwiftDescendents = root.querySelectorAll('.bang-el:not([lazy])').length === 0;
+          loaded = noSwiftDescendents;
+        } else {
+          const nonZeroCheck = this.started > 0;
+          const finishedCheck = this.finished >= this.started;
+          loaded = nonZeroCheck && finishedCheck;
+        }
+
+        return loaded;
+      }
+
+      start() {
+        if ( this.root == document ) say('log', 'Counting start');
+        this.started++;
+      }
+
+      finish() {
+        if ( this.root == document ) say('log', 'Counting finished');
+        this.finished++;
+      }
     }
-    const Counts = new Counter;
-    const LoadChecker = countsChecker(Counts);
-    const Finished = () => Counts.finished++;
-    const SHADOW_OPTS = {mode:'open'};
+    const SHADOW_OPTS = {mode:'open', delegatesFocus: true};
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
     const INSERT = 'insert';
     const ALL_DEPS = {allDependents: true};
+    let LoadChecker;
     let RequestId = 0;
     let hindex = 0;
     let observer; // global mutation observer
@@ -1077,56 +1225,46 @@
       #name = name;
       #dependents = [];
 
-      constructor({task: task = () => void 0} = {}) {
+      constructor() {
         super();
-        this.counts = new Counter;
+        new Counter(this);
         this.cookMarkup = async (markup, state) => {
           const cooked = await cook.call(this, markup, state);
           if ( !this.shadowRoot ) {
             const shadow = this.attachShadow(SHADOW_OPTS);
+            state._tasks && state._tasks.forEach(t => {
+              const funcName = t(this);
+              DEBUG && console.log(`Applied automatic event handler function ${funcName} to component ${this}`);
+            });
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
-            const listening = shadow.querySelectorAll(CONFIG.EVENTS);
-            listening.forEach(node => this.handleAttrs(node.attributes, {node, originals: true}));
-            
+            cookListeners(shadow);
             // add dependents
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
-            this.#dependents = deps.map(node => node.untilLoaded());
+            this.#dependents = deps.map(node => node.untilVisible());
           }
         }
         this.markLoaded = async () => {
+          this.alreadyPrinted = true;
           if ( ! this.loaded ) {
-            this.counts.finished++;
+            this.counts.finish();
             const loaded = await this.untilLoaded();
             if ( loaded ) {
               this.loaded = loaded;
               this.setVisible();
               if ( ! this.isLazy ) {
-                setTimeout(Finished, 0);
+                setTimeout(() => document.counts.finish(), 0);
               }
             } else {
+              console.warn('Not loaded', this);
               // right now this never happens
             }
           }
         }
-        this.checkLoad = countsChecker(this.counts);
+        this.loadCheck = () => this.counts.check();
+        this.visibleCheck = () => this.classList?.contains('bang-styled');
         this.loadKey = Math.random().toString(36);
-
-        if ( this.hasAttribute('lazy') ) {
-          this.isLazy = true;
-          if ( this.hasAttribute('super') ) {
-            this.superLazy = true;
-            loaded().then(() => sleep(400*Math.random()).then(() => this.print().then(task)));
-          } else {
-            if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
-              sleep(160*Math.random()).then(() => this.print().then(task));
-            } else {
-              this.print().then(task);
-            }
-          }
-        } else {
-          this.print().then(task);
-        }
+        this.visibleLoadKey = Math.random().toString(36);
       }
 
       get name() {
@@ -1158,11 +1296,10 @@
       }
 
       prepareVisibility() {
-        this.alreadyPrinted = true;
         this.classList.add('bang-el');
-        this.counts.started++;
+        this.counts.start();
         if ( !this.isLazy ) {
-          Counts.started++;
+          document.counts.start();
         }
         this.classList.remove('bang-styled');
         // we prefetch the style
@@ -1172,9 +1309,19 @@
       }
 
       async untilLoaded() {
-        const myDependentsLoaded = (await Promise.all(this.#dependents)).every(loaded => loaded);
-        const myContentLoaded = await becomesTrue(this.checkLoad, this.loadKey);
+        const myDependentsLoaded = (await Promise.all(this.#dependents)).every(visible => visible);
+        const myContentLoaded = await becomesTrue(this.loadCheck, this.loadKey);
+        DEBUG && console.log(new Date - self.Start);
         return myContentLoaded && myDependentsLoaded;
+      }
+
+      async untilVisible() {
+        if ( this.isLazy ) return true;
+        return await becomesTrue(this.visibleCheck, this.visibleLoadKey);
+      }
+
+      get deps() {
+        return this.#dependents;
       }
 
       updateIfChanged(state) {
@@ -1192,7 +1339,7 @@
 
       get state() {
         const key = this.getAttribute('state');
-        return cloneState(key);
+        return getState(key); //(key);
       }
 
       set state(newValue) {
@@ -1213,69 +1360,40 @@
       connectedCallback() {
         say('log',name, 'connected');
         this.handleAttrs(this.attributes, {originals: true});
+        if ( this.hasAttribute('lazy') ) {
+          this.isLazy = true;
+          if ( this.hasAttribute('super') ) {
+            this.superLazy = true;
+            loaded().then(() => sleep(400*Math.random()).then(() => this.print()));
+          } else {
+            if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
+              sleep(160*Math.random()).then(() => this.print());
+            } else {
+              this.print();
+            }
+          }
+        } else {
+          this.print();
+        }
       }
 
       // private methods
       handleAttrs(attrs, {node, originals} = {}) {
-        let state = {};
+        const stateHolder = {};
 
         if ( ! node ) node = this;
 
         // we can optimize this method more, we only get attrs if originals == true
         // otherwise we just get and process the single 'state' attr 
         // this is a lot more performant
-        for( let {name,value} of attrs ) {
+        for( const {name,value} of attrs ) {
           if ( isUnset(value) ) continue;
-          if ( name === 'state' ) {
-            const stateKey = value.trim(); 
-            const stateObject = cloneState(stateKey);
-            
-            if ( isUnset(stateObject) ) {
-              console.warn(node);
-              self.STATE = STATE;
-              console.warn(new ReferenceError(`
-                <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.
-              `));
-              break;
-            }
-            
-            state = stateObject;
-
-            if ( originals ) {
-              let acquirers = Dependents.get(stateKey);
-              if ( ! acquirers ) {
-                acquirers = new Set();
-                Dependents.set(stateKey, acquirers);
-              }
-              acquirers.add(node);
-            } else break;
-          } else if ( originals ) { // set event handlers to custom element class instance methods
-            if ( ! name.startsWith('on') ) continue;
-            value = value.trim();
-            if ( ! value ) continue;
-
-            // Perf note:
-              // Local and Parent are just optimizations to avoid if we can the
-              // getAncestor function call, which saves us a couple seconds in large documents
-            const Local = node[value] instanceof Function;
-            const Parent = node.getRootNode()?.host?.[value] instanceof Function;
-            const path = Local ? LOCAL_PATH :
-              Parent ? PARENT_PATH : 
-              getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
-            ;
-
-            if ( !path || value.startsWith(path) ) continue;
-
-            // Conditional logic explained:
-              // don't add a function call bracket if
-              // 1. it already has one
-              // 2. the reference is not a function
-            const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
-            node.setAttribute(name, `${path}${value}${ender}`);
-          }
+          handleAttribute(name, value, {node, originals, stateHolder});
         }
 
-        return state;
+        self._states.push(stateHolder.state);
+
+        return stateHolder.state;
       }
 
       printShadow(state) {
@@ -1296,6 +1414,10 @@
 
   // API
     async function use(name) {
+      if ( self.customElements.get(name) ) return;
+
+      console.log('using', name);
+
       let component;
       await fetchScript(name)
         .then(script => { // if there's a script that extends base, evaluate it to be component
@@ -1311,6 +1433,8 @@
           component = BangBase(name);
         });
       
+      if ( self.customElements.get(name) ) return;
+
       self.customElements.define(name, component);
     }
     
@@ -1377,6 +1501,16 @@
       Object.assign(CONFIG, newConfig);
     }
 
+    function immediate(f) {
+      if ( !(f instanceof Function) ) {
+        throw new TypeError(`immediate can only be called on a function. Recieved: ${f}`);
+      }
+
+      if ( f[IMMEDIATE] ) return;
+
+      Object.defineProperty(f, IMMEDIATE, {value: true, configurable: false, enumerable: false, writable: false});
+    }
+
     function runCode(context, str) {
       with(context) {
         return eval(str); 
@@ -1401,17 +1535,19 @@
       const stateJSON = JS(state);
       STATE.delete(oStateJSON);
       STATE.set(key, state);
+      const views = Dependents.get(oKey);
       if ( key.startsWith('system-key:') ) {
         STATE.delete(key);
         STATE.delete(key+'.json.last');
         key = new StateKey()+'';
         STATE.set(key, state);
         STATE.set(state, key);
+        views.forEach(view => view.setAttribute('state', key));
+        console.log({key, oKey});
       }
+      Dependents.set(key, views);
       STATE.set(key+'.json.last', stateJSON);
       STATE.set(stateJSON, key+'.json.last');
-      const views = Dependents.get(oKey);
-      Dependents.set(key, views);
       return key;
     }
 
@@ -1431,6 +1567,7 @@
       save: save = false
     } = {}) {
       const jss = JS(state);
+      console.log({jss, state});
       let lk = key+'.json.last';
       if ( GET_ONLY ) {
         if ( !STATE.has(key) ) {
@@ -1443,6 +1580,7 @@
           /*if ( stateChanged(oState).didChange ) {*/
           if ( oStateJSON !== jss ) {
             key = updateState(state, key);
+            console.log({key}, 'no where to put');
           }
         }
       } else {
@@ -1459,10 +1597,14 @@
 
       if ( rerender ) { // re-render only those components depending on that key
         const acquirers = Dependents.get(key);
-        if ( acquirers ) acquirers.forEach(host => host.print());
+        if ( acquirers ) acquirers.forEach(host => host.update());
       }
       
       return true;
+    }
+
+    function getState(key) {
+      return STATE.get(key);
     }
 
     function patchState(key, state) {
@@ -1475,10 +1617,6 @@
       else {
         throw new ReferenceError(`State store does not have the key ${key}`);
       }
-    }
-
-    function countsChecker(counts) {
-      return () => counts.started > 0 && counts.finished >= counts.started;
     }
 
     async function loaded() {
@@ -1501,7 +1639,7 @@
       const result = {args, started: new Date};
       let pr;
       if ( RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
-        pr = fetch(...args).catch(err => (say('log', err), err));
+        pr = fetch(...args).catch(err => (say('log', err), `/* ${err} */`));
         result.pr = pr;
         RequestPipeLine.set(key, result);
         const complete = r => {
@@ -1533,15 +1671,174 @@
     }
 
   // helpers
+    function handleAttribute(name, value, {node, originals, stateHolder} = {}) {
+      DEBUG && console.log({name, value, node, originals, stateHolder});
+      if ( name === 'state' ) {
+        const stateKey = value.trim(); 
+        const stateObject = getState(stateKey); // cloneState(stateKey);
+        
+        if ( isUnset(stateObject) ) {
+          console.warn(node);
+          self.STATE = STATE;
+          console.warn(new ReferenceError(`
+            <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.
+          `));
+          return;
+        }
+        
+        stateHolder.state = stateObject;
+
+        if ( originals ) {
+          let acquirers = Dependents.get(stateKey);
+          if ( ! acquirers ) {
+            acquirers = new Set();
+            Dependents.set(stateKey, acquirers);
+          }
+          acquirers.add(node);
+        } else return;
+      } else if ( originals ) { // set event handlers to custom element class instance methods
+        if ( ! name.startsWith('on') ) return;
+        value = value.trim();
+        value = value.replace(/\(event\)$/, '');
+        if ( ! value ) return;
+
+        // Perf note:
+          // Local and Parent are just optimizations to avoid if we can the
+          // getAncestor function call, which saves us a couple seconds in large documents
+        const Local = node[value] instanceof Function;
+        const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+        DEBUG && console.log({Local, Parent});
+        const Func = Local ? node[value] :
+          Parent ? node.getRootNode().host[value] :
+          null;
+        const path = Local ? LOCAL_PATH :
+          Parent ? PARENT_PATH : 
+          getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
+        ;
+
+        if ( !path || value.startsWith(path) ) return;
+
+        if ( name === 'onbond' ) {
+          if ( Func ) {
+            try {
+              Func(node);
+              //FIXME: should this actually be removed ? 
+              node.removeAttribute(name);
+            } catch(error) {
+              console.warn(`bond function error`, {error, name, value, node, originals, stateHolder, Func});
+            }
+          } else {
+            console.warn(`bond function Not dereferencable`, {name, value, node, originals, stateHolder});
+          }
+          return;
+        }
+
+        // Conditional logic explained:
+          // don't add a function call bracket if
+          // 1. it already has one
+          // 2. the reference is not a function
+        const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
+        node.setAttribute(name, `${path}${value}${ender}`);
+      }
+    }
+
+    function handleNewAttribute(name, value, {node}) {
+      value = value.trim();
+      if ( ! value ) return;
+
+      const [nameSpace, ...flags] = name.split(':');
+
+      if ( nameSpace !== NAMESPACE ) {
+        throw new TypeError(`Irregular namespace ${nameSpace}`);
+      }
+
+      const eventName = flags.pop();
+      const flagObj = flags.reduce((o, name) => (o[name] = true, o), {});
+
+      // Perf note:
+        // Local and Parent are just optimizations to avoid if we can the
+        // getAncestor function call, which saves us a couple seconds in large documents
+      const Local = node[value] instanceof Function;
+      const Parent = node.getRootNode()?.host?.[value] instanceof Function;
+      console.log({name, value, node, Local, Parent});
+      const path = Local ? LOCAL_PATH :
+        Parent ? PARENT_PATH : 
+        getAncestor(node.getRootNode()?.host?.getRootNode?.()?.host, value)
+      ;
+
+      if ( !path || value.startsWith(path) ) return;
+
+      // Conditional logic explained:
+        // don't add a function call bracket if
+        // 1. it already has one
+        // 2. the reference is not a function
+      const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
+      node.addEventListener(
+        eventName, 
+        new Function('event', `return ${path}${value}${ender}`), 
+        flagObj
+      );
+    }
+
+    function select(context, selector) {
+      try {
+        if ( USE_XPATH ) {
+          const results = [];
+          let xresult;
+          if ( context instanceof DocumentFragment ) {
+            for( const elContext of context.children ) {
+              if ( selector instanceof XPathExpression ) {
+                xresult = selector.evaluate(elContext, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+              } else {
+                xresult = document.evaluate(selector, elContext, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+              }
+              let node;
+              /* eslint-disable no-cond-assign */
+              while(node = xresult.iterateNext()) {
+                results.push(node);
+              } 
+              /* eslint-enable no-cond-assign */
+            }
+          } else {
+            if ( selector instanceof XPathExpression ) {
+              xresult = selector.evaluate(context, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+            } else {
+              xresult = document.evaluate(selector, context, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+            }
+            let node;
+            /* eslint-disable no-cond-assign */
+            while(node = xresult.iterateNext()) {
+              results.push(node);
+            }
+            /* eslint-enable no-cond-assign */
+          }
+          return results;
+        } else {
+          DEBUG && console.log('non xpath', selector);
+          return context.querySelectorAll ? context.querySelectorAll(selector) : [];
+        }
+      } catch(e) {
+        console.warn(e);
+      }
+    }
+
     async function install() {
+      DEBUG && (self.Start = new Date);
+      new Counter(document);
+      LoadChecker = () => document.counts.check();
+
+      self._states = [];
       Object.assign(globalThis, {
+        STATE,
+        CONFIG,
         F,
-        use, setState, patchState, cloneState, loaded, 
+        use, setState, getState, patchState, cloneState, loaded, 
         sleep, bangFig, bangLoaded, isMobile, trace,
         undoState, redoState, stateChanged, getViews, updateState,
         isUnset,  EMPTY, 
         dateString,
         runCode, schedule,
+        immediate,
         ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
 
@@ -1600,23 +1897,16 @@
         else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
       
         if ( CACHE.get(styleKey) instanceof Error ) { 
-          resp = `<style>
-            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
-              return e;
-            })}
+          resp = `
+          <style>
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
           </style>${text}` 
         } else {
           // inlining styles for increase speed */
-          resp = `<style>
-            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
-              return e;
-            })}
-            ${await fetchStyle(name).then(e => {
-              if ( e instanceof Error ) return `/* no ${name}/${CONFIG.styleFile} defined */`;
-              return e;
-            })}
+          resp = `
+          <style>
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
+            ${await fetchStyle(name)}
           </style>${text}`;
         }
         
@@ -1644,6 +1934,7 @@
         resp = new ReferenceError(`Fetch error: ${url}, ${r.statusText}`);
         throw resp;
       })
+      .then(e => e instanceof Error ? `/* no ${name}/${file} defined */` : e)
       .finally(async () => CACHE.set(key, await resp));
       
       return fileText;
@@ -1661,7 +1952,10 @@
     async function transformBangs(records) {
       for( const record of records ) {
         for( const node of record.addedNodes ) {
-          await findBangs(transformBang, node);
+          if ( node.nodeType !== Node.TEXT_NODE ) {
+            cookListeners(node);
+            await findBangs(transformBang, node);
+          }
         }
       }
     }
@@ -1711,37 +2005,46 @@
           } else return NodeFilter.FILTER_SKIP;
         }
       };
-      const iterator = document.createTreeWalker(root, Filter, Acceptor);
+      // FIXME: do we need to walk through shadows here?
+      const iterators = [];
       const replacements = [];
       const dependents = [];
 
-      // handle root node
-        // Note:
-          // it's a special case because it will be present in the iteration even if
-          // the NodeFilter would filter it out if it were not the root
-        let current = iterator.currentNode;
+      let iterator = document.createTreeWalker(root, Filter, Acceptor);
+      let current;
 
-        // Note:
-          // we need isBangTag here because a node that doesn't pass 
-          // Acceptor.accept will stop show up as the first currentNode
-          // in a tree iterator
-        if ( isBangTag(current) ) {
-          if ( !TRANSFORMING.has(current) ) {
-            TRANSFORMING.add(current);
-            const target = current;
-            replacements.push(() => transformBang(target));
-          }
-        }
+      iterators.push(iterator);
 
       // handle any descendents
         while (true) {
-          current = iterator.nextNode();
-          if ( ! current ) break;
+          current = iterator?.nextNode();
+          if ( ! current ) {
+            if ( iterators.length ) {
+              iterator = iterators.shift();
+              current = iterator.currentNode;
+              // Note:
+                // we need isBangTag here because a node that doesn't pass 
+                // Acceptor.accept will stop show up as the first currentNode
+                // in a tree iterator
+              if ( isBangTag(current) ) {
+                if ( !TRANSFORMING.has(current) ) {
+                  TRANSFORMING.add(current);
+                  const target = current;
+                  replacements.push(() => transformBang(target));
+                }
+              }
+              continue;
+            } else break;
+          }
 
-          // Note:
-            // a small optimization is replace isBangTag by the following check
-            // we don't need isBangTag here because it's already passed the 
-            // equivalent check in Acceptor.acceptNode
+          // handle root node
+            // Note:
+              // it's a special case because it will be present in the iteration even if
+              // the NodeFilter would filter it out if it were not the root
+            // Note:
+              // a small optimization is replace isBangTag by the following check
+              // we don't need isBangTag here because it's already passed the 
+              // equivalent check in Acceptor.acceptNode
           if ( current.nodeType === Node.COMMENT_NODE ) {
             if ( !TRANSFORMING.has(current) ) {
               TRANSFORMING.add(current);
@@ -1749,7 +2052,12 @@
               replacements.push(() => transformBang(target));
             }
           }
+
           dependents.push(current);
+
+          if ( current.shadowRoot instanceof ShadowRoot ) {
+            iterators.push(document.createTreeWalker(current.shadowRoot, Filter, Acceptor)); 
+          }
         }
 
       let i = 0;
@@ -1774,6 +2082,26 @@
       } else return;
     }
 
+
+    function cookListeners(root) {
+      const that = root.getRootNode().host;
+      DEBUG && console.log({root, that});
+      const listening = select(root, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
+      DEBUG && console.log({listening});
+      if ( USE_XPATH ) {
+        listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true}));
+      } else {
+        listening.forEach(node => that.handleAttrs(node.attributes, {node, originals: true}));
+      }
+
+      if ( USE_XPATH ) {
+        // new style event listeners (only with XPath)
+        const newListening = select(root, X_NEWLISTENING);
+        newListening.forEach(({name, value, ownerElement:node}) => handleNewAttribute(name, value, {node, originals: true}));
+      }
+    }
+
+
     function actualElement(node) {
       const el = node.nodeType === Node.COMMENT_NODE ? 
         node.linkedCustomElement 
@@ -1784,11 +2112,15 @@
       return el;
     }
 
+    // NOTE: I'll have to add auto-detected functions to the node
+    // before this point, so they can be found here
+    // but after (I think) vv does it's processing. (I hope we can do this with current flow)
     function getAncestor(node, value) {
       if ( node ) {
         const currentPath = [PARENT_PATH + ONE_HIGHER];
         while( node ) {
           if ( node[value] instanceof Function ) return currentPath.join(EMPTY);
+
           node = node.getRootNode().host;
           currentPath.push( 'getRootNode().host.' );
         }
@@ -1823,16 +2155,29 @@
 
     async function cook(markup, state) {
       let cooked = EMPTY;
-      try {
-        if ( !state._self ) {
+      if ( !state._self ) {
+        try {
           Object.defineProperty(state, '_self', {value: state});
+          //Object.defineProperty(state, 'state', {value: state});
+        } catch(e) {
+          say('warn!',
+            `Cannot add '_self' self-reference property to state. 
+              This enables a component to inspect the top-level state object it is passed.`
+          );
         }
-      } catch(e) {
-        say('warn!',
-          `Cannot add '_self' self-reference property to state. 
-            This enables a component to inspect the top-level state object it is passed.`
-        );
       }
+      if ( !state._host ) {
+        const _host = this;
+        try {
+          Object.defineProperty(state, '_host', {value: _host});
+        } catch(e) {
+          say('warn!',
+            `Cannot add '_host' self-reference property to component host. 
+              This enables a component to inspect its Shadow Host element`
+          );
+        }
+      }
+
       try {
         with(state) {
           cooked = await eval("(async function () { return await _FUNC`${{state}}"+markup+"`; }())");  
@@ -1946,6 +2291,14 @@
     function clone(o) {
       return JSON.parse(JS(o));
     }
-}());
 
+    function Replacer(key, value) {
+      const obj = this;
+      if ( typeof obj[key] === "function" ) {
+        return value.toString();
+      } else if ( value instanceof Node ) {
+        return `${value.nodeName}//${value.nodeValue || value.outerHTML || value.textContent}`;
+      } else return value;
+    }
+}());
 
