@@ -120,7 +120,7 @@ class Table extends Base {
     }
   }
 
-  fastUpdate() {
+  nofastUpdate() {
     const state = this.state;
     const cells = state.cells || state;
 
@@ -139,6 +139,8 @@ class Table extends Base {
     const entry = target.value.trim();
     const value = Table.getRealValue(entry);
     const key = host.dataset.key;
+
+    console.log({host, key, cells, that: this});
    
     if ( ! cells.cell[key] ) {
       cells.cell[key] = {key, value:'', formula:''}; 
@@ -155,6 +157,7 @@ class Table extends Base {
 
     await this.run(cells);
     setTimeout(() => target.scrollLeft = 0, 100);
+    console.log({cells});
     this.state = cells;
   }
 

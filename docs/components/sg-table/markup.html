@@ -1,5 +1,5 @@
 ${{key}}
-<sg-frame state=${_self} fill resize>
+<sg-frame state=${(console.warn('hey',{_self}), _self)} fill resize>
   <div class=box 
       b:passive:touchstart=Resize
       b:passive:pointerdown=Resize 
@@ -40,7 +40,7 @@ ${{key}}
             const cellKey = `${key}:${colName}${rowName}`;
             return await F`${{key:cellKey}}
           <td>
-            <!sg-cell data-key=${cellKey} state=${cell[cellKey]} />
+            <sg-cell data-key=${cellKey} state=${cell[cellKey]} ></sg-cell>
           </td>
           `}, {batchSize: 5})}
         </tr>

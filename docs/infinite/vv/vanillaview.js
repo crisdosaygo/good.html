@@ -10,7 +10,7 @@
     const attrskip = attrmarkup;
 
   // constants
-    const DEBUG             = false;
+    const DEBUG             = true;
     const NULLFUNC          = () => void 0;
     /* eslint-disable no-useless-escape */
     const KEYMATCH          = /(?:<!\-\-)?(key0.\d+)(?:\-\->)?/gm;

@@ -81,43 +81,20 @@
         ].map(name => (name.key = Math.random()+'', name)),
         selected: '',
       },
-      cells: {
-        key: Math.random().toFixed(18),
-        title: 'Cells (works!)',
-        sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-cells',
-        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
-        rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
-        selections: []
-      },
-      cells2: {
-        key: compKey,
-        title: 'Cells (works!)',
-        sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-table',
-        columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
-        rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
-        selections: []
-      },
     };
-    State.cells.cell = Object.fromEntries((function () {
-      const entries = [];
-      State.cells.columnNames.forEach(col => {
-        State.cells.rowNames.forEach(row => {
-          const key = `${col}${row}`;
-          const value = {key, value: '', formula: '', editFormula: false};
-          entries.push([key, value]);
-        });
-      });
-      return entries;
-    }()));
-    State.cells.cell.A1.value = 123;
-    State.cells.cell.B1.value = 456;
-    State.cells.cell.A2.formula = '= A1 * B1';
-    State.cells.cell.A2.editFormula = true;
+    const cells2 = {
+      key: compKey,
+      title: 'Cells (works!)',
+      sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-table',
+      columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
+      rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
+      selections: []
+    };
 
-    State.cells2.cell = Object.fromEntries((function () {
+    cells2.cell = Object.fromEntries((function () {
       const entries = [];
-      State.cells2.columnNames.forEach(col => {
-        State.cells2.rowNames.forEach(row => {
+      cells2.columnNames.forEach(col => {
+        cells2.rowNames.forEach(row => {
           const key = `${compKey}:${col}${row}`;
           const value = {key, value: '', formula: '', editFormula: false};
           entries.push([key, value]);
@@ -151,6 +128,7 @@
       ]
     }
     setState('multi', multi, {save:true});
+    setState('cells2', cells2, {save:true});
   });
 </script>
 <style>

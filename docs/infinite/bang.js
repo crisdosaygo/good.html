@@ -1,7 +1,7 @@
 /* eslint-disable no-setter-return, no-with, no-constant-condition, no-async-promise-executor */
 (function () {
   // constants, classes, config and state
-    const DEBUG = false;
+    const DEBUG = true;
     const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
     const NAMESPACE = 'b';
     const PIPELINE_REQUESTS = true;
@@ -129,7 +129,7 @@
         super();
         this.cookMarkup = async (markup, state) => {
           const _host = this;
-          console.group(`Component ${this.#name}`);
+          DEBUG && console.log(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state);
           console.log(`Component : ${this.#name}`);
           console.log(`State host: ${_host.name}`);
@@ -146,7 +146,7 @@
               console.warn(e);
             }
           });
-          console.groupEnd();
+          DEBUG && console.log();
           let shadow = this.shadowRoot;
           if ( ! shadow ) {
             const shadow = this.attachShadow(SHADOW_OPTS);
@@ -276,6 +276,7 @@
         return this.#dependents;
       }
 
+      //FIXME this has a problem
       updateIfChanged(state) {
         const {didChange} = stateChanged(state);
         if ( didChange ) {
@@ -1193,7 +1194,7 @@
       if ( ! state._top ) {
         Object.defineProperty(state, '_top', { value: _top });
       }
-
+      
       try {
         with(state) {
           cooked = await eval("(async function () { return await _FUNC`${{state,_host}}"+markup+"`; }())");  
@@ -1201,7 +1202,7 @@
         return cooked;
       } catch(error) {
         console.warn('cook', error);
-        say('error!', 'Template error', {markup, state, error});
+        say('error!', 'Template error', {markup, state, error, _host: this});
         throw error;
       }
     }

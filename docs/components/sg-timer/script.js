@@ -3,7 +3,7 @@ class Component extends Base {
     super();
     this.untilLoaded().then(async () => {
       const {state} = this;
-      this.startKeepingTime(state);
+      //this.startKeepingTime(state);
       this.state = state;
     });
   }
