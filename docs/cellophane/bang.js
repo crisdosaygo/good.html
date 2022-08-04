@@ -1,7 +1,7 @@
 /* eslint-disable no-setter-return, no-with, no-constant-condition, no-async-promise-executor */
 (function () {
   // constants, classes, config and state
-    const DEBUG = true;
+    const DEBUG = false;
     const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
     const NAMESPACE = 'b';
     const PIPELINE_REQUESTS = true;
