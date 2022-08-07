@@ -851,6 +851,10 @@
 
       let attr = node.getAttribute(name);
 
+      if ( node.matches('canvas') && name.includes(':') ) {
+        console.log('get attr', {name, newVal});
+      }
+
       let newAttrValue;
 
       if ( oldAttrVal === oldVal ) {
@@ -895,6 +899,10 @@
         }
       }
 
+      if ( node.matches('canvas') && name.includes(':') ) {
+        console.log('get attr', {name, newAttrValue});
+      }
+
       if ( attr !== newAttrValue ) {
         reliablySetAttribute(node, name, newAttrValue);
       }
@@ -910,14 +918,15 @@
 
       const oName = name;
       let modifiers;
-      if ( name.includes(':') ) {
-        ([name, ...modifiers] = name.split(':'));
+
+      if ( node.matches('canvas') && name.includes(':') ) {
+        console.log({name, value});
       }
 
       if ( modifiers ) {
-        modifiers = modifiers.map(m => ([m, true]));
+        modifiers = Object.fromEntries(modifiers.map(m => ([m, true])));
         DEBUG && console.warn("not handling modifiers currently", {node, name, value, modifiers});
-        //node.addEventListener(name, funcValue, Object.fromEntries(modifiers));
+        //node.addEventListener(name, funcValue, modifiers);
       }
 
       if ( CONFIG.EVENTS.includes('on'+name) ) {
@@ -943,6 +952,7 @@
       try {
         node.setAttribute(name,isUnset(value) ? name : value);
       } catch(e) {
+        console.warn(`error`, e, {node, name, value});
       }
       // if you set style like this is fucks it up
       if ( name in node && name !== 'style' ) {
