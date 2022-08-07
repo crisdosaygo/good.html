@@ -31,6 +31,7 @@
     let comp = 0;
     const NextComponent = () => `b${comp++}${Math.random().toString(36)}`;
     const F = _FUNC; 
+    const G = _GFUNC;
     const FUNC_CALL = /\);?$/;
     const MirrorNode = Symbol.for('[[MN]]');
     const DIV = document.createElement('div');
@@ -110,6 +111,7 @@
     let observer; // global mutation observer
     let systemKeys = 1;
     let _c$;
+    let _s$;
     let firstState;
 
     const BangBase = (name) => class Base extends HTMLElement {
@@ -123,6 +125,7 @@
       #names = new Map();
       #paths = new Map();
       #destructors = new Set();
+      #others;
       key;
 
       constructor() {
@@ -131,11 +134,11 @@
           const _host = this;
           DEBUG && console.log(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state);
-          console.log(`Component : ${this.#name}`);
-          console.log(`State host: ${_host.name}`);
-          console.log(`Will add ${this.#funcs.size} event handler functions`);
+          DEBUG && console.log(`Component : ${this.#name}`);
+          DEBUG && console.log(`State host: ${_host.name}`);
+          DEBUG && console.log(`Will add ${this.#funcs.size} event handler functions`);
           if ( _host.name !== this.#name ) {
-            console.info(`\tComponent and _host value differ`);
+            DEBUG && console.info(`\tComponent and _host value differ`);
           }
           this.#funcs.forEach(t => {
             try {
@@ -157,7 +160,7 @@
             this.#dependents = deps.map(node => node.untilVisible());
             this.cookListeners(shadow);
           } else {
-            console.log('already has shadow', this);
+            DEBUG && console.log('already has shadow', this);
             if ( this.needsRefresh ) {
               this.cookListeners(shadow);
               this.needsRefresh = false;
@@ -181,6 +184,20 @@
             }
           }
         }
+      }
+
+      prepareState() {
+        // set others to be merged into the with
+      }
+
+      get others() {
+        if ( ! this.#others ) return {}
+        return this.#others;
+      }
+
+      set others(newOthers) {
+        console.log(`setting others`, newOthers)
+        this.#others = newOthers;
       }
 
       get destructors() {
@@ -340,12 +357,12 @@
       }
 
       disconnectedCallback() {
-        console.log(`${this.name} disconnecting...`);
+        DEBUG && console.log(`${this.name} disconnecting...`);
         this.alreadyPrinted = false;
         this.loaded = false;
         this.destructors.forEach(d => {
           try {
-            console.log(`Running destructor`, d.toString());
+            DEBUG && console.log(`Running destructor`, d.toString());
             d();
           } catch(e) {
             console.warn(`Destructor for ${this.name} failed`, e, d);
@@ -407,7 +424,7 @@
     async function use(name) {
       if ( self.customElements.get(name) ) return;
 
-      console.log('using', name);
+      DEBUG && console.log('using', name);
 
       let component;
       await fetchScript(name)
@@ -603,7 +620,7 @@
 
       if ( ! firstState ) {
         firstState = state; 
-        console.log(`Set first state at key ${key}`, state);
+        DEBUG && console.log(`Set first state at key ${key}`, state);
       }
       
       return true;
@@ -788,7 +805,7 @@
 
       const {Func,host,path} = getAncestor(node, value);
 
-      console.log(node, {value, path});
+      DEBUG && console.log(node, {value, path});
 
       if ( !path || value.startsWith(path) ) return;
 
@@ -880,10 +897,12 @@
       });
 
       const module = globalThis.vanillaview || (await import('./vv/vanillaview.js'));
-      const {s} = module;
+      const {s,c} = module;
       const That = {STATE,CONFIG,StateKey,JS}; 
       _c$ = s.bind(That);
+      _s$ = c.bind(That);
       That._c$ = _c$;
+      That._s$ = _s$;
 
       if ( CONFIG.delayFirstPaintUntilLoaded ) {
         becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
@@ -1196,7 +1215,7 @@
       }
       
       try {
-        with(state) {
+        with({...state, ..._host.others}) {
           cooked = await eval("(async function () { return await _FUNC`${{state,_host}}"+markup+"`; }())");  
         }
         return cooked;
@@ -1210,6 +1229,12 @@
     async function _FUNC(strings, ...vals) {
       const s = Array.from(strings);
       const ret =  await _c$(s, ...vals);
+      return ret;
+    }
+
+    async function _GFUNC(strings, ...vals) {
+      const s = Array.from(strings);
+      const ret = await _s$(s, ...vals);
       return ret;
     }
 
@@ -1298,7 +1323,7 @@
   
     function trace(msg = EMPTY) {
       const tracer = new Error('Trace');
-      console.log(msg, 'Call stack', tracer.stack);
+      DEBUG && console.log(msg, 'Call stack', tracer.stack);
     }
 
     function dateString(date) {

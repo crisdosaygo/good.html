@@ -80,7 +80,7 @@
         ({state,_host} = v.shift());
         p.shift();
         v = await Promise.all(v.map(val => process(that, val, state, _host)));
-        const xyz = vanillaview(p,v);
+        const xyz = vanillaview(p,v, {_host});
         //xyz[Symbol.for('BANG-VV')] = true;
         DEBUG && console.log({state}, self.__state = state);
         return xyz;
@@ -88,7 +88,7 @@
         const laterFunc = async (state, _host) => {
           DEBUG && console.log({state}, self.__state = state);
           v = await Promise.all(v.map(val => process(that, val, state, _host)));
-          const xyz = vanillaview(p,v);
+          const xyz = vanillaview(p,v, {_host});
           //xyz[Symbol.for('BANG-VV')] = true;
           return xyz;
         };
@@ -99,11 +99,12 @@
     }
 
     export function c(p,...v) {
+      //console.error(`Using c (X) function. Not recommended`);
       return vanillaview(p,v, {useCache:false});
     }
 
   // main function (TODO: should we refactor?)
-    function vanillaview(p,v,{useCache:useCache=true}={}) {
+    function vanillaview(p,v,{useCache:useCache=true, _host}={}) {
       const retVal = {};
       let instance, cacheKey;
 
@@ -161,7 +162,18 @@
           cache[cacheKey] = retVal;
         }
         retVal.nodes.forEach(node => {
-          REMOVE_MAP.set(node, {ck:cacheKey, ik: instance.key+EMPTY});
+          const instanceKey = instance.key+EMPTY;
+          REMOVE_MAP.set(node, {ck:cacheKey, ik: instanceKey});
+          _host.destructors.add(() => {
+            console.log(`Destructor running for ${_host.name} to remove vv cache keys`, {cacheKey, instanceKey});
+            if ( cacheKey && instanceKey && instanceKey !== "undefined" ) {
+              if ( cache[cacheKey] ) {
+                cache[cacheKey].instances[instanceKey] = null;
+              }
+            } else if ( cacheKey ) {
+              cache[cacheKey] = null;
+            }
+          });
         });
       }
 
@@ -521,6 +533,14 @@
             const kill = REMOVE_MAP.get(n);
             if ( kill ) {
               killSet.add(JS(kill));
+              // NOTE:
+              // this next line is essential
+                // it checks which other VV fragments are descendents of the node being removed. And for each of those
+                // it adds the cache Keys of that fragment to the kill set, so their caches will also be killed
+                // this essential line prevents the re-rendering of cached components that are meant to be on-screen into 
+                // off-screen detached fragments, which occurs if we don't kill these caches, because their caches
+                // would indicate they need to be re-rendered at their insertion point, instad of re-created anew
+              const deps = [...REMOVE_MAP.entries()].forEach(([vvNode, k]) => n.contains(vvNode) && killSet.add(JS(k)));
             } else {
               DEBUG && console.warn(`No kill signature for`, n, REMOVE_MAP);
             }
@@ -529,7 +549,9 @@
             const {ck: cacheKey, ik: instanceKey} = JSON.parse(kill);
             try {
               if ( cacheKey && instanceKey && instanceKey !== "undefined" ) {
-                cache[cacheKey].instances[instanceKey] = null;
+                if ( cache[cacheKey] ) {
+                  cache[cacheKey].instances[instanceKey] = null;
+                }
               } else if ( cacheKey ) {
                 cache[cacheKey] = null;
               }
@@ -909,7 +931,7 @@
             return;
           }
         } else {
-          console.warn(`No host exists yet`);
+          DEBUG && console.warn(`No host exists yet`);
           if ( existingValue?.startsWith('this.') ) {
             console.log('Not running replacement again for', {node, name, oName, value, existingValue});
             DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
