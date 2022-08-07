@@ -796,22 +796,13 @@
 
       const eventName = flags.pop();
       const flagObj = Object.fromEntries(flags.map(f => [f, true]));
-      //const flagObj = flags.reduce((o, name) => (o[name] = true, o), {});
-      console.log({name, eventName, nameSpace, flags, flagObj});
-
-      //if ( value.startsWith('this') ) return;
 
       if ( node.getRootNode().host.paths.has(value) ) return;
-      //console.log('2', value, [...node.getRootNode().host.paths.keys()]);
 
       value = value.replace(/\(event\)$/, '');
       if ( ! value ) return;
 
       const {Func,host,path} = getAncestor(node, value);
-
-      if ( node.matches('canvas') && name.includes(':') ) {
-        console.log({Func, host, path, value, name});
-      }
 
       DEBUG && console.log(node, {value, path});
 

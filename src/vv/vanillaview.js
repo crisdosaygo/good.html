@@ -165,7 +165,7 @@
           const instanceKey = instance.key+EMPTY;
           REMOVE_MAP.set(node, {ck:cacheKey, ik: instanceKey});
           _host.destructors.add(() => {
-            console.log(`Destructor running for ${_host.name} to remove vv cache keys`, {cacheKey, instanceKey});
+            DEBUG && console.log(`Destructor running for ${_host.name} to remove vv cache keys`, {cacheKey, instanceKey});
             if ( cacheKey && instanceKey && instanceKey !== "undefined" ) {
               if ( cache[cacheKey] ) {
                 cache[cacheKey].instances[instanceKey] = null;
@@ -339,7 +339,6 @@
                 that.STATE.delete(stateKey);
                 const oKey = stateKey;
                 stateKey = new that.StateKey()+EMPTY;
-                console.log({oKey, stateKey});
               }
               that.STATE.set(stateKey, x);
               that.STATE.set(x, stateKey);
@@ -818,7 +817,6 @@
                 return O;
               }, {});
             }
-            console.log(eventName, funcVal, flags);
             node.removeEventListener(eventName, funcVal, flags); 
           } else {
             const index = externals.indexOf(funcVal);
@@ -850,11 +848,6 @@
       let {oldVal,node,index,name,val,lengths,oldAttrVal} = scope;
 
       let attr = node.getAttribute(name);
-
-      if ( node.matches('canvas') && name.includes(':') ) {
-        console.log('get attr', {name, newVal});
-      }
-
       let newAttrValue;
 
       if ( oldAttrVal === oldVal ) {
@@ -899,10 +892,6 @@
         }
       }
 
-      if ( node.matches('canvas') && name.includes(':') ) {
-        console.log('get attr', {name, newAttrValue});
-      }
-
       if ( attr !== newAttrValue ) {
         reliablySetAttribute(node, name, newAttrValue);
       }
@@ -918,10 +907,6 @@
 
       const oName = name;
       let modifiers;
-
-      if ( node.matches('canvas') && name.includes(':') ) {
-        console.log({name, value});
-      }
 
       if ( modifiers ) {
         modifiers = Object.fromEntries(modifiers.map(m => ([m, true])));
@@ -942,7 +927,6 @@
         } else {
           DEBUG && console.warn(`No host exists yet`);
           if ( existingValue?.startsWith('this.') ) {
-            console.log('Not running replacement again for', {node, name, oName, value, existingValue});
             DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
             return;
           }
