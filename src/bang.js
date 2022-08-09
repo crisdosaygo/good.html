@@ -2,6 +2,7 @@
 (function () {
   // constants, classes, config and state
     const DEBUG = false;
+    const SK_DEBUG = false;
     const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
     const NAMESPACE = 'b';
     const PIPELINE_REQUESTS = true;
@@ -58,6 +59,7 @@
     const History = [];
     const STATE = new Map();
     const CACHE = new Map();
+    const syskeys = new Map();
     const Waiters = new Map();
     const Started = new Set();
     const TRANSFORMING = new WeakSet();
@@ -412,6 +414,10 @@
 
     class StateKey extends String {
       constructor (keyNumber) {
+        if ( DEBUG || SK_DEBUG ) {
+          const stack = (new Error('state key')).stack;
+          self.syskeys.set(`system-key:${systemKeys+2}`, stack);
+        }
         if ( keyNumber == undefined ) super(`system-key:${systemKeys+=2}`); 
         else super(`client-key:${keyNumber}`);
       }
@@ -543,7 +549,7 @@
       const stateJSON = JS(state);
       STATE.delete(oStateJSON);
       STATE.set(key, state);
-      DEBUG && console.log({key});
+      DEBUG && console.log({key, state});
       const views = Dependents.get(oKey);
       if ( key.startsWith('system-key:') ) {
         try {
@@ -880,6 +886,7 @@
       LoadChecker = () => document.counts.check();
 
       self._states = [];
+      self.syskeys = syskeys;
       Object.assign(globalThis, {
         Dependents,
         STATE,

@@ -42,7 +42,9 @@
     const EMPTY = '';
     const {stringify:_STR} = JSON;
     const JS = o => _STR(o, Replacer, EMPTY);
-    const isVV  = x => x?.code === CODE && Array.isArray(x.nodes);
+    const isVV  = x => (x?.code === CODE || (x?.type && ( 
+        x.type === 'MarkupObject' || x.type === 'MarkupAttrObject' 
+      ))) && Array.isArray(x?.nodes);
     const NextFunc          = () => `f${FuncCounter++}` + (Math.random()*10).toString(36).replace('.', '_');
 
   // logging
