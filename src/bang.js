@@ -890,6 +890,7 @@
       Object.assign(globalThis, {
         Dependents,
         STATE,
+        CACHE,
         CONFIG,
         F,
         use, setState, getState, patchState, cloneState, loaded, 
@@ -934,6 +935,7 @@
       } else Started.add(key);
 
       const styleKey = `style${name}`;
+
       const baseUrl = `${CONFIG.componentsPath}/${name}`;
       if ( CACHE.has(key) ) {
         const markup = CACHE.get(key);
@@ -988,9 +990,9 @@
 
       const url = `${CONFIG.componentsPath}/${name ? name + '/' : EMPTY}${file}`;
       let resp;
-      const fileText = await pipeLinedFetch(url).then(r => { 
+      const fileText = await pipeLinedFetch(url).then(async r => { 
         if ( r.ok ) {
-          resp = r.text();
+          resp = await r.text();
           return resp;
         } 
         resp = new ReferenceError(`Fetch error: ${url}, ${r.statusText}`);

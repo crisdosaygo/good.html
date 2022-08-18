@@ -1,1323 +1,280 @@
-/* eslint-disable no-setter-return, no-with, no-constant-condition, no-async-promise-executor */
-(function () {
-  // constants, classes, config and state
-    const DEBUG = false;
-    const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
-    const NAMESPACE = 'b';
-    const PIPELINE_REQUESTS = true;
-    const RANDOM_SLEEP_ON_FIRST_PRINT = true;
-    const RESPONSIVE_MEDIATION = true;
-    const USE_XPATH = true;
-    const X_NS_ATTRS = `.//@*[starts-with(name(), '${NAMESPACE}:')]`;
-    const X_NEWLISTENING = document.createExpression(X_NS_ATTRS);
-    const XON_EVENT_ATTRS = `.//@*[starts-with(local-name(), 'on')]`;
-    const X_LISTENING = document.createExpression(XON_EVENT_ATTRS);
-    const OPTIMIZE = true;
-    const GET_ONLY = true;
-    const MOBILE = isMobile();
-    const GC_TIMEOUT = 10000;
-    //const GENERATOR = (function*(){yield}()).constructor;
-    const EMPTY = '';
-    const {stringify:_STR} = JSON;
-    const Reserved = new Set(['_self', '_host', '_top']);
-    const JS = o => _STR(o, Replacer, EMPTY);
-    const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
-    const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
-    const POS = 'beforeend';
-    const LOCAL_PATH = 'this.';
-    const PARENT_PATH = 'this.getRootNode().host.';
-    const ONE_HIGHER = 'getRootNode().host.';
-    const CALL_WITH_EVENT = '(event)';
-    let comp = 0;
-    const NextComponent = () => `b${comp++}${Math.random().toString(36)}`;
-    const F = _FUNC; 
-    const FUNC_CALL = /\);?$/;
-    const MirrorNode = Symbol.for('[[MN]]');
-    const DIV = document.createElement('div');
-    const path = location.pathname;
-    const CONFIG = {
-      htmlFile: 'markup.html',
-      scriptFile: 'script.js',
-      styleFile: 'style.css',
-      bangKey: '_bang_key',
-      componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}../components`,
-      allowUnset: true,
-      unsetPlaceholder: EMPTY,
-      EVENTS: `bond error load click pointerdown pointerup pointermove mousedown mouseup submit
-        mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
-        dragmove drag mouseover mouseout focus blur focusin focusout scroll
-        input change compositionstart compositionend text paste beforepaste select cut copy
-        keydown keyup keypress compositionupdate
-        contextmenu wheel
-      `.split(/\s+/g).filter(s => s.length).map(e => `[on${e}]`).join(','),
-      delayFirstPaintUntilLoaded: false,
-      capBangRatioAtUnity: false,
-      noHandlerPassthrough: false
-    }
-    const History = [];
-    const STATE = new Map();
-    const CACHE = new Map();
-    const Waiters = new Map();
-    const Started = new Set();
-    const TRANSFORMING = new WeakSet();
-    const Dependents = new Map();
-    const MAX_CONCURRENT_REQUESTS = 5;
-    const RequestPipeLine = new Map();
-    const RequestWaiting = [];
-    class Counter {
-      started = 0;
-      finished = 0;
-
-      constructor(root) {
-        root.counts = this;
-        this.root = root;
-      }
-
-      check() {
-        const {root} = this;
-        const isTopLevel = root === document;
-        let loaded = false;
-
-        if ( isTopLevel ) {
-          const noSwiftDescendents = root.querySelectorAll('.bang-el:not([lazy])').length === 0;
-          loaded = noSwiftDescendents;
-        } else {
-          const nonZeroCheck = this.started > 0;
-          const finishedCheck = this.finished >= this.started;
-          loaded = nonZeroCheck && finishedCheck;
-        }
-
-        return loaded;
-      }
-
-      start() {
-        if ( this.root == document ) say('log', 'Counting start');
-        this.started++;
-      }
-
-      finish() {
-        if ( this.root == document ) say('log', 'Counting finished');
-        this.finished++;
-      }
-    }
-    const SHADOW_OPTS = {mode:'open', delegatesFocus: true};
-    const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
-    const INSERT = 'insert';
-    const ALL_DEPS = {allDependents: true};
-    let LoadChecker;
-    let RequestId = 0;
-    let hindex = 0;
-    let observer; // global mutation observer
-    let systemKeys = 1;
-    let _c$;
-    let firstState;
-
-    const BangBase = (name) => class Base extends HTMLElement {
-      static #activeAttrs = ['state']; // we listen for changes to these attributes only
-      static get observedAttributes() {
-        return Array.from(Base.#activeAttrs);
-      }
-      #name = name;
-      #dependents = [];
-      #funcs = new Set();
-      #names = new Map();
-      #paths = new Map();
-      #destructors = new Set();
-      key;
-
-      constructor() {
-        super();
-        this.cookMarkup = async (markup, state) => {
-          const _host = this;
-          DEBUG && console.log(`Component ${this.#name}`);
-          const cooked = await cook.call(this, markup, state);
-          console.log(`Component : ${this.#name}`);
-          console.log(`State host: ${_host.name}`);
-          console.log(`Will add ${this.#funcs.size} event handler functions`);
-          if ( _host.name !== this.#name ) {
-            console.info(`\tComponent and _host value differ`);
-          }
-          this.#funcs.forEach(t => {
-            try {
-              const funcName = t(this);
-              DEBUG && console.log(`Applied automatic event handler function ${funcName} to component`, this);
-              this.#funcs.delete(t);
-            } catch(e) {
-              console.warn(e);
-            }
-          });
-          DEBUG && console.log();
-          let shadow = this.shadowRoot;
-          if ( ! shadow ) {
-            const shadow = this.attachShadow(SHADOW_OPTS);
-            observer.observe(shadow, OBSERVE_OPTS);
-            await cooked.to(shadow, INSERT);
-            // add dependents
-            const deps = await findBangs(transformBang, shadow, ALL_DEPS);
-            this.#dependents = deps.map(node => node.untilVisible());
-            this.cookListeners(shadow);
-          } else {
-            console.log('already has shadow', this);
-            if ( this.needsRefresh ) {
-              this.cookListeners(shadow);
-              this.needsRefresh = false;
-            }
-          }
-        }
-        this.markLoaded = async () => {
-          this.alreadyPrinted = true;
-          if ( ! this.loaded ) {
-            this.counts.finish();
-            const loaded = await this.untilLoaded();
-            if ( loaded ) {
-              this.loaded = loaded;
-              this.setVisible();
-              if ( ! this.isLazy ) {
-                setTimeout(() => document.counts.finish(), 0);
-              }
-            } else {
-              console.warn('Not loaded', this);
-              // right now this never happens
-            }
-          }
-        }
-      }
-
-      get destructors() {
-        return this.#destructors;
-      }
-
-      get paths() {
-        return this.#paths;
-      }
-
-      get names() {
-        return this.#names;
-      }
-
-      get funcs() {
-        return this.#funcs;
-      }
-
-      get name() {
-        return this.#name;
-      }
-
-      // BANG! API methods
-      async print() {
-        if ( !this.alreadyPrinted ) {
-          this.prepareVisibility();
-        }
-        const state = this.handleAttrs(this.attributes);
-        if ( OPTIMIZE ) {
-          const nextState = JS(state);
-          if ( this.alreadyPrinted && this.lastState === nextState ) {
-            return;
-          }
-          this.lastState = nextState;
-        }
-        return this.printShadow(state)
-      }
-
-      update() {
-        if ( this.fastUpdate ) {
-          return this.fastUpdate();
-        } else {
-          return this.print();
-        }
-      }
-
-      prepareVisibility() {
-        this.classList.add('bang-el');
-        this.counts.start();
-        if ( !this.isLazy ) {
-          document.counts.start();
-        }
-        this.classList.remove('bang-styled');
-        // we prefetch the style
-        fetchStyle(name).catch(err => {
-          say('warn', err);
-        });
-      }
-
-      async untilLoaded() {
-        const myDependentsLoaded = (await Promise.all(this.#dependents)).every(visible => visible);
-        const myContentLoaded = await becomesTrue(this.loadCheck, this.loadKey);
-        const styleCheck = await becomesTrue(() => this.styleSheetsImported());
-        DEBUG && console.log(new Date - self.Start);
-        return myContentLoaded && myDependentsLoaded && styleCheck;
-      }
-
-      async styleSheetsImported() {     
-        // just a very basic version that works with the way we write components now
-        // a single style import and a single stylesheet per component
-
-        // always first stylesheet is inserted by system (at top of markup template) 
-        // I think we can count on the above being true but not sure
-
-        const rules = this?.shadowRoot?.styleSheets?.[0]?.cssRules;
-        if ( rules ) {
-          const iRule = [...rules].find(rule => rule instanceof CSSImportRule);
-          if ( !iRule ) {
-            return true;
-          }
-          await becomesTrue(() => !!iRule?.styleSheet?.rules?.length);
-          return true;
-        }
-        return true;
-      }
-
-      async untilVisible() {
-        if ( this.isLazy ) return true;
-        return await becomesTrue(this.visibleCheck, this.visibleLoadKey);
-      }
-
-      get deps() {
-        return this.#dependents;
-      }
-
-      //FIXME this has a problem
-      updateIfChanged(state) {
-        const {didChange} = stateChanged(state);
-        if ( didChange ) {
-          const oKey = this.getAttribute('state');
-          const newKey = updateState(state);
-          DEBUG && console.log({didChange, oKey, newKey}, this);
-          const views = Dependents.get(this) || new Set();
-          views.add(this);
-          Dependents.set(newKey, views);
-          views.forEach(view => view.setAttribute('state', newKey));
-        }
-      }
-
-      setVisible() {
-        this.classList.add('bang-styled');
-      }
-
-      get state() {
-        const key = this.getAttribute('state');
-        return getState(key); //(key);
-      }
-
-      set state(newValue) {
-        const key = this.getAttribute('state');
-        if ( key.startsWith('system-key:') ) {
-          return this.updateIfChanged(this.state);
-        }
-        return setState(key, newValue);
-      }
-
-      // Web Components methods
-      attributeChangedCallback(name, oldValue) {
-        if ( name === 'state' && !isUnset(oldValue) ) {
-          this.update();
-        }
-      }
-
-      connectedCallback() {
-        new Counter(this);
-        this.loadCheck = () => this.counts.check();
-        this.visibleCheck = () => this.classList?.contains('bang-styled');
-        this.loadKey = Math.random().toString(36);
-        this.visibleLoadKey = Math.random().toString(36);
-        say('log',name, 'connected');
-        this.handleAttrs(this.attributes, {originals: true});
-        if ( this.hasAttribute('lazy') ) {
-          this.isLazy = true;
-          if ( this.hasAttribute('super') ) {
-            this.superLazy = true;
-            loaded().then(() => sleep(400*Math.random()).then(() => this.print()));
-          } else {
-            if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
-              sleep(160*Math.random()).then(() => this.print());
-            } else {
-              this.print();
-            }
-          }
-        } else {
-          this.print();
-        }
-      }
-
-      disconnectedCallback() {
-        console.log(`${this.name} disconnecting...`);
-        this.alreadyPrinted = false;
-        this.loaded = false;
-        this.destructors.forEach(d => {
-          try {
-            console.log(`Running destructor`, d.toString());
-            d();
-          } catch(e) {
-            console.warn(`Destructor for ${this.name} failed`, e, d);
-          }
-        });
-        this.needsRefresh = true;
-      }
-
-      // private methods
-      cookListeners(root) {
-        return cookListeners(root);
-      }
-
-      handleAttrs(attrs, {node, originals} = {}) {
-        const stateHolder = {};
-
-        if ( ! node ) node = this;
-
-        // we can optimize this method more, we only get attrs if originals == true
-        // otherwise we just get and process the single 'state' attr 
-        // this is a lot more performant
-        for( const {name,value} of attrs ) {
-          if ( isUnset(value) ) continue;
-          handleAttribute(name, value, {node, originals, stateHolder, host: this});
-        }
-
-        self._states.push(stateHolder.state);
-
-        return stateHolder.state;
-      }
-
-      printShadow(state) {
-        if ( ! state ) {
-          DEBUG && console.warn(`No state on component ${this.name}. Will pass empty state`);
-          DEBUG && console.dir(this);
-          //throw new TypeError(`No state`);
-          const stateKey = new StateKey()+''; 
-          state = {};
-          setState(stateKey, state);
-          this.setAttribute('state', stateKey);
-          DEBUG && console.log(`Assigned empty state to key ${stateKey}`);
-        }
-        return fetchMarkup(this.#name).then(markup => this.cookMarkup(markup, state))
-        .catch(err => DEBUG && say('warn!',err))
-        .finally(this.markLoaded);
-      }
-    };
-
-    class StateKey extends String {
-      constructor (keyNumber) {
-        if ( keyNumber == undefined ) super(`system-key:${systemKeys+=2}`); 
-        else super(`client-key:${keyNumber}`);
-      }
-    }
-
-  install();
-
-  // API
-    async function use(name) {
-      if ( self.customElements.get(name) ) return;
-
-      console.log('using', name);
-
-      let component;
-      await fetchScript(name)
-        .then(script => { // if there's a script that extends base, evaluate it to be component
-          const Base = BangBase(name);
-          const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;
-          try {
-            component = eval(Compose);
-          } catch(e) {
-            DEBUG && console.warn('use', e);
-            say('warn!',e, Compose, component)
-          }
-        }).catch(err => {  // otherwise if there is no such extension script, just use the Base class
-          DEBUG && say('log!', err);
-          component = BangBase(name);
-        });
-      
-      if ( self.customElements.get(name) ) return;
-
-      self.customElements.define(name, component);
-    }
-    
-    // run a map of a list of work with configurable breaks in between
-    // to let the main thread breathe at the same time 
-    async function schedule(list, func, {
-          batchSize: batchSize = 1,
-          yieldTime: yieldTime = 30,
-          strictSerial: strictSerial = true,
-          useFrame: useFrame = false
-        } = {}) {
-      // note list can be async iterable
-      const results = [];
-      let i = 0;
-      let currentBatch = 0;
-      for await ( const item of list ) {
-        let result;
-        if ( strictSerial ) {
-          result = await func(item, i);
-        } else {
-          result = func(item, i);
-        }
-        results.push(result);
-
-        if ( RESPONSIVE_MEDIATION ) {
-          i++;
-          currentBatch++;
-          if ( currentBatch < batchSize ) continue;
-          currentBatch = 0;
-
-          if ( useFrame ) {
-            await nextFrame();
-          } else if ( yieldTime > -1 ) {
-            await sleep(yieldTime);
-          }
-        }
-      }
-      return results;
-    }
-
-    function undoState(key, transform = x => x) {
-      while( hindex > 0 ) {
-        hindex -= 1;
-        if ( History[hindex].name === key ) {
-          setState(key, transform(History[hindex].value));
-          return true;
-        }
-      }
-      return false;
-    }
-
-    function redoState(key, transform = x => x) {
-      while( hindex < History.length - 1 ) {
-        hindex += 1;
-        if ( History[hindex].name === key ) {
-          setState(key, transform(History[hindex].value));
-          return true;
-        }
-      }
-      return false;
-    }
-
-    function bangFig(newConfig = {}) {
-      Object.assign(CONFIG, newConfig);
-    }
-
-    function immediate(f) {
-      if ( !(f instanceof Function) ) {
-        throw new TypeError(`immediate can only be called on a function. Recieved: ${f}`);
-      }
-
-      if ( f[IMMEDIATE] ) return;
-
-      Object.defineProperty(f, IMMEDIATE, {value: true, configurable: false, enumerable: false, writable: false});
-    }
-
-    function runCode(context, str) {
-      with(context) {
-        return eval(str); 
-      }
-    }
-
-    function stateChanged(obj) {
-      const key = STATE.get(obj);
-      const oStateJSON = STATE.get(key+'.json.last');
-      const stateJSON = JS(obj);
-      return {key, didChange: oStateJSON !== stateJSON, stateJSON, oStateJSON};
-    }
-
-    function updateState(state, key) {
-      key = key || STATE.get(state);
-      if ( ! key ) {
-        console.warn('no key for state', state);
-        throw new ReferenceError(`Key must exist to update state.`);
-      }
-      const oKey = key;
-      const oStateJSON = STATE.get(key+'.json.last');
-      const stateJSON = JS(state);
-      STATE.delete(oStateJSON);
-      STATE.set(key, state);
-      DEBUG && console.log({key});
-      const views = Dependents.get(oKey);
-      if ( key.startsWith('system-key:') ) {
-        try {
-          STATE.delete(key);
-          STATE.delete(key+'.json.last');
-          key = new StateKey()+'';
-          STATE.set(key, state);
-          STATE.set(state, key);
-          if ( views ) {
-            views.forEach(view => view.setAttribute('state', key));
-          }
-          DEBUG && console.log({key, oKey});
-        } catch(e) {
-          console.warn(e);
-        }
-      }
-      if ( views ) {
-        Dependents.set(key, views);
-      }
-      STATE.set(key+'.json.last', stateJSON);
-      STATE.set(stateJSON, key+'.json.last');
-      return key;
-    }
-
-    function getViews(obj) {
-      const key = STATE.get(obj);
-      const acquirers = Dependents.get(key);
-      if ( acquirers ) {
-        return Array.from(acquirers);
-      } else {
-        console.warn('No acquirers for key');
-        return [];
-      }
-    }
-
-    function setState(key, state, {
-      rerender: rerender = true, 
-      save: save = false
-    } = {}) {
-      const jss = JS(state);
-      DEBUG && console.log({jss, state});
-      let lk = key+'.json.last';
-      if ( GET_ONLY ) {
-        if ( !STATE.has(key) ) {
-          STATE.set(key, state);
-          STATE.set(state, key);
-          STATE.set(jss,lk);
-          STATE.set(lk,jss);
-        } else {
-          const oStateJSON = STATE.get(lk);
-          /*if ( stateChanged(oState).didChange ) {*/
-          if ( oStateJSON !== jss ) {
-            key = updateState(state, key);
-            DEBUG && console.log({key}, 'no where to put');
-          }
-        }
-      } else {
-        STATE.set(key, state);
-        STATE.set(state, key);
-        STATE.set(jss,lk);
-        STATE.set(lk,jss);
-      }
-
-      if ( save ) {
-        hindex = Math.min(hindex+1, History.length);
-        History.splice(hindex, 0, {name: key, value: clone(state)});
-      }
-
-      if ( rerender ) { // re-render only those components depending on that key
-        const acquirers = Dependents.get(key);
-        if ( acquirers ) acquirers.forEach(host => host.update());
-      }
-
-      if ( ! firstState ) {
-        firstState = state; 
-        console.log(`Set first state at key ${key}`, state);
-      }
-      
-      return true;
-    }
-
-    function getState(key) {
-      return STATE.get(key);
-    }
-
-    function patchState(key, state) {
-      return setState(key, state, {rerender: false});
-    }
-
-    function cloneState(key, getOnly = GET_ONLY) {
-      if ( getOnly ) return STATE.get(key);
-      if ( STATE.has(key) ) return clone(STATE.get(key));
-      else {
-        throw new ReferenceError(`State store does not have the key ${key}`);
-      }
-    }
-
-    async function loaded() {
-      return becomesTrue(LoadChecker);
-    }
-
-    async function bangLoaded() {
-      return becomesTrue(bangLoadedCheck);
-    }
-
-    function bangLoadedCheck() {
-      const c_defined = typeof _c$ === "function";
-      return c_defined;
-    }
-
-  // network pipelining (for performance)
-    async function pipeLinedFetch(...args) {
-      if ( !PIPELINE_REQUESTS ) return fetch(...args);
-      const key = nextRequestId();
-      const result = {args, started: new Date};
-      let pr;
-      if ( RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
-        pr = fetch(...args).catch(err => (say('log', err), `/* ${err} */`));
-        result.pr = pr;
-        RequestPipeLine.set(key, result);
-        const complete = r => {
-          const result = RequestPipeLine.get(key);
-          result.finished = new Date;
-          result.duration = result.finished - result.started;
-          RequestPipeLine.delete(key); 
-          if ( RequestWaiting.length && RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
-            const result = RequestWaiting.shift();
-            const req = fetch(...result.args);
-            req.then(complete).then(r => (result.resolve(r), r)).catch(e => (result.reject(e), e));
-            RequestPipeLine.set(key, result);
-          }
-          return r;
-        };
-        pr.then(complete);
-      } else {
-        let resolve, reject;
-        pr = new Promise((res,rej) => (resolve = res, reject = rej));
-        result.resolve = resolve;
-        result.reject = reject;
-        RequestWaiting.push(result);
-      }
-      return pr;
-    }
-
-    function nextRequestId() {
-      return `${RequestId++}${Math.random().toString(36)}`;
-    }
-
-  // helpers
-    function cookListeners(root) {
-      const that = root.getRootNode().host;
-      DEBUG && console.log({root, that});
-      const listening = select(root, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
-      DEBUG && console.log({listening});
-      if ( USE_XPATH ) {
-        listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true, host: that}));
-      } else {
-        listening.forEach(node => that.handleAttrs(node.attributes, {node, originals: true}));
-      }
-
-      if ( USE_XPATH ) {
-        // new style event listeners (only with XPath)
-        const newListening = select(root, X_NEWLISTENING);
-        newListening.forEach(({name, value, ownerElement:node}) => handleNewAttribute(name, value, {node, originals: true, host: that}));
-      }
-    }
-
-    function handleAttribute(name, value, {node, originals, stateHolder, host: Host} = {}) {
-      DEBUG && console.log({name, value, node, originals, stateHolder});
-      if ( name === 'state' ) {
-        const stateKey = value.trim(); 
-        const stateObject = getState(stateKey); // cloneState(stateKey);
-        
-        if ( isUnset(stateObject) ) {
-          console.warn(node);
-          self.STATE = STATE;
-          console.warn(new ReferenceError(`
-            <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.
-          `));
-          return;
-        }
-        
-        stateHolder.state = stateObject;
-
-        if ( originals ) {
-          let acquirers = Dependents.get(stateKey);
-          if ( ! acquirers ) {
-            acquirers = new Set();
-            Dependents.set(stateKey, acquirers);
-          }
-          acquirers.add(node);
-          Dependents.set(node, acquirers);
-        } else return;
-      } else if ( originals ) { // set event handlers to custom element class instance methods
-        if ( ! name.startsWith('on') ) return;
-        value = value.trim();
-
-        if ( node.getRootNode().host.paths.has(value) ) return;
-        //console.log('1', value, [...node.getRootNode().host.paths.keys()]);
-
-        value = value.replace(/\(event\)$/, '');
-        if ( ! value ) return;
-
-        //if ( value.startsWith('this.') ) return;
-
-        const {Func,host,path} = getAncestor(node, value);
-
-        if ( name === 'onbond' ) {
-          if ( Func ) {
-            DEBUG && console.log(`Dereference bond function`, Func, node);
-            try {
-              Func(node);
-              //FIXME: should this actually be removed ? 
-              //node.removeAttribute(name);
-            } catch(error) {
-              console.warn(`bond function error`, {error, name, value, node, originals, stateHolder, Func});
-            }
-          } else {
-            console.warn(`bond function Not dereferencable`, {name, value, node, originals, stateHolder});
-          }
-          return;
-        }
-
-        if ( !path || value.startsWith(path) ) return;
-
-        // Conditional logic explained:
-          // don't add a function call bracket if
-          // 1. it already has one
-          // 2. the reference is not a function
-        const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
-        const val = `${path}${value}${ender}`;
-        host.paths.set(val, Func); 
-        node.setAttribute(name, val);
-        DEBUG && console.log(`Adding destructor`, host, name);
-        if ( value.match(/^f\d+_/) ) {
-          host.destructors.add(() => node.removeAttribute(name));
-        }
-      }
-    }
-
-    function handleNewAttribute(name, value, {node, Host}) {
-      value = value.trim();
-      if ( ! value ) return;
-
-      const [nameSpace, ...flags] = name.split(':');
-
-      if ( nameSpace !== NAMESPACE ) {
-        throw new TypeError(`Irregular namespace ${nameSpace}`);
-      }
-
-      const eventName = flags.pop();
-      const flagObj = flags.reduce((o, name) => (o[name] = true, o), {});
-
-      //if ( value.startsWith('this') ) return;
-
-      if ( node.getRootNode().host.paths.has(value) ) return;
-      //console.log('2', value, [...node.getRootNode().host.paths.keys()]);
-
-      const {Func,host,path} = getAncestor(node, value);
-
-      console.log(node, {value, path});
-
-      if ( !path || value.startsWith(path) ) return;
-
-      // Conditional logic explained:
-        // don't add a function call bracket if
-        // 1. it already has one
-        // 2. the reference is not a function
-      const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
-      const val = `${path}${value}${ender}`;
-      host.paths.set(val, Func); 
-      const handler = new Function('event', `return ${val}`);
-      node.addEventListener(
-        eventName, 
-        handler,
-        flagObj
-      );
-      if ( value.match(/^f\d+_/) ) {
-        host.destructors.add(() => {
-          node.removeEventListener(
-            eventName, 
-            handler,
-            flagObj
-          );
-        });
-      }
-    }
-
-    function select(context, selector) {
-      try {
-        if ( USE_XPATH ) {
-          const results = [];
-          let xresult;
-          if ( context instanceof DocumentFragment ) {
-            for( const elContext of context.children ) {
-              if ( selector instanceof XPathExpression ) {
-                xresult = selector.evaluate(elContext, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
-              } else {
-                xresult = document.evaluate(selector, elContext, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-              }
-              let node;
-              /* eslint-disable no-cond-assign */
-              while(node = xresult.iterateNext()) {
-                results.push(node);
-              } 
-              /* eslint-enable no-cond-assign */
-            }
-          } else {
-            if ( selector instanceof XPathExpression ) {
-              xresult = selector.evaluate(context, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
-            } else {
-              xresult = document.evaluate(selector, context, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-            }
-            let node;
-            /* eslint-disable no-cond-assign */
-            while(node = xresult.iterateNext()) {
-              results.push(node);
-            }
-            /* eslint-enable no-cond-assign */
-          }
-          return results;
-        } else {
-          DEBUG && console.log('non xpath', selector);
-          return context.querySelectorAll ? context.querySelectorAll(selector) : [];
-        }
-      } catch(e) {
-        console.warn(e);
-      }
-    }
-
-    async function install() {
-      DEBUG && (self.Start = new Date);
-      new Counter(document);
-      LoadChecker = () => document.counts.check();
-
-      self._states = [];
-      Object.assign(globalThis, {
-        Dependents,
-        STATE,
-        CONFIG,
-        F,
-        use, setState, getState, patchState, cloneState, loaded, 
-        sleep, bangFig, bangLoaded, isMobile, trace,
-        undoState, redoState, stateChanged, getViews, updateState,
-        isUnset,  EMPTY, 
-        dateString,
-        runCode, schedule,
-        immediate,
-        ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
-      });
-
-      const module = globalThis.vanillaview || (await import('./vv/vanillaview.js'));
-      const {s} = module;
-      const That = {STATE,CONFIG,StateKey,JS}; 
-      _c$ = s.bind(That);
-      That._c$ = _c$;
-
-      if ( CONFIG.delayFirstPaintUntilLoaded ) {
-        becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
-      }
-
-      observer = new MutationObserver(transformBangs);
-      /* we are interested in bang nodes (which start as comments) */
-      observer.observe(document, OBSERVE_OPTS);
-      await findBangs(transformBang); 
-      
-      loaded().then(() => document.body.classList.add('bang-styled'));
-    }
-
-    async function fetchMarkup(name) {
-      // cache first
-        // we make any subsequent calls for name wait for the first call to complete
-        // otherwise we create many in parallel without benefitting from caching
-
-      const key = `markup:${name}`;
-
-      if ( Started.has(key) ) {
-        if ( ! CACHE.has(key) ) await cacheHasKey(key);
-      } else Started.add(key);
-
-      const styleKey = `style${name}`;
-      const baseUrl = `${CONFIG.componentsPath}/${name}`;
-      if ( CACHE.has(key) ) {
-        const markup = CACHE.get(key);
-        if ( CACHE.get(styleKey) instanceof Error ) { 
-          /*comp && comp.setVisible(); */
-        }
-        
-        // if there is an error style and we are still includig that link
-        // we generate and cache the markup again to omit such a link element
-        if ( CACHE.get(styleKey) instanceof Error && markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {
-          // then we need to set the cache for markup again and remove the link to the stylesheet which failed 
-        } else {
-          /* comp && comp.setVisible(); */
-          return markup;
-        }
-      }
-      
-      const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;
-      let resp;
-      const markupText = await pipeLinedFetch(markupUrl).then(async r => { 
-        let text = EMPTY;
-        if ( r.ok ) text = await r.text();
-        else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
-      
-        if ( CACHE.get(styleKey) instanceof Error ) { 
-          resp = `
-          <style>
-            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
-          </style>${text}` 
-        } else {
-          // inlining styles for increase speed */
-          resp = `
-          <style>
-            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
-            ${await fetchStyle(name)}
-          </style>${text}`;
-        }
-        
-        return resp;
-      }).finally(async () => CACHE.set(key, await resp));
-      return markupText;
-    }
-
-    async function fetchFile(name, file) {
-      const key = `${file}:${name}`;
-
-      if ( Started.has(key) ) {
-        if ( ! CACHE.has(key) ) await cacheHasKey(key);
-      } else Started.add(key);
-
-      if ( CACHE.has(key) ) return CACHE.get(key);
-
-      const url = `${CONFIG.componentsPath}/${name ? name + '/' : EMPTY}${file}`;
-      let resp;
-      const fileText = await pipeLinedFetch(url).then(r => { 
-        if ( r.ok ) {
-          resp = r.text();
-          return resp;
-        } 
-        resp = new ReferenceError(`Fetch error: ${url}, ${r.statusText}`);
-        throw resp;
-      })
-      .then(e => e instanceof Error ? `/* no ${name}/${file} defined */` : e)
-      .finally(async () => CACHE.set(key, await resp));
-      
-      return fileText;
-    }
-
-    async function fetchStyle(name) {
-      return fetchFile(name, CONFIG.styleFile);
-    }
-
-    async function fetchScript(name) {
-      return fetchFile(name, CONFIG.scriptFile);
-    }
-
-    // search and transform each added subtree
-    async function transformBangs(records) {
-      for( const record of records ) {
-        for( const node of record.addedNodes ) {
-          if ( node.nodeType !== Node.TEXT_NODE ) {
-            cookListeners(node);
-            await findBangs(transformBang, node);
-          }
-        }
-      }
-    }
-
-    function transformBang(current) {
-      const [name, data] = getBangDetails(current);
-
-      // replace the bang node (comment) with its actual custom element node
-      const actualElement = createElement(name, data);
-      current.linkedCustomElement = actualElement;
-      actualElement[MirrorNode] = current;
-      current.parentNode.replaceChild(actualElement, current);
-    }
-
-    async function findBangs(callback, root = document.documentElement, {
-          allDependents: allDependents = false,
-          batchSize: batchSize = 100,
-          yieldTime: yieldTime = 0,
-          useFrame: useFrame = true
-        } = {}) {
-      if ( root.noFindBang ) return allDependents ? [] : void 0;
-      const found = allDependents ? 
-        node => node.nodeType === Node.COMMENT_NODE || 
-          node.nodeType === Node.ELEMENT_NODE 
-        :
-        node => node.nodeType === Node.COMMENT_NODE
-      ;
-      const Filter = allDependents ? 
-        NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_ELEMENT
-        :
-        NodeFilter.SHOW_COMMENT
-      ;
-      const Details = allDependents ? 
-        getNodeDetails  
-        :
-        getBangDetails
-      ;
-      const Return = allDependents ? NodeFilter.FILTER_SKIP : NodeFilter.FILTER_REJECT;
-      const Acceptor = {
-        acceptNode(node) {
-          if ( found(node) ) {
-            const [name] = Details(node); 
-            if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
-            else return Return; 
-          } else if ( isDocument(node) ) {
-            return NodeFilter.FILTER_ACCEPT;
-          } else return NodeFilter.FILTER_SKIP;
-        }
-      };
-      // FIXME: do we need to walk through shadows here?
-      const iterators = [];
-      const replacements = [];
-      const dependents = [];
-
-      let iterator = document.createTreeWalker(root, Filter, Acceptor);
-      let current;
-
-      iterators.push(iterator);
-
-      // handle any descendents
-        while (true) {
-          current = iterator?.nextNode();
-          if ( ! current ) {
-            if ( iterators.length ) {
-              iterator = iterators.shift();
-              current = iterator.currentNode;
-              // Note:
-                // we need isBangTag here because a node that doesn't pass 
-                // Acceptor.accept will stop show up as the first currentNode
-                // in a tree iterator
-              if ( isBangTag(current) ) {
-                if ( !TRANSFORMING.has(current) ) {
-                  TRANSFORMING.add(current);
-                  const target = current;
-                  replacements.push(() => transformBang(target));
-                }
-              }
-              continue;
-            } else break;
-          }
-
-          // handle root node
-            // Note:
-              // it's a special case because it will be present in the iteration even if
-              // the NodeFilter would filter it out if it were not the root
-            // Note:
-              // a small optimization is replace isBangTag by the following check
-              // we don't need isBangTag here because it's already passed the 
-              // equivalent check in Acceptor.acceptNode
-          if ( current.nodeType === Node.COMMENT_NODE ) {
-            if ( !TRANSFORMING.has(current) ) {
-              TRANSFORMING.add(current);
-              const target = current;
-              replacements.push(() => transformBang(target));
-            }
-          }
-
-          dependents.push(current);
-
-          if ( current.shadowRoot instanceof ShadowRoot ) {
-            iterators.push(document.createTreeWalker(current.shadowRoot, Filter, Acceptor)); 
-          }
-        }
-
-      let i = 0;
-      while(replacements.length) {
-        replacements.pop()();
-        if ( RESPONSIVE_MEDIATION && allDependents ) {
-          i++;
-          if ( i < batchSize ) continue;
-          i = 0;
-          if ( useFrame ) {
-            await nextFrame();
-          } else {
-            await sleep(yieldTime);
-          }
-        }
-      }
-
-      if ( allDependents ) {
-        return dependents
-          .map(actualElement)
-          .filter(el => el && !el.hasAttribute('lazy'));
-      } else return;
-    }
-
-
-
-
-    function actualElement(node) {
-      const el = node.nodeType === Node.COMMENT_NODE ? 
-        node.linkedCustomElement 
-        : 
-        node 
-      ;
-      //console.log(node, el);
-      return el;
-    }
-
-    // NOTE: I'll have to add auto-detected functions to the node
-    // before this point, so they can be found here
-    // but after (I think) vv does it's processing. (I hope we can do this with current flow)
-    function getAncestor(node, value) {
-      const oNode = node;
-      let lastNode;
-      if ( node ) {
-        const currentPath = ['this.'];
-        while( node ) {
-          if ( node[value] instanceof Function ) {
-            const retVal = {Func: node[value], path: currentPath.join(EMPTY), oNode, host: node};
-            return retVal;
-          }
-          if ( node?.paths?.has(value) ) {
-            return { host: node, Func: node?.paths?.get(value), path: value };
-          }
-          currentPath.push( ONE_HIGHER );
-
-          lastNode = node;
-
-          node = node.getRootNode().host;
-        }
-      }
-      console.warn(`Error could not dereference function ${value} starting at original node:`, oNode);
-      console.warn(`Got as high as`, lastNode);
-      return {};
-    }
-
-    function isBangTag(node) {
-      return node.nodeType === Node.COMMENT_NODE && getBangDetails(node)[0].match(DOUBLE_BARREL);
-    }
-
-    function isDocument(node) {
-      return node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||
-        node.nodeType === Node.DOCUMENT_NODE
-      ;
-    }
-
-    function getBangDetails(node) {
-      const text = node.textContent.trim();
-      const [name, ...data] = text.split(/[\s\t]/g);
-      return [name.trim(), data.join(' ')];
-    }
-
-    function getNodeDetails(node) {
-      switch(node.nodeType) {
-        case Node.COMMENT_NODE:
-          return getBangDetails(node);
-        case Node.ELEMENT_NODE:
-          return [node.localName];
-      }
-    }
-
-    async function cook(markup, state) {
-      let cooked = EMPTY;
-      const _top = firstState;
-      const _self = state;
-      const _host = this;
-
-      if ( ! state._top ) {
-        Object.defineProperty(state, '_top', { value: _top });
-      }
-      
-      try {
-        with(state) {
-          cooked = await eval("(async function () { return await _FUNC`${{state,_host}}"+markup+"`; }())");  
-        }
-        return cooked;
-      } catch(error) {
-        console.warn('cook', error);
-        say('error!', 'Template error', {markup, state, error, _host: this});
-        throw error;
-      }
-    }
-
-    async function _FUNC(strings, ...vals) {
-      const s = Array.from(strings);
-      const ret =  await _c$(s, ...vals);
-      return ret;
-    }
-
-    function createElement(name, data) {
-      return toDOM(`<${name} ${data}></${name}>`).firstElementChild;
-    }
-
-    function toDOM(str) {
-      DIV.replaceChildren();
-      DIV.insertAdjacentHTML(POS, `<template>${str}</template>`);
-      return DIV.firstElementChild.content;
-    }
-
-    async function becomesTrue(check, key) {
-      const WaitKey = key || check;
-      let waiters = Waiters.get(WaitKey);
-
-      if ( ! waiters ) {
-        waiters = _becomesTrue(check).then(checkResult => {
-          setTimeout(() => Waiters.delete(WaitKey), GC_TIMEOUT);
-          return checkResult; 
-        });
-        Waiters.set(WaitKey, waiters);
-      }
-      const pr = new Promise(resolve => waiters.then(resolve));
-      return pr;
-    }
-
-    async function _becomesTrue(check) {
-      return new Promise(async res => {
-        while(true) {
-          await nextFrame();
-          const v = await check();
-          if ( v ) break;
-        }
-        res(true);
-      });
-    }
-
-    // this is to optimize using becomesTrue so we don't start a new timer
-    // for every becomesTrue function call (in the case of the cache check, anyway)
-    // we can use this pattern to apply to other becomesTrue calls like loaded
-    async function cacheHasKey(key) {
-      const cacheKey = `cache:${key}`;
-      const funcKey = `checkFunc:${key}`;
-      let checkFunc = Waiters.get(funcKey);
-      if ( ! checkFunc ) {
-        checkFunc = () => CACHE.has(key);
-        Waiters.set(funcKey,checkFunc);
-      }
-      return becomesTrue(checkFunc, cacheKey);
-    }
-
-    async function sleep(ms) {
-      return new Promise(res => setTimeout(res, ms));
-    }
-    
-    async function nextFrame() {
-      return new Promise(res => requestAnimationFrame(res));
-    }
-
-    function isUnset(x) {
-      return x === undefined || x === null;
-    }
-
-    function say(mode, ...stuff) {
-      (DEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && !LIGHTHOUSE && alert(`${mode}: ${stuff.join('\n')}`);
-      (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!',EMPTY)](...stuff);
-    }
-
-    function isMobile() {
-      const toMatch = [
-        /Android/i,
-        /webOS/i,
-        /iPhone/i,
-        /iPad/i,
-        /iPod/i,
-        /BlackBerry/i,
-        /Windows Phone/i
-      ];
-
-      return toMatch.some((toMatchItem) => {
-        return navigator.userAgent.match(toMatchItem);
-      });
-    }
-  
-    function trace(msg = EMPTY) {
-      const tracer = new Error('Trace');
-      console.log(msg, 'Call stack', tracer.stack);
-    }
-
-    function dateString(date) {
-      const offset = date.getTimezoneOffset()
-      date = new Date(date.getTime() - (offset*60*1000))
-      return date.toISOString().split('T')[0];
-    }
-
-    function clone(o) {
-      return JSON.parse(JS(o));
-    }
-
-    function Replacer(key, value) {
-      const obj = this;
-      if ( typeof obj[key] === "function" ) {
-        return value.toString();
-      } else if ( value instanceof Node ) {
-        return `${value.nodeName}//${value.nodeValue || value.outerHTML || value.textContent}`;
-      } else return value;
-    }
-}());
-
+/*
+ * ATTENTION: The "eval" devtool has been used (maybe by default in mode: "development").
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+/******/ (function() { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/cat.bang.js":
+/*!*************************!*\
+  !*** ./src/cat.bang.js ***!
+  \*************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+eval("(function (global, factory) {\n   true ? factory(exports) :\n  0;\n})(this, (function (exports) {\n  // eslint directives\n    /* eslint-disable no-empty */\n  // vanillaview.js\n    // imports\n      const CODE = Math.random().toFixed(18);\n      const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);\n\n    // backwards compatible alias\n      const skip = markup;\n      const attrskip = attrmarkup;\n      const NULLFUNC          = () => void 0;\n      /* eslint-disable no-useless-escape */\n      const KEYMATCH          = /(?:<!\\-\\-)?(key0.\\d+)(?:\\-\\->)?/gm;\n      /* eslint-enable no-useless-escape */\n      const ATTRMATCH         = /\\w+=/;\n      const JOINER            = '<link rel=join>';\n      const KEYLEN            = 20;\n      const XSS               = () => `Possible XSS / object forgery attack detected. ` +\n                                `Object code could not be verified.`;\n      const OBJ               = x => ({message:`Object values not allowed here.`, x});\n      const UNSET             = () => `Unset values not allowed here.`;\n      const INSERT            = () => `Error inserting template into DOM. ` +\n        `Position must be one of: ` +\n        `replace, beforebegin, afterbegin, beforeend, innerhtml, afterend`;\n      const NOTFOUND          = loc => `Error inserting template into DOM. ` +\n        `Location ${loc} was not found in the document.`;\n      const MOVE              = new class {\n        beforeend   (frag,elem) { elem.appendChild(frag); }\n        beforebegin (frag,elem) { elem.parentNode.insertBefore(frag,elem); }\n        afterend    (frag,elem) { elem.parentNode.insertBefore(frag,elem.nextSibling); }\n        replace     (frag,elem) { elem.parentNode.replaceChild(frag,elem); }\n        afterbegin  (frag,elem) { elem.insertBefore(frag,elem.firstChild); }\n        innerhtml   (frag,elem) { elem.replaceChildren(); elem.appendChild(frag); }\n        insert      (frag,node) { node.replaceChildren(frag); }\n      };\n      const REMOVE_MAP        = new Map();\n      const DIV               = document.createElement('div');\n      const POS               = 'beforeend';\n      const EMPTY = '';\n      const {stringify:_STR} = JSON;\n      const JS = o => _STR(o, Replacer, EMPTY);\n      const isVV  = x => (x?.code === CODE || (x?.type && ( \n          x.type === 'MarkupObject' || x.type === 'MarkupAttrObject' \n        ))) && Array.isArray(x?.nodes);\n      const NextFunc          = () => `f${FuncCounter++}` + (Math.random()*10).toString(36).replace('.', '_');\n\n    // logging\n      //globalThis.onerror = (...v) => (console.log(v, v[0]+EMPTY, v[4] && v[4].message, v[4] && v[4].stack), true);\n\n    // type functions\n      const isKey             = v => !!v && (typeof v.key === 'string' || typeof v.key === 'number') && Object.getOwnPropertyNames(v).length <= 2;\n\n    // state\n      let FuncCounter = 10;\n\n    // cache \n      const cache = {};\n      // deux\n\n    // main exports \n      Object.assign(s,{attrskip,skip,attrmarkup,markup,guardEmptyHandlers,die});\n      Object.assign(globalThis, {vanillaview: {c, s}}); \n\n      async function s(p,...v) {\n        const that = this;\n        let SystemCall = false;\n        let state, _host;\n\n        if ( p[0].length === 0 && v[0].state ) {\n          // by convention (see how we construct the template that we tag with FUNC)\n          // the first value is the state object when our system calls it\n          SystemCall = true;\n        }\n\n        v.find(isKey) || {};\n\n        if ( SystemCall ) {\n          ({state,_host} = v.shift());\n          p.shift();\n          v = await Promise.all(v.map(val => process(that, val, state, _host)));\n          const xyz = vanillaview(p,v, {_host});\n          return xyz;\n        } else {\n          const laterFunc = async (state, _host) => {\n            v = await Promise.all(v.map(val => process(that, val, state, _host)));\n            const xyz = vanillaview(p,v, {_host});\n            //xyz[Symbol.for('BANG-VV')] = true;\n            return xyz;\n          };\n          laterFunc[IMMEDIATE] = true;\n          //laterFunc[Symbol.for('BANG-VV')] = true;\n          return laterFunc;\n        }\n      }\n\n      function c(p,...v) {\n        //console.error(`Using c (X) function. Not recommended`);\n        return vanillaview(p,v, {useCache:false});\n      }\n\n    // main function (TODO: should we refactor?)\n      function vanillaview(p,v,{useCache:useCache=true, _host}={}) {\n        const retVal = {};\n        let instance, cacheKey;\n\n        v = v.map(guardAndTransformVal);\n\n        if ( useCache ) {\n          (instance = (v.find(isKey) || {}));\n          cacheKey = p.join(JOINER);\n          const {cached,firstCall} = isCached(cacheKey,v,instance);\n         \n          if ( ! firstCall ) {\n            cached.update(v);\n            return cached;\n          } else {\n            retVal.oldVals = Array.from(v);\n          }\n        } else {\n          retVal.oldVals = Array.from(v);\n        }\n        \n        // compile the template into an updater\n\n        p = [...p]; \n        const vmap = {};\n        const V = v.map(replaceValWithKeyAndOmitInstanceKey(vmap));\n        const externals = [];\n        let str = EMPTY;\n\n        while( p.length > 1 ) str += p.shift() + V.shift();\n        str += p.shift();\n\n        const frag = toDOM(str);\n        // FIXME: do we need to walk through shadows here?\n        const walker = document.createTreeWalker(frag, NodeFilter.SHOW_ALL);\n\n        do {\n          makeUpdaters({walker,vmap,externals});\n        } while(walker.nextNode())\n\n        Object.assign(retVal, {\n          externals,\n          v:Object.values(vmap),\n          cacheKey,\n          instance,\n          to,\n          update,\n          code:CODE,\n          nodes:Array.from(frag.childNodes)\n        });\n\n        if ( useCache ) {\n          if ( instance.key !== undefined ) {\n            cache[cacheKey].instances[instance.key] = retVal;\n          } else {\n            cache[cacheKey] = retVal;\n          }\n          retVal.nodes.forEach(node => {\n            const instanceKey = instance.key+EMPTY;\n            REMOVE_MAP.set(node, {ck:cacheKey, ik: instanceKey});\n            _host.destructors.add(() => {\n              if ( cacheKey && instanceKey && instanceKey !== \"undefined\" ) {\n                if ( cache[cacheKey] ) {\n                  cache[cacheKey].instances[instanceKey] = null;\n                }\n              } else if ( cacheKey ) {\n                cache[cacheKey] = null;\n              }\n            });\n          });\n        }\n\n        return retVal;\n      }\n\n    // bang integration functions (modified from bang versions)\n      async function process(that, x, state, _host) {\n        if ( typeof x === 'string' ) return x;\n        else \n\n        if ( typeof x === 'number' ) return x+EMPTY;\n        else\n\n        if ( typeof x === 'boolean' ) return x+EMPTY;\n        else\n\n        if ( x instanceof Date ) return x+EMPTY;\n        else\n\n        if ( isUnset(x) ) {\n          if ( CONFIG.allowUnset ) return CONFIG.unsetPlaceholder || EMPTY;\n          else {\n            throw new TypeError(`Value cannot be unset, was: ${x}`);\n          }\n        }\n        else\n\n        if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state, _host);\n        else\n\n        if ( x instanceof Element ) return x.outerHTML;\n        else\n\n        if ( x instanceof Node ) return x.textContent;\n        else \n\n        if ( isVV(x) ) {\n          return {code:CODE, externals: x.externals, nodes: x.nodes};\n        }\n\n        const isArray     = Array.isArray(x);\n        const isVVArray   = isArray && (x.length === 0 || isVV(x[0]));\n\n        if ( isIterable(x) ) {\n          if ( isVVArray ) {\n            return join(x);\n          // is a func array ?\n          } else if ( (x[0] instanceof Function) && ! x[0][IMMEDIATE] ) {\n            const character = funcCharacter(...x);\n            if ( _host.names.has(character) ) {\n              const {func: existingFunc, name: existingName} = _host.names.get(character);\n              if ( existingName ) {\n                _host.funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));\n                return existingName;\n              }\n            }\n            const randomName = NextFunc();\n\n            const func = (\n              function(ev) {\n                for( const fun of x ) {\n                  try {\n                    fun(ev);\n                  } catch(e) {\n                    console.warn(`Handler in func array failed`, {fun, e, ev, x});\n                  }\n                }\n              }\n            );\n\n            _host.names.set(character, {name:randomName, func});\n            _host.funcs.add(component => (component[randomName] = func, randomName));\n            return `${randomName}(event)`;\n          } else if ( x[0] instanceof Element || x[0] instanceof Node ) {\n            return {code:CODE, externals: [], nodes: x};\n          } else {\n            // if an Array or iterable is given then\n            // its values are recursively processed via this same function\n            return process(that, await Promise.all(\n              (\n                await Promise.all(Array.from(x)).catch(e => e+EMPTY)\n              ).map(v => process(that, v, state, _host))\n            ), state, _host);\n          }\n        }\n\n        const isVVK = isKey(x);\n        const isMAO = x.code === CODE && typeof x.str === \"string\";\n        if ( isVVK || isMAO || isVV(x) ) {\n          return x; // let vanillaview guardAndTransformVal handle\n        }\n\n        else \n\n        if ( x[IMMEDIATE] && Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {\n          return await process(that, await x(state, _host), state, _host);\n        }\n        else\n\n        if ( x[IMMEDIATE] && (x instanceof Function) ) return x(state, _host);\n        else // it's an object, of some type \n\n        if ( x instanceof Function ) {\n          const character = funcCharacter(x);\n          if ( _host.names.has(character) ) {\n            const {func: existingFunc, name: existingName} = _host.names.get(character);\n            if ( existingName ) {\n              _host.funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));\n              return existingName;\n            }\n          }\n          const name = NextFunc();\n          _host.names.set(character, {name, func:x});\n          _host.funcs.add(component => (component[name] = x, name)); \n          return `${name}(event)`;\n        }\n\n        else\n        {\n          // State store     \n            /* so we assume an object is state and save it */\n            /* to the global state store */\n            /* which is two-sides so we can find a key */\n            /* given an object. This avoid duplicates */\n          let stateKey;\n\n          // own keys\n            // an object can specify it's own state key\n            // to provide a single logical identity for a piece of state that may\n            // be represented by many objects\n\n          if ( Object.prototype.hasOwnProperty.call(x, CONFIG.bangKey) ) {\n            stateKey = new that.StateKey(x[CONFIG.bangKey])+EMPTY;\n            // in that case, replace the previously saved object with the same logical identity\n            const oldX = that.STATE.get(stateKey);\n            that.STATE.delete(oldX);\n\n            that.STATE.set(stateKey, x);\n            that.STATE.set(x, stateKey);\n          } \n\n          else  /* or the system can come up with a state key */\n\n          {\n            const jsx = JS(x);\n            if ( that.STATE.has(x) || that.STATE.has(jsx) ) {\n              stateKey = (that.STATE.get(x) || that.STATE.get(jsx)).replace(/.json.last$/,'');\n              const lastXJSON = that.STATE.get(stateKey+'.json.last');\n              if ( jsx !== lastXJSON ) {\n                that.STATE.delete(lastXJSON); \n                if ( stateKey.startsWith('system-key') ) {\n                  that.STATE.delete(stateKey);\n                  stateKey = new that.StateKey()+EMPTY;\n                }\n                that.STATE.set(stateKey, x);\n                that.STATE.set(x, stateKey);\n              }\n            } else {\n              stateKey = new that.StateKey()+EMPTY;\n              //console.log({oKey, stateKey, block2:true, jsx});\n              that.STATE.set(stateKey, x);\n              that.STATE.set(x, stateKey);\n              /*\n                _host.funcs.add(component => {\n                  let aq = Dependents.get(stateKey);\n                  if ( ! aq ) {\n                    aq = new Set();\n                    Dependents.set(stateKey, aq);\n                  }\n                  aq.add(component);\n                });\n              */\n            }\n            that.STATE.set(jsx, stateKey+'.json.last');\n            that.STATE.set(stateKey+'.json.last', jsx);\n          }\n\n          stateKey += EMPTY;\n          return stateKey;\n        }\n      }\n\n      function funcCharacter(...x) {\n        return `${x.map(f => f.toString()).join(';')}`; \n      }\n\n      function isIterable(y) {\n        if ( y === null ) return false;\n        return y[Symbol.iterator] instanceof Function;\n      }\n\n      function isUnset(x) {\n        return x === undefined || x === null;\n      }\n\n    // to function\n      function to(location, options) {\n        const position = (options || 'replace').toLocaleLowerCase();\n        const frag = document.createDocumentFragment();\n        this.nodes.forEach(n => frag.appendChild(n));\n        const isNode = location instanceof Node;\n        const elem = isNode ? location : document.querySelector(location);\n        try {\n          MOVE[position](frag,elem);\n        } catch(e) {\n          switch(e.constructor && e.constructor.name) {\n            case \"DOMException\":      die({error: INSERT()});             break;\n            case \"TypeError\":         die({error: NOTFOUND(location)});   break; \n            default:                  throw e;\n          }\n        }\n        while(this.externals.length) {\n          this.externals.shift()();\n        }\n      }\n\n    // update functions\n      function makeUpdaters({walker,vmap,externals}) {\n        const node = walker.currentNode;\n        if ( node.shadowRoot instanceof ShadowRoot ) {\n          throw new TypeError(`Shadow not supported here currently`);\n        }\n        switch( node.nodeType ) {\n          case Node.ELEMENT_NODE:\n            handleElement({node,vmap,externals}); break;\n          case Node.COMMENT_NODE:\n          case Node.TEXT_NODE:\n            handleNode({node,vmap,externals}); break;\n        }\n      }\n\n    // debug stuff\n      const Replacers = new Map();\n    // end debug stuff\n\n      function handleNode({node,vmap,externals}) {\n        const lengths = [];\n        const text = node.nodeValue; \n        let result = KEYMATCH.exec(text);\n        while ( result ) {\n          const {index} = result;\n          const key = result[1];\n          const val = vmap[key];\n          const replacer = makeNodeUpdater({node,index,lengths,val});\n          const wrappedReplacer = () => {\n            try {\n              replacer(val.val);\n            } catch(error) {\n              console.warn(`Error in replacer for key ${key}`, {val, error});\n            }\n            Replacers.delete(key);\n          };\n          externals.push(wrappedReplacer);\n          Replacers.set(key, wrappedReplacer);\n          val.replacers.push( replacer );\n          result = KEYMATCH.exec(text);\n        }\n      }\n\n      // node functions\n        function makeNodeUpdater(nodeState) {\n          const {node} = nodeState;\n          const scope = Object.assign({}, nodeState, {\n            oldVal: {length: KEYLEN},\n            oldNodes: [node],\n            lastAnchor: node,\n          });\n          return (newVal) => {\n            if ( scope.oldVal == newVal ) return;\n            scope.val.val = newVal;\n            switch(getType(newVal)) {\n              case \"vanillaviewobject\":\n                handleMarkupInNode(newVal, scope); break;\n              default:\n                handleTextInNode(newVal, scope); break;\n            }\n          };\n        }\n\n        function handleMarkupInNode(newVal, state) {\n          let {oldNodes,lastAnchor} = state;\n          if ( newVal.nodes.length ) {\n            if ( sameOrder(oldNodes,newVal.nodes) ) ; else {\n              {\n                const insertable = [];\n                Array.from(newVal.nodes).forEach(node => {\n                  const inserted = document.contains(node.ownerDocument);\n                  if ( ! inserted ) {\n                    insertable.push(node);\n                  } else {\n                    while( insertable.length ) {\n                      const insertee = insertable.shift();\n                      node.parentNode.insertBefore(insertee, node);\n                    }\n                  }\n                });\n                while ( insertable.length ) {\n                  const insertee = insertable.shift();\n                  lastAnchor.parentNode.insertBefore(insertee,lastAnchor);\n                }\n                state.lastAnchor = newVal.nodes[newVal.nodes.length-1];\n              }\n            }\n          } else {\n            const placeholderNode = summonPlaceholder(lastAnchor);\n            lastAnchor.parentNode.insertBefore(placeholderNode,lastAnchor.nextSibling);\n            state.lastAnchor = placeholderNode;\n          }\n          // MARK: Unbond event might be relevant here.\n          // if nodes are not included we can just remove them\n          const dn = diffNodes(oldNodes,newVal.nodes);\n          if ( dn.size ) {\n            const f = document.createDocumentFragment();\n            const killSet = new Set();\n            dn.forEach(n => {\n              f.appendChild(n);\n              if ( n.linkedCustomElement ) {\n                f.appendChild(n.linkedCustomElement);\n              }\n              if ( n.nodeType === Node.COMMENT_NODE && n.textContent.match(/key\\d+/) ) return;\n              const kill = REMOVE_MAP.get(n);\n              if ( kill ) {\n                killSet.add(JS(kill));\n                // NOTE:\n                // this next line is essential\n                  // it checks which other VV fragments are descendents of the node being removed. And for each of those\n                  // it adds the cache Keys of that fragment to the kill set, so their caches will also be killed\n                  // this essential line prevents the re-rendering of cached components that are meant to be on-screen into \n                  // off-screen detached fragments, which occurs if we don't kill these caches, because their caches\n                  // would indicate they need to be re-rendered at their insertion point, instad of re-created anew\n                [...REMOVE_MAP.entries()].forEach(([vvNode, k]) => n.contains(vvNode) && killSet.add(JS(k)));\n              }\n            });\n            killSet.forEach(kill => {\n              const {ck: cacheKey, ik: instanceKey} = JSON.parse(kill);\n              try {\n                if ( cacheKey && instanceKey && instanceKey !== \"undefined\" ) {\n                  if ( cache[cacheKey] ) {\n                    cache[cacheKey].instances[instanceKey] = null;\n                  }\n                } else if ( cacheKey ) {\n                  cache[cacheKey] = null;\n                }\n              } catch(e) {\n                console.warn(`Error in kill for`, {kill, cacheKey, instanceKey});\n              }\n            });\n          }\n          state.oldNodes = newVal.nodes || [lastAnchor];\n          while ( newVal.externals.length ) {\n            const func = newVal.externals.shift();\n            func();\n          } \n        }\n\n        function sameOrder(nodesA, nodesB) {\n          if ( nodesA.length != nodesB.length ) return false;\n\n          return Array.from(nodesA).every((an,i) => an == nodesB[i]);\n        }\n\n        function handleTextInNode(newVal, state) {\n          let {oldVal, index, val, lengths, node} = state;\n\n          const valIndex = val.vi;\n          const originalLengthBefore = Object.keys(lengths.slice(0,valIndex)).length*KEYLEN;\n          const lengthBefore = lengths.slice(0,valIndex).reduce((sum,x) => sum + x, 0);\n          const value = node.nodeValue;\n\n          lengths[valIndex] = newVal.length;\n\n          const correction = lengthBefore-originalLengthBefore;\n          const before = value.slice(0,index+correction);\n          const after = value.slice(index+correction+oldVal.length);\n\n          const newValue = before + newVal + after;\n\n          node.nodeValue = newValue;\n\n          if ( node.linkedCustomElement && newValue !== oldVal ) {\n            updateLinkedCustomElement(node);\n          }\n\n          state.oldVal = newVal;\n        }\n\n      // element attribute functions\n        function updateLinkedCustomElement(node) {\n          const lce = node.linkedCustomElement;\n          const span = toDOM(`<span ${node.textContent}></span>`).firstChild;\n          //FIXME: may have to look at this for the combination of vv and bang, may not need to remove these\n          const toRemove = new Set(\n            getAttributes(lce)\n              .filter(({name}) => !name.startsWith('on'))\n              .map(({name}) => name)\n          );\n          getAttributes(span).forEach(({name, value}) => {\n            if ( name === lce.localName ) return; // i.e., it's the bang tag name\n            if ( name.startsWith('on') ) return; // we don't handle event handlers here, that's in bang\n            lce.setAttribute(name, value);\n            toRemove.delete(name);\n          });\n          toRemove.forEach(name => lce.removeAttribute(name));\n        }\n\n        function handleElement({node,vmap,externals}) {\n          getAttributes(node).forEach(({name,value} = {}) => {\n            const attrState = {node, vmap, externals, name, lengths: []};\n\n            KEYMATCH.lastIndex = 0;\n            let result = KEYMATCH.exec(name);\n            while( result ) {\n              prepareAttributeUpdater(result, attrState, {updateName:true});\n              result = KEYMATCH.exec(name);\n            }\n\n            KEYMATCH.lastIndex = 0;\n            result = KEYMATCH.exec(value);\n            while( result ) {\n              prepareAttributeUpdater(result, attrState, {updateName:false});\n              result = KEYMATCH.exec(value);\n            }\n          });\n        }\n\n        function prepareAttributeUpdater(result, attrState, {updateName}) {\n          const {index, input} = result;\n          const scope = Object.assign({}, attrState, {\n            index, input, updateName, \n            val: attrState.vmap[result[1]],\n            oldVal: {length: KEYLEN},\n            oldName: attrState.name,\n          });\n\n          let replacer;\n          if ( updateName ) {\n            replacer = makeAttributeNameUpdater(scope);\n          } else {\n            replacer = makeAttributeValueUpdater(scope);\n          }\n\n          scope.externals.push(() => replacer(scope.val.val));\n          scope.val.replacers.push( replacer );\n        }\n\n        // FIXME: needs to support multiple replacements just like value\n        // QUESTION: why is the variable oldName so required here, why can't we call it oldVal?\n        // if we do it breaks, WHY?\n        function makeAttributeNameUpdater(scope) {\n          let {oldName,node,val} = scope;\n          return (newVal) => {\n            if ( oldName == newVal ) return;\n            val.val = newVal;\n            const attr = node.hasAttribute(oldName) ? oldName : EMPTY;\n            if ( attr !== newVal ) {\n              if ( attr ) {\n                node.removeAttribute(oldName);\n                node[oldName] = undefined;\n              }\n              if ( newVal ) {\n                newVal = newVal.trim();\n\n                let name = newVal, value = undefined;\n\n                if( ATTRMATCH.test(newVal) ) {\n                  const assignmentIndex = newVal.indexOf('='); \n                  ([name,value] = [newVal.slice(0,assignmentIndex), newVal.slice(assignmentIndex+1)]);\n                }\n\n                reliablySetAttribute(node, name, value);\n              }\n              oldName = newVal;\n            }\n          };\n        }\n\n        function makeAttributeValueUpdater(scope) {\n          const updater = (newVal) => {\n            if ( scope.oldVal == newVal ) return;\n            scope.val.val = newVal;\n            switch(getType(newVal)) {\n              case \"funcarray\":       updateAttrWithFuncarrayValue(newVal, scope); break;\n              case \"function\":        updateAttrWithFunctionValue(newVal, scope); break;\n              case \"handlers\":        updateAttrWithHandlersValue(newVal, scope); break;\n              case \"vanillaviewobject\": \n                newVal = nodesToStr(newVal.nodes); \n                updateAttrWithTextValue(newVal, scope); break;\n              /* eslint-disable no-fallthrough */\n              case \"markupattrobject\":  // deliberate fall through\n                newVal = newVal.str;\n              default:                \n                updateAttrWithTextValue(newVal, scope); break;\n              /* eslint-enable no-fallthrough */\n            }\n          };\n          // call it the first time so it loads well\n          // and we elide out the key placeholders here\n          updater(scope.val.val);\n          return updater;\n        }\n\n    // helpers\n      function Replacer(key, value) {\n        const obj = this;\n        if ( typeof obj[key] === \"function\" ) {\n          return value.toString();\n        } else if ( value instanceof Node ) {\n          return `${value.nodeName}//${value.nodeValue || value.outerHTML || value.textContent}`;\n        } else return value;\n      }\n\n      function getAttributes(node) {\n        if ( ! node.hasAttribute ) return [];\n\n        // for parity with classList.add (which trims whitespace)\n          // otherwise once the classList manipulation happens\n          // our indexes for replacement will be off\n        if ( node.hasAttribute('class') ) {\n          node.setAttribute('class', formatClassListValue(node.getAttribute('class')));\n        }\n        return Array.from(node.attributes);\n        /*\n        if ( !! node.attributes && Number.isInteger(node.attributes.length) ) return Array.from(node.attributes);\n        const attrs = [];\n        for ( const name of node ) {\n          if ( node.hasAttribute(name) ) {\n            attrs.push({name, value:node.getAttribute(name)});\n          }\n        }\n        return attrs;\n        */\n      }\n\n      function updateAttrWithFunctionValue(newVal, scope) {\n        let {oldVal,node,name,externals} = scope;\n        if ( name !== 'bond' ) {\n          let flags = {};\n          if ( name.includes(':') ) {\n            ([name, ...flags] = name.split(':'));\n            flags = flags.reduce((O,f) => {\n              O[f] = true;\n              return O;\n            }, {});\n          }\n          if ( oldVal ) {\n            node.removeEventListener(name, oldVal, flags);\n          }\n          node.addEventListener(name, newVal, flags); \n          reliablySetAttribute(node, name, EMPTY);\n        } else {\n          if ( oldVal ) {\n            const index = externals.indexOf(oldVal);\n            if ( index >= 0 ) {\n              externals.splice(index,1);\n            }\n          }\n          externals.push(() => newVal(node)); \n        }\n        scope.oldVal = newVal;\n      }\n\n      function updateAttrWithFuncarrayValue(newVal, scope) {\n        let {oldVal,node,name,externals} = scope;\n        if ( oldVal && ! Array.isArray(oldVal) ) {\n          oldVal = [oldVal]; \n        }\n        if ( name !== 'bond' ) {\n          let flags = {};\n          if ( name.includes(':') ) {\n            ([name, ...flags] = name.split(':'));\n            flags = flags.reduce((O,f) => {\n              O[f] = true;\n              return O;\n            }, {});\n          }\n          if ( oldVal ) {\n            oldVal.forEach(of => node.removeEventListener(name, of, flags));\n          }\n          newVal.forEach(f => node.addEventListener(name, f, flags));\n        } else {\n          if ( oldVal ) {\n            oldVal.forEach(of => {\n              const index = externals.indexOf(of);\n              if ( index >= 0 ) {\n                externals.splice(index,1);\n              }\n            });\n          }\n          newVal.forEach(f => externals.push(() => f(node)));\n        }\n        scope.oldVal = newVal;\n      }\n\n      function updateAttrWithHandlersValue(newVal, scope) {\n        let {oldVal,node,externals,} = scope;\n        if ( !!oldVal && typeof oldVal === 'object'  ) {\n          Object.entries(oldVal).forEach(([eventName,funcVal]) => {\n            if ( eventName !== 'bond' ) {\n              let flags = {};\n              if ( eventName.includes(':') ) {\n                ([eventName, ...flags] = eventName.split(':'));\n                flags = flags.reduce((O,f) => {\n                  O[f] = true;\n                  return O;\n                }, {});\n              }\n              node.removeEventListener(eventName, funcVal, flags); \n            } else {\n              const index = externals.indexOf(funcVal);\n              if ( index >= 0 ) {\n                externals.splice(index,1);\n              }\n            }\n          });\n        }\n        Object.entries(newVal).forEach(([eventName,funcVal]) => {\n          if ( eventName !== 'bond' ) {\n            let flags = {};\n            if ( eventName.includes(':') ) {\n              ([eventName, ...flags] = eventName.split(':'));\n              flags = flags.reduce((O,f) => {\n                O[f] = true;\n                return O;\n              }, {});\n            }\n            node.addEventListener(eventName, funcVal, flags); \n          } else {\n            externals.push(() => funcVal(node)); \n          }\n        });\n        scope.oldVal = newVal;\n      }\n\n      function updateAttrWithTextValue(newVal, scope) {\n        let {oldVal,node,index,name,val,lengths,oldAttrVal} = scope;\n\n        let attr = node.getAttribute(name);\n        let newAttrValue;\n\n        if ( oldAttrVal === oldVal ) {\n          // if we are setting old val to be the whole attribute value\n          // then we can just splice it in by setting it easily\n          newAttrValue = newVal;\n        } else {\n          // otherwise we need to carefully calculate everything\n          let zeroWidthCorrection = 0;\n          const valIndex = val.vi;\n          const originalLengthBefore = Object.keys(lengths.slice(0,valIndex)).length*KEYLEN;\n            \n          // we need to trim newVal to have parity with classlist add\n            // the reason we have zeroWidthCorrection = -1\n            // is because the classList is a set of non-zero width tokens\n            // separated by spaces\n            // when we have a zero width token, we have two adjacent spaces\n            // which, by virtue of our other requirement, gets replaced by a single space\n            // effectively elliding out our replacement location\n            // in order to keep our replacement location in tact\n            // we need to compensate for the loss of a token slot (effectively a token + a space)\n            // and having a -1 correction effectively does this.\n          if ( name == \"class\" ) {\n            newVal = newVal.trim();\n            if ( newVal.length == 0 ) {\n              zeroWidthCorrection = -1;\n            }\n            scope.val.val = newVal;\n          }\n          lengths[valIndex] = newVal.length + zeroWidthCorrection;\n          const lengthBefore = lengths.slice(0,valIndex).reduce((sum,x) => sum + x, 0);\n\n          const correction = lengthBefore-originalLengthBefore;\n          const before = attr.slice(0,index+correction);\n          const after = attr.slice(index+correction+oldVal.length);\n          \n          if ( name == \"class\" ) {\n            const spacer = oldVal.length == 0 ? ' ' : EMPTY;\n            newAttrValue = before + spacer + newVal + spacer + after;\n          } else {\n            newAttrValue = before + newVal + after;\n          }\n        }\n\n        if ( attr !== newAttrValue ) {\n          reliablySetAttribute(node, name, newAttrValue);\n        }\n\n        scope.oldVal = newVal;\n        scope.oldAttrVal = newAttrValue;\n      }\n\n      function reliablySetAttribute(node, name, value, /*{funcValue} = {}*/) {\n        if (  name == \"class\" ) {\n          value = formatClassListValue(value);\n        }\n\n        if ( CONFIG.EVENTS.includes('on'+name) ) {\n          name = 'on'+name;\n\n          const existingValue = node.getAttribute(name);\n          if ( node.getRootNode().host ) {\n            //console.log(node, [...node.getRootNode().host.paths.keys()]);\n            if ( node.getRootNode().host.paths.has(existingValue) ) {\n              return;\n            }\n          } else {\n            if ( existingValue?.startsWith('this.') ) {\n              return;\n            }\n          }\n        }\n\n        try {\n          node.setAttribute(name,isUnset(value) ? name : value);\n        } catch(e) {\n          console.warn(`error`, e, {node, name, value});\n        }\n        // if you set style like this is fucks it up\n        if ( name in node && name !== 'style' ) {\n          try {\n            node[name] = isUnset(value) ? true : value;\n          } catch(e) {\n          }\n        }\n      }\n\n      function getType(val) {\n        const to = typeof val;\n        const type = to === 'function' ? 'function' :\n          val.code === CODE && Array.isArray(val.nodes) ? 'vanillaviewobject' : \n          val.code === CODE && typeof val.str === 'string' ? 'markupattrobject' :\n          Array.isArray(val) && (val.length === 0 || (\n            val[0].code === CODE && Array.isArray(val[0].nodes) \n          )) ? 'vanillaviewarray' : \n          Array.isArray(val) && (val.length === 0 || (\n            typeof val[0] === 'function'\n          )) ? 'funcarray' : \n          to === 'object' ? 'handlers' : \n          'default'\n        ;\n        return type;\n      }\n\n      function summonPlaceholder(sibling) {\n        let ph = [...sibling.parentNode.childNodes].find(\n          node => node.isConnected && \n            node.nodeType == Node.COMMENT_NODE && \n            node.nodeValue == 'vanillaview_placeholder' \n          );\n        if ( ! ph ) {\n          ph = toDOM(`<!--vanillaview_placeholder-->`).firstChild;\n        }\n        return ph;\n      }\n\n      // cache helpers\n        // FIXME: function needs refactor\n        function isCached(cacheKey,v,instance) {\n          let firstCall;\n          let cached = cache[cacheKey];\n          if ( cached == undefined ) {\n            cached = cache[cacheKey] = {};\n            if ( instance.key !== undefined ) {\n              cached.instances = {};\n              cached = cached.instances[instance.key] = {};\n            }\n            firstCall = true;\n          } else {\n            if ( instance.key !== undefined ) {\n              if ( ! cached.instances ) {\n                cached.instances = {};\n                firstCall = true;\n              } else {\n                cached = cached.instances[instance.key];\n                if ( ! cached ) {\n                  firstCall = true;\n                } else {\n                  if ( instance.kill === true ) {\n                    cached = cache[cacheKey]; \n                    if ( cached && cached.instances ) {\n                      cached.instances[instance.key] = null;\n                    }\n                    cached = null;\n                    firstCall = true;\n                  } else {\n                    firstCall = false;\n                  }\n                }\n              }\n            } else {\n              firstCall = false;\n            }\n          }\n          //console.log({cached,firstCall,instance});\n          return {cached,firstCall};\n        }\n\n      // Markup helpers\n        // Returns an object that VanillaView treats as markup,\n        // even tho it is NOT a VanillaView Object (defined with R/X/$)\n        // And even tho it is in the location of a template value replacement\n        // Which would normally be the treated as String\n        function markup(str) {\n          str = isUnset(str) ? EMPTY : str; \n          const frag = toDOM(str);\n          const retVal = {\n            type: 'MarkupObject',\n            code:CODE,\n            nodes:Array.from(frag.childNodes),\n            externals: []\n          };\n          return retVal;\n        }\n\n        // Returns an object that VanillaView treats, again, as markup\n        // But this time markup that is OKAY to have within a quoted attribute\n        function attrmarkup(str) {\n          str = isUnset(str) ? EMPTY : str; \n          str = str.replace(/\"/g,'&quot;');\n          const retVal = {\n            type: 'MarkupAttrObject',\n            code: CODE,\n            str\n          };\n          return retVal;\n        }\n\n        function guardEmptyHandlers(val) {\n          if ( Array.isArray(val) ) {\n            if ( val.length == 0 ) {\n              return [NULLFUNC]\n            } \n            return val;\n          } else {\n            if ( isUnset(val) ) {\n              return NULLFUNC;\n            }\n          }\n        }\n\n      // other helpers\n        function formatClassListValue(value) {\n          value = value.trim();\n          value = value.replace(/\\s+/g, ' ');\n          return value;\n        }\n\n        function replaceValWithKeyAndOmitInstanceKey(vmap) {\n          return (val,vi) => {\n            // omit instance key\n            if ( isKey(val) ) {\n              return EMPTY;\n            }\n            const key = 'key'+Math.random().toFixed(15);\n            let k = key;\n            if ( val.code === CODE && Array.isArray(val.nodes) ) {\n              k = `<!--${k}-->`;\n            }\n            vmap[key] = {vi,val,replacers:[]};\n            return k;\n          };\n        }\n\n        function toDOM(str) {\n          DIV.replaceChildren();\n          DIV.insertAdjacentHTML(POS, `<template>${str}</template>`);\n          return DIV.firstElementChild.content;\n        }\n\n        function guardAndTransformVal(v) {\n          const isVVArray   = Array.isArray(v) && (v.length === 0 || isVV(v[0]));\n          const isNotSet         = isUnset(v);\n          const isForgery = v.code !== CODE && Array.isArray(v.nodes);\n          const isObject        = typeof v === 'object';\n\n          if ( isVVArray )      return join(v); \n          if ( isKey(v) )           return v;\n          if ( v.code === CODE )    return v;\n\n          if ( isNotSet )            die({error: UNSET()});\n          if ( isForgery )          die({error: XSS()});\n\n          if ( Array.isArray(v) && v[0] instanceof Node ) {\n            return {code:CODE, nodes: v, externals: []};\n          }\n\n          if ( Array.isArray(v) && v[0] instanceof Function ) {\n            return v;\n          }\n\n          if ( isObject ) die({error: OBJ(v)});\n\n          return v+EMPTY;\n        }\n\n        function join(os) {\n          const externals = [];\n          const bigNodes = [];\n          const v = [];\n          const oldVals = [];\n          for( const o of os ) {\n            //v.push(...o.v); \n            //oldVals.push(...o.oldVals);\n            externals.push(...o.externals);\n            bigNodes.push(...o.nodes);\n          }\n          const retVal = {v,code:CODE,oldVals,nodes:bigNodes,to,update,externals};\n          return retVal;\n        }\n\n        function nodesToStr(nodes) {\n          const frag = document.createDocumentFragment();\n          nodes.forEach(n => frag.appendChild(n.cloneNode(true)));\n          const container = document.createElement('body');\n          container.appendChild(frag);\n          return container.innerHTML;\n        }\n\n        function diffNodes(last,next) {\n          last = new Set(last);\n          next = new Set(next);\n          return new Set([...last].filter(n => !next.has(n)));\n        }\n\n        function update(newVals) {\n          const updateable = this.v.filter(({vi}) => didChange(newVals[vi], this.oldVals[vi]));\n          updateable.forEach(({vi,replacers}) => replacers.forEach(f => f(newVals[vi])));\n          this.oldVals = Array.from(newVals);\n        }\n\n        function didChange(oldVal, newVal) {\n          const [oldType, newType] = [oldVal, newVal].map(getType); \n          let ret;\n          if ( oldType != newType ) {\n            ret =  true;\n          } else {\n            switch(oldType) {\n              case \"vanillaviewobject\":\n                // the vanillaview object is returned by a view function\n                // which has already called its updaters and checked its slot values\n                // to determine and show changes\n                // except in the case of a list of nodes\n                ret = true;\n                break;\n              /* eslint-disable no-fallthrough */\n              case \"funcarray\":\n              case \"function\":\n                // hard to equate even if same str value as scope could be diff\n                ret = true;\n                break;\n              case \"vanillaviewarray\":\n                // need to do array dif so don't do here\n                ret = true;\n                break;\n              case \"markupattrobject\":\n                // need to check multiple things\n                ret = true;\n                break;\n              default:\n                ret = JS(oldVal) !== JS(newVal);\n                break;\n              /* eslint-enable no-fallthrough */\n            }\n          }\n\n          return ret;\n        }\n\n    // reporting and error helpers \n      function die(msg,err) {\n        msg.stack = (new Error()).stack.split(/\\s*\\n\\s*/g);\n        throw msg;\n      }\n\n  exports.c = c;\n  exports.s = s;\n\n  Object.defineProperty(exports, '__esModule', { value: true });\n\n}));\n/* eslint-disable no-setter-return, no-with, no-constant-condition, no-async-promise-executor */\n(function () {\n  // constants, classes, config and state\n    const DEBUG = false;\n    const SK_DEBUG = false;\n    const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);\n    const NAMESPACE = 'b';\n    const PIPELINE_REQUESTS = true;\n    const RANDOM_SLEEP_ON_FIRST_PRINT = true;\n    const RESPONSIVE_MEDIATION = true;\n    const USE_XPATH = true;\n    const X_NS_ATTRS = `.//@*[starts-with(name(), '${NAMESPACE}:')]`;\n    const X_NEWLISTENING = document.createExpression(X_NS_ATTRS);\n    const XON_EVENT_ATTRS = `.//@*[starts-with(local-name(), 'on')]`;\n    const X_LISTENING = document.createExpression(XON_EVENT_ATTRS);\n    const OPTIMIZE = true;\n    const GET_ONLY = true;\n    const MOBILE = isMobile();\n    const GC_TIMEOUT = 10000;\n    //const GENERATOR = (function*(){yield}()).constructor;\n    const EMPTY = '';\n    const {stringify:_STR} = JSON;\n    const Reserved = new Set(['_self', '_host', '_top']);\n    const JS = o => _STR(o, Replacer, EMPTY);\n    const LIGHTHOUSE = navigator.userAgent.includes(\"Chrome-Lighthouse\");\n    const DOUBLE_BARREL = /^\\w+-(?:\\w+-?)*$/; // note that this matches triple- and higher barrels, too\n    const POS = 'beforeend';\n    const LOCAL_PATH = 'this.';\n    const PARENT_PATH = 'this.getRootNode().host.';\n    const ONE_HIGHER = 'getRootNode().host.';\n    const CALL_WITH_EVENT = '(event)';\n    let comp = 0;\n    const NextComponent = () => `b${comp++}${Math.random().toString(36)}`;\n    const F = _FUNC; \n    const G = _GFUNC;\n    const FUNC_CALL = /\\);?$/;\n    const MirrorNode = Symbol.for('[[MN]]');\n    const DIV = document.createElement('div');\n    const path = location.pathname;\n    const CONFIG = {\n      htmlFile: 'markup.html',\n      scriptFile: 'script.js',\n      styleFile: 'style.css',\n      bangKey: '_bang_key',\n      componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}../components`,\n      allowUnset: true,\n      unsetPlaceholder: EMPTY,\n      EVENTS: `bond error load click pointerdown pointerup pointermove mousedown mouseup submit\n        mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend \n        dragmove drag mouseover mouseout focus blur focusin focusout scroll\n        input change compositionstart compositionend text paste beforepaste select cut copy\n        keydown keyup keypress compositionupdate\n        contextmenu wheel\n      `.split(/\\s+/g).filter(s => s.length).map(e => `[on${e}]`).join(','),\n      delayFirstPaintUntilLoaded: false,\n      capBangRatioAtUnity: false,\n      noHandlerPassthrough: false\n    }\n    const History = [];\n    const STATE = new Map();\n    const CACHE = new Map();\n    const syskeys = new Map();\n    const Waiters = new Map();\n    const Started = new Set();\n    const TRANSFORMING = new WeakSet();\n    const Dependents = new Map();\n    const MAX_CONCURRENT_REQUESTS = 5;\n    const RequestPipeLine = new Map();\n    const RequestWaiting = [];\n    class Counter {\n      started = 0;\n      finished = 0;\n\n      constructor(root) {\n        root.counts = this;\n        this.root = root;\n      }\n\n      check() {\n        const {root} = this;\n        const isTopLevel = root === document;\n        let loaded = false;\n\n        if ( isTopLevel ) {\n          const noSwiftDescendents = root.querySelectorAll('.bang-el:not([lazy])').length === 0;\n          loaded = noSwiftDescendents;\n        } else {\n          const nonZeroCheck = this.started > 0;\n          const finishedCheck = this.finished >= this.started;\n          loaded = nonZeroCheck && finishedCheck;\n        }\n\n        return loaded;\n      }\n\n      start() {\n        if ( this.root == document ) say('log', 'Counting start');\n        this.started++;\n      }\n\n      finish() {\n        if ( this.root == document ) say('log', 'Counting finished');\n        this.finished++;\n      }\n    }\n    const SHADOW_OPTS = {mode:'open', delegatesFocus: true};\n    const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};\n    const INSERT = 'insert';\n    const ALL_DEPS = {allDependents: true};\n    let LoadChecker;\n    let RequestId = 0;\n    let hindex = 0;\n    let observer; // global mutation observer\n    let systemKeys = 1;\n    let _c$;\n    let _s$;\n    let firstState;\n\n    const BangBase = (name) => class Base extends HTMLElement {\n      static #activeAttrs = ['state']; // we listen for changes to these attributes only\n      static get observedAttributes() {\n        return Array.from(Base.#activeAttrs);\n      }\n      #name = name;\n      #dependents = [];\n      #funcs = new Set();\n      #names = new Map();\n      #paths = new Map();\n      #destructors = new Set();\n      #others;\n      key;\n\n      constructor() {\n        super();\n        this.cookMarkup = async (markup, state) => {\n          const _host = this;\n          DEBUG && console.log(`Component ${this.#name}`);\n          const cooked = await cook.call(this, markup, state);\n          DEBUG && console.log(`Component : ${this.#name}`);\n          DEBUG && console.log(`State host: ${_host.name}`);\n          DEBUG && console.log(`Will add ${this.#funcs.size} event handler functions`);\n          if ( _host.name !== this.#name ) {\n            DEBUG && console.info(`\\tComponent and _host value differ`);\n          }\n          this.#funcs.forEach(t => {\n            try {\n              const funcName = t(this);\n              DEBUG && console.log(`Applied automatic event handler function ${funcName} to component`, this);\n              this.#funcs.delete(t);\n            } catch(e) {\n              console.warn(e);\n            }\n          });\n          DEBUG && console.log();\n          let shadow = this.shadowRoot;\n          if ( ! shadow ) {\n            const shadow = this.attachShadow(SHADOW_OPTS);\n            observer.observe(shadow, OBSERVE_OPTS);\n            await cooked.to(shadow, INSERT);\n            // add dependents\n            const deps = await findBangs(transformBang, shadow, ALL_DEPS);\n            this.#dependents = deps.map(node => node.untilVisible());\n            this.cookListeners(shadow);\n          } else {\n            DEBUG && console.log('already has shadow', this);\n            if ( this.needsRefresh ) {\n              this.cookListeners(shadow);\n              this.needsRefresh = false;\n            }\n          }\n        }\n        this.markLoaded = async () => {\n          this.alreadyPrinted = true;\n          if ( ! this.loaded ) {\n            this.counts.finish();\n            const loaded = await this.untilLoaded();\n            if ( loaded ) {\n              this.loaded = loaded;\n              this.setVisible();\n              if ( ! this.isLazy ) {\n                setTimeout(() => document.counts.finish(), 0);\n              }\n            } else {\n              console.warn('Not loaded', this);\n              // right now this never happens\n            }\n          }\n        }\n      }\n\n      prepareState() {\n        // set others to be merged into the with\n      }\n\n      get others() {\n        if ( ! this.#others ) return {}\n        return this.#others;\n      }\n\n      set others(newOthers) {\n        this.#others = newOthers;\n      }\n\n      get destructors() {\n        return this.#destructors;\n      }\n\n      get paths() {\n        return this.#paths;\n      }\n\n      get names() {\n        return this.#names;\n      }\n\n      get funcs() {\n        return this.#funcs;\n      }\n\n      get name() {\n        return this.#name;\n      }\n\n      // BANG! API methods\n      async print() {\n        if ( !this.alreadyPrinted ) {\n          this.prepareVisibility();\n        }\n        const state = this.handleAttrs(this.attributes);\n        if ( OPTIMIZE ) {\n          const nextState = JS(state);\n          if ( this.alreadyPrinted && this.lastState === nextState ) {\n            return;\n          }\n          this.lastState = nextState;\n        }\n        return this.printShadow(state)\n      }\n\n      update() {\n        if ( this.fastUpdate ) {\n          return this.fastUpdate();\n        } else {\n          return this.print();\n        }\n      }\n\n      prepareVisibility() {\n        this.classList.add('bang-el');\n        this.counts.start();\n        if ( !this.isLazy ) {\n          document.counts.start();\n        }\n        this.classList.remove('bang-styled');\n        // we prefetch the style\n        fetchStyle(name).catch(err => {\n          say('warn', err);\n        });\n      }\n\n      async untilLoaded() {\n        const myDependentsLoaded = (await Promise.all(this.#dependents)).every(visible => visible);\n        const myContentLoaded = await becomesTrue(this.loadCheck, this.loadKey);\n        const styleCheck = await becomesTrue(() => this.styleSheetsImported());\n        DEBUG && console.log(new Date - self.Start);\n        return myContentLoaded && myDependentsLoaded && styleCheck;\n      }\n\n      async styleSheetsImported() {     \n        // just a very basic version that works with the way we write components now\n        // a single style import and a single stylesheet per component\n\n        // always first stylesheet is inserted by system (at top of markup template) \n        // I think we can count on the above being true but not sure\n\n        const rules = this?.shadowRoot?.styleSheets?.[0]?.cssRules;\n        if ( rules ) {\n          const iRule = [...rules].find(rule => rule instanceof CSSImportRule);\n          if ( !iRule ) {\n            return true;\n          }\n          await becomesTrue(() => !!iRule?.styleSheet?.rules?.length);\n          return true;\n        }\n        return true;\n      }\n\n      async untilVisible() {\n        if ( this.isLazy ) return true;\n        return await becomesTrue(this.visibleCheck, this.visibleLoadKey);\n      }\n\n      get deps() {\n        return this.#dependents;\n      }\n\n      //FIXME this has a problem\n      updateIfChanged(state) {\n        const {didChange} = stateChanged(state);\n        if ( didChange ) {\n          const oKey = this.getAttribute('state');\n          const newKey = updateState(state);\n          DEBUG && console.log({didChange, oKey, newKey}, this);\n          const views = Dependents.get(this) || new Set();\n          views.add(this);\n          Dependents.set(newKey, views);\n          views.forEach(view => view.setAttribute('state', newKey));\n        }\n      }\n\n      setVisible() {\n        this.classList.add('bang-styled');\n      }\n\n      get state() {\n        const key = this.getAttribute('state');\n        return getState(key); //(key);\n      }\n\n      set state(newValue) {\n        const key = this.getAttribute('state');\n        if ( key.startsWith('system-key:') ) {\n          return this.updateIfChanged(this.state);\n        }\n        return setState(key, newValue);\n      }\n\n      // Web Components methods\n      attributeChangedCallback(name, oldValue) {\n        if ( name === 'state' && !isUnset(oldValue) ) {\n          this.update();\n        }\n      }\n\n      connectedCallback() {\n        new Counter(this);\n        this.loadCheck = () => this.counts.check();\n        this.visibleCheck = () => this.classList?.contains('bang-styled');\n        this.loadKey = Math.random().toString(36);\n        this.visibleLoadKey = Math.random().toString(36);\n        say('log',name, 'connected');\n        this.handleAttrs(this.attributes, {originals: true});\n        if ( this.hasAttribute('lazy') ) {\n          this.isLazy = true;\n          if ( this.hasAttribute('super') ) {\n            this.superLazy = true;\n            loaded().then(() => sleep(400*Math.random()).then(() => this.print()));\n          } else {\n            if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {\n              sleep(160*Math.random()).then(() => this.print());\n            } else {\n              this.print();\n            }\n          }\n        } else {\n          this.print();\n        }\n      }\n\n      disconnectedCallback() {\n        DEBUG && console.log(`${this.name} disconnecting...`);\n        this.alreadyPrinted = false;\n        this.loaded = false;\n        this.destructors.forEach(d => {\n          try {\n            DEBUG && console.log(`Running destructor`, d.toString());\n            d();\n          } catch(e) {\n            console.warn(`Destructor for ${this.name} failed`, e, d);\n          }\n        });\n        this.needsRefresh = true;\n      }\n\n      // private methods\n      cookListeners(root) {\n        return cookListeners(root);\n      }\n\n      handleAttrs(attrs, {node, originals} = {}) {\n        const stateHolder = {};\n\n        if ( ! node ) node = this;\n\n        // we can optimize this method more, we only get attrs if originals == true\n        // otherwise we just get and process the single 'state' attr \n        // this is a lot more performant\n        for( const {name,value} of attrs ) {\n          if ( isUnset(value) ) continue;\n          handleAttribute(name, value, {node, originals, stateHolder, host: this});\n        }\n\n        self._states.push(stateHolder.state);\n\n        return stateHolder.state;\n      }\n\n      printShadow(state) {\n        if ( ! state ) {\n          DEBUG && console.warn(`No state on component ${this.name}. Will pass empty state`);\n          DEBUG && console.dir(this);\n          //throw new TypeError(`No state`);\n          const stateKey = new StateKey()+''; \n          state = {};\n          setState(stateKey, state);\n          this.setAttribute('state', stateKey);\n          DEBUG && console.log(`Assigned empty state to key ${stateKey}`);\n        }\n        return fetchMarkup(this.#name).then(markup => this.cookMarkup(markup, state))\n        .catch(err => DEBUG && say('warn!',err))\n        .finally(this.markLoaded);\n      }\n    };\n\n    class StateKey extends String {\n      constructor (keyNumber) {\n        if ( DEBUG || SK_DEBUG ) {\n          const stack = (new Error('state key')).stack;\n          self.syskeys.set(`system-key:${systemKeys+2}`, stack);\n        }\n        if ( keyNumber == undefined ) super(`system-key:${systemKeys+=2}`); \n        else super(`client-key:${keyNumber}`);\n      }\n    }\n\n  install();\n\n  // API\n    async function use(name) {\n      if ( self.customElements.get(name) ) return;\n\n      DEBUG && console.log('using', name);\n\n      let component;\n      await fetchScript(name)\n        .then(script => { // if there's a script that extends base, evaluate it to be component\n          const Base = BangBase(name);\n          const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;\n          try {\n            component = eval(Compose);\n          } catch(e) {\n            DEBUG && console.warn('use', e);\n            say('warn!',e, Compose, component)\n          }\n        }).catch(err => {  // otherwise if there is no such extension script, just use the Base class\n          DEBUG && say('log!', err);\n          component = BangBase(name);\n        });\n      \n      if ( self.customElements.get(name) ) return;\n\n      self.customElements.define(name, component);\n    }\n    \n    // run a map of a list of work with configurable breaks in between\n    // to let the main thread breathe at the same time \n    async function schedule(list, func, {\n          batchSize: batchSize = 1,\n          yieldTime: yieldTime = 30,\n          strictSerial: strictSerial = true,\n          useFrame: useFrame = false\n        } = {}) {\n      // note list can be async iterable\n      const results = [];\n      let i = 0;\n      let currentBatch = 0;\n      for await ( const item of list ) {\n        let result;\n        if ( strictSerial ) {\n          result = await func(item, i);\n        } else {\n          result = func(item, i);\n        }\n        results.push(result);\n\n        if ( RESPONSIVE_MEDIATION ) {\n          i++;\n          currentBatch++;\n          if ( currentBatch < batchSize ) continue;\n          currentBatch = 0;\n\n          if ( useFrame ) {\n            await nextFrame();\n          } else if ( yieldTime > -1 ) {\n            await sleep(yieldTime);\n          }\n        }\n      }\n      return results;\n    }\n\n    function undoState(key, transform = x => x) {\n      while( hindex > 0 ) {\n        hindex -= 1;\n        if ( History[hindex].name === key ) {\n          setState(key, transform(History[hindex].value));\n          return true;\n        }\n      }\n      return false;\n    }\n\n    function redoState(key, transform = x => x) {\n      while( hindex < History.length - 1 ) {\n        hindex += 1;\n        if ( History[hindex].name === key ) {\n          setState(key, transform(History[hindex].value));\n          return true;\n        }\n      }\n      return false;\n    }\n\n    function bangFig(newConfig = {}) {\n      Object.assign(CONFIG, newConfig);\n    }\n\n    function immediate(f) {\n      if ( !(f instanceof Function) ) {\n        throw new TypeError(`immediate can only be called on a function. Recieved: ${f}`);\n      }\n\n      if ( f[IMMEDIATE] ) return;\n\n      Object.defineProperty(f, IMMEDIATE, {value: true, configurable: false, enumerable: false, writable: false});\n    }\n\n    function runCode(context, str) {\n      with(context) {\n        return eval(str); \n      }\n    }\n\n    function stateChanged(obj) {\n      const key = STATE.get(obj);\n      const oStateJSON = STATE.get(key+'.json.last');\n      const stateJSON = JS(obj);\n      return {key, didChange: oStateJSON !== stateJSON, stateJSON, oStateJSON};\n    }\n\n    function updateState(state, key) {\n      key = key || STATE.get(state);\n      if ( ! key ) {\n        console.warn('no key for state', state);\n        throw new ReferenceError(`Key must exist to update state.`);\n      }\n      const oKey = key;\n      const oStateJSON = STATE.get(key+'.json.last');\n      const stateJSON = JS(state);\n      STATE.delete(oStateJSON);\n      STATE.set(key, state);\n      DEBUG && console.log({key, state});\n      const views = Dependents.get(oKey);\n      if ( key.startsWith('system-key:') ) {\n        try {\n          STATE.delete(key);\n          STATE.delete(key+'.json.last');\n          key = new StateKey()+'';\n          STATE.set(key, state);\n          STATE.set(state, key);\n          if ( views ) {\n            views.forEach(view => view.setAttribute('state', key));\n          }\n          DEBUG && console.log({key, oKey});\n        } catch(e) {\n          console.warn(e);\n        }\n      }\n      if ( views ) {\n        Dependents.set(key, views);\n      }\n      STATE.set(key+'.json.last', stateJSON);\n      STATE.set(stateJSON, key+'.json.last');\n      return key;\n    }\n\n    function getViews(obj) {\n      const key = STATE.get(obj);\n      const acquirers = Dependents.get(key);\n      if ( acquirers ) {\n        return Array.from(acquirers);\n      } else {\n        console.warn('No acquirers for key');\n        return [];\n      }\n    }\n\n    function setState(key, state, {\n      rerender: rerender = true, \n      save: save = false\n    } = {}) {\n      const jss = JS(state);\n      DEBUG && console.log({jss, state});\n      let lk = key+'.json.last';\n      if ( GET_ONLY ) {\n        if ( !STATE.has(key) ) {\n          STATE.set(key, state);\n          STATE.set(state, key);\n          STATE.set(jss,lk);\n          STATE.set(lk,jss);\n        } else {\n          const oStateJSON = STATE.get(lk);\n          /*if ( stateChanged(oState).didChange ) {*/\n          if ( oStateJSON !== jss ) {\n            key = updateState(state, key);\n            DEBUG && console.log({key}, 'no where to put');\n          }\n        }\n      } else {\n        STATE.set(key, state);\n        STATE.set(state, key);\n        STATE.set(jss,lk);\n        STATE.set(lk,jss);\n      }\n\n      if ( save ) {\n        hindex = Math.min(hindex+1, History.length);\n        History.splice(hindex, 0, {name: key, value: clone(state)});\n      }\n\n      if ( rerender ) { // re-render only those components depending on that key\n        const acquirers = Dependents.get(key);\n        if ( acquirers ) acquirers.forEach(host => host.update());\n      }\n\n      if ( ! firstState ) {\n        firstState = state; \n        DEBUG && console.log(`Set first state at key ${key}`, state);\n      }\n      \n      return true;\n    }\n\n    function getState(key) {\n      return STATE.get(key);\n    }\n\n    function patchState(key, state) {\n      return setState(key, state, {rerender: false});\n    }\n\n    function cloneState(key, getOnly = GET_ONLY) {\n      if ( getOnly ) return STATE.get(key);\n      if ( STATE.has(key) ) return clone(STATE.get(key));\n      else {\n        throw new ReferenceError(`State store does not have the key ${key}`);\n      }\n    }\n\n    async function loaded() {\n      return becomesTrue(LoadChecker);\n    }\n\n    async function bangLoaded() {\n      return becomesTrue(bangLoadedCheck);\n    }\n\n    function bangLoadedCheck() {\n      const c_defined = typeof _c$ === \"function\";\n      return c_defined;\n    }\n\n  // network pipelining (for performance)\n    async function pipeLinedFetch(...args) {\n      if ( !PIPELINE_REQUESTS ) return fetch(...args);\n      const key = nextRequestId();\n      const result = {args, started: new Date};\n      let pr;\n      if ( RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {\n        pr = fetch(...args).catch(err => (say('log', err), `/* ${err} */`));\n        result.pr = pr;\n        RequestPipeLine.set(key, result);\n        const complete = r => {\n          const result = RequestPipeLine.get(key);\n          result.finished = new Date;\n          result.duration = result.finished - result.started;\n          RequestPipeLine.delete(key); \n          if ( RequestWaiting.length && RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {\n            const result = RequestWaiting.shift();\n            const req = fetch(...result.args);\n            req.then(complete).then(r => (result.resolve(r), r)).catch(e => (result.reject(e), e));\n            RequestPipeLine.set(key, result);\n          }\n          return r;\n        };\n        pr.then(complete);\n      } else {\n        let resolve, reject;\n        pr = new Promise((res,rej) => (resolve = res, reject = rej));\n        result.resolve = resolve;\n        result.reject = reject;\n        RequestWaiting.push(result);\n      }\n      return pr;\n    }\n\n    function nextRequestId() {\n      return `${RequestId++}${Math.random().toString(36)}`;\n    }\n\n  // helpers\n    function cookListeners(root) {\n      const that = root.getRootNode().host;\n      DEBUG && console.log({root, that});\n      const listening = select(root, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);\n      DEBUG && console.log({listening});\n      if ( USE_XPATH ) {\n        listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true, host: that}));\n      } else {\n        listening.forEach(node => that.handleAttrs(node.attributes, {node, originals: true}));\n      }\n\n      if ( USE_XPATH ) {\n        // new style event listeners (only with XPath)\n        const newListening = select(root, X_NEWLISTENING);\n        newListening.forEach(({name, value, ownerElement:node}) => handleNewAttribute(name, value, {node, originals: true, host: that}));\n      }\n    }\n\n    function handleAttribute(name, value, {node, originals, stateHolder, host: Host} = {}) {\n      DEBUG && console.log({name, value, node, originals, stateHolder});\n      if ( name === 'state' ) {\n        const stateKey = value.trim(); \n        const stateObject = getState(stateKey); // cloneState(stateKey);\n        \n        if ( isUnset(stateObject) ) {\n          console.warn(node);\n          self.STATE = STATE;\n          console.warn(new ReferenceError(`\n            <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.\n          `));\n          return;\n        }\n        \n        stateHolder.state = stateObject;\n\n        if ( originals ) {\n          let acquirers = Dependents.get(stateKey);\n          if ( ! acquirers ) {\n            acquirers = new Set();\n            Dependents.set(stateKey, acquirers);\n          }\n          acquirers.add(node);\n          Dependents.set(node, acquirers);\n        } else return;\n      } else if ( originals ) { // set event handlers to custom element class instance methods\n        if ( ! name.startsWith('on') ) return;\n        value = value.trim();\n\n        if ( node.getRootNode().host.paths.has(value) ) return;\n        //console.log('1', value, [...node.getRootNode().host.paths.keys()]);\n\n        value = value.replace(/\\(event\\)$/, '');\n        if ( ! value ) return;\n\n        //if ( value.startsWith('this.') ) return;\n\n        const {Func,host,path} = getAncestor(node, value);\n\n        if ( name === 'onbond' ) {\n          if ( Func ) {\n            DEBUG && console.log(`Dereference bond function`, Func, node);\n            try {\n              Func(node);\n              //FIXME: should this actually be removed ? \n              //node.removeAttribute(name);\n            } catch(error) {\n              console.warn(`bond function error`, {error, name, value, node, originals, stateHolder, Func});\n            }\n          } else {\n            console.warn(`bond function Not dereferencable`, {name, value, node, originals, stateHolder});\n          }\n          return;\n        }\n\n        if ( !path || value.startsWith(path) ) return;\n\n        // Conditional logic explained:\n          // don't add a function call bracket if\n          // 1. it already has one\n          // 2. the reference is not a function\n        const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;\n        const val = `${path}${value}${ender}`;\n        host.paths.set(val, Func); \n        node.setAttribute(name, val);\n        DEBUG && console.log(`Adding destructor`, host, name);\n        if ( value.match(/^f\\d+_/) ) {\n          host.destructors.add(() => node.removeAttribute(name));\n        }\n      }\n    }\n\n    function handleNewAttribute(name, value, {node, Host}) {\n      value = value.trim();\n      if ( ! value ) return;\n\n      const [nameSpace, ...flags] = name.split(':');\n      \n      if ( nameSpace !== NAMESPACE ) {\n        throw new TypeError(`Irregular namespace ${nameSpace}`);\n      }\n\n      const eventName = flags.pop();\n      const flagObj = Object.fromEntries(flags.map(f => [f, true]));\n\n      if ( node.getRootNode().host.paths.has(value) ) return;\n\n      value = value.replace(/\\(event\\)$/, '');\n      if ( ! value ) return;\n\n      const {Func,host,path} = getAncestor(node, value);\n\n      DEBUG && console.log(node, {value, path});\n\n      if ( !path || value.startsWith(path) ) return;\n\n      // Conditional logic explained:\n        // don't add a function call bracket if\n        // 1. it already has one\n        // 2. the reference is not a function\n      const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;\n      const val = `${path}${value}${ender}`;\n      host.paths.set(val, Func); \n      const handler = new Function('event', `return ${val}`);\n      node.addEventListener(\n        eventName, \n        handler,\n        flagObj\n      );\n      if ( value.match(/^f\\d+_/) ) {\n        host.destructors.add(() => {\n          node.removeEventListener(\n            eventName, \n            handler,\n            flagObj\n          );\n        });\n      }\n    }\n\n    function select(context, selector) {\n      try {\n        if ( USE_XPATH ) {\n          const results = [];\n          let xresult;\n          if ( context instanceof DocumentFragment ) {\n            for( const elContext of context.children ) {\n              if ( selector instanceof XPathExpression ) {\n                xresult = selector.evaluate(elContext, XPathResult.ORDERED_NODE_ITERATOR_TYPE);\n              } else {\n                xresult = document.evaluate(selector, elContext, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);\n              }\n              let node;\n              /* eslint-disable no-cond-assign */\n              while(node = xresult.iterateNext()) {\n                results.push(node);\n              } \n              /* eslint-enable no-cond-assign */\n            }\n          } else {\n            if ( selector instanceof XPathExpression ) {\n              xresult = selector.evaluate(context, XPathResult.ORDERED_NODE_ITERATOR_TYPE);\n            } else {\n              xresult = document.evaluate(selector, context, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);\n            }\n            let node;\n            /* eslint-disable no-cond-assign */\n            while(node = xresult.iterateNext()) {\n              results.push(node);\n            }\n            /* eslint-enable no-cond-assign */\n          }\n          return results;\n        } else {\n          DEBUG && console.log('non xpath', selector);\n          return context.querySelectorAll ? context.querySelectorAll(selector) : [];\n        }\n      } catch(e) {\n        console.warn(e);\n      }\n    }\n\n    async function install() {\n      DEBUG && (self.Start = new Date);\n      new Counter(document);\n      LoadChecker = () => document.counts.check();\n\n      self._states = [];\n      self.syskeys = syskeys;\n      Object.assign(globalThis, {\n        Dependents,\n        STATE,\n        CACHE,\n        CONFIG,\n        F,\n        use, setState, getState, patchState, cloneState, loaded, \n        sleep, bangFig, bangLoaded, isMobile, trace,\n        undoState, redoState, stateChanged, getViews, updateState,\n        isUnset,  EMPTY, \n        dateString,\n        runCode, schedule,\n        immediate,\n        ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})\n      });\n\n      const module = globalThis.vanillaview || (await __webpack_require__.e(/*! import() */ \"src_vv_vanillaview_js\").then(__webpack_require__.bind(__webpack_require__, /*! ./vv/vanillaview.js */ \"./src/vv/vanillaview.js\")));\n      const {s,c} = module;\n      const That = {STATE,CONFIG,StateKey,JS}; \n      _c$ = s.bind(That);\n      _s$ = c.bind(That);\n      That._c$ = _c$;\n      That._s$ = _s$;\n\n      if ( CONFIG.delayFirstPaintUntilLoaded ) {\n        becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));\n      }\n\n      observer = new MutationObserver(transformBangs);\n      /* we are interested in bang nodes (which start as comments) */\n      observer.observe(document, OBSERVE_OPTS);\n      await findBangs(transformBang); \n      \n      loaded().then(() => document.body.classList.add('bang-styled'));\n    }\n\n    async function fetchMarkup(name) {\n      // cache first\n        // we make any subsequent calls for name wait for the first call to complete\n        // otherwise we create many in parallel without benefitting from caching\n\n      const key = `markup:${name}`;\n\n      if ( Started.has(key) ) {\n        if ( ! CACHE.has(key) ) await cacheHasKey(key);\n      } else Started.add(key);\n\n      const styleKey = `style${name}`;\n\n      const baseUrl = `${CONFIG.componentsPath}/${name}`;\n      if ( CACHE.has(key) ) {\n        const markup = CACHE.get(key);\n        if ( CACHE.get(styleKey) instanceof Error ) { \n          /*comp && comp.setVisible(); */\n        }\n        \n        // if there is an error style and we are still includig that link\n        // we generate and cache the markup again to omit such a link element\n        if ( CACHE.get(styleKey) instanceof Error && markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {\n          // then we need to set the cache for markup again and remove the link to the stylesheet which failed \n        } else {\n          /* comp && comp.setVisible(); */\n          return markup;\n        }\n      }\n      \n      const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;\n      let resp;\n      const markupText = await pipeLinedFetch(markupUrl).then(async r => { \n        let text = EMPTY;\n        if ( r.ok ) text = await r.text();\n        else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element\n      \n        if ( CACHE.get(styleKey) instanceof Error ) { \n          resp = `\n          <style>\n            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}\n          </style>${text}` \n        } else {\n          // inlining styles for increase speed */\n          resp = `\n          <style>\n            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}\n            ${await fetchStyle(name)}\n          </style>${text}`;\n        }\n        \n        return resp;\n      }).finally(async () => CACHE.set(key, await resp));\n      return markupText;\n    }\n\n    async function fetchFile(name, file) {\n      const key = `${file}:${name}`;\n\n      if ( Started.has(key) ) {\n        if ( ! CACHE.has(key) ) await cacheHasKey(key);\n      } else Started.add(key);\n\n      if ( CACHE.has(key) ) return CACHE.get(key);\n\n      const url = `${CONFIG.componentsPath}/${name ? name + '/' : EMPTY}${file}`;\n      let resp;\n      const fileText = await pipeLinedFetch(url).then(async r => { \n        if ( r.ok ) {\n          resp = await r.text();\n          return resp;\n        } \n        resp = new ReferenceError(`Fetch error: ${url}, ${r.statusText}`);\n        throw resp;\n      })\n      .then(e => e instanceof Error ? `/* no ${name}/${file} defined */` : e)\n      .finally(async () => CACHE.set(key, await resp));\n      \n      return fileText;\n    }\n\n    async function fetchStyle(name) {\n      return fetchFile(name, CONFIG.styleFile);\n    }\n\n    async function fetchScript(name) {\n      return fetchFile(name, CONFIG.scriptFile);\n    }\n\n    // search and transform each added subtree\n    async function transformBangs(records) {\n      for( const record of records ) {\n        for( const node of record.addedNodes ) {\n          if ( node.nodeType !== Node.TEXT_NODE ) {\n            cookListeners(node);\n            await findBangs(transformBang, node);\n          }\n        }\n      }\n    }\n\n    function transformBang(current) {\n      const [name, data] = getBangDetails(current);\n\n      // replace the bang node (comment) with its actual custom element node\n      const actualElement = createElement(name, data);\n      current.linkedCustomElement = actualElement;\n      actualElement[MirrorNode] = current;\n      current.parentNode.replaceChild(actualElement, current);\n    }\n\n    async function findBangs(callback, root = document.documentElement, {\n          allDependents: allDependents = false,\n          batchSize: batchSize = 100,\n          yieldTime: yieldTime = 0,\n          useFrame: useFrame = true\n        } = {}) {\n      if ( root.noFindBang ) return allDependents ? [] : void 0;\n      const found = allDependents ? \n        node => node.nodeType === Node.COMMENT_NODE || \n          node.nodeType === Node.ELEMENT_NODE \n        :\n        node => node.nodeType === Node.COMMENT_NODE\n      ;\n      const Filter = allDependents ? \n        NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_ELEMENT\n        :\n        NodeFilter.SHOW_COMMENT\n      ;\n      const Details = allDependents ? \n        getNodeDetails  \n        :\n        getBangDetails\n      ;\n      const Return = allDependents ? NodeFilter.FILTER_SKIP : NodeFilter.FILTER_REJECT;\n      const Acceptor = {\n        acceptNode(node) {\n          if ( found(node) ) {\n            const [name] = Details(node); \n            if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;\n            else return Return; \n          } else if ( isDocument(node) ) {\n            return NodeFilter.FILTER_ACCEPT;\n          } else return NodeFilter.FILTER_SKIP;\n        }\n      };\n      // FIXME: do we need to walk through shadows here?\n      const iterators = [];\n      const replacements = [];\n      const dependents = [];\n\n      let iterator = document.createTreeWalker(root, Filter, Acceptor);\n      let current;\n\n      iterators.push(iterator);\n\n      // handle any descendents\n        while (true) {\n          current = iterator?.nextNode();\n          if ( ! current ) {\n            if ( iterators.length ) {\n              iterator = iterators.shift();\n              current = iterator.currentNode;\n              // Note:\n                // we need isBangTag here because a node that doesn't pass \n                // Acceptor.accept will stop show up as the first currentNode\n                // in a tree iterator\n              if ( isBangTag(current) ) {\n                if ( !TRANSFORMING.has(current) ) {\n                  TRANSFORMING.add(current);\n                  const target = current;\n                  replacements.push(() => transformBang(target));\n                }\n              }\n              continue;\n            } else break;\n          }\n\n          // handle root node\n            // Note:\n              // it's a special case because it will be present in the iteration even if\n              // the NodeFilter would filter it out if it were not the root\n            // Note:\n              // a small optimization is replace isBangTag by the following check\n              // we don't need isBangTag here because it's already passed the \n              // equivalent check in Acceptor.acceptNode\n          if ( current.nodeType === Node.COMMENT_NODE ) {\n            if ( !TRANSFORMING.has(current) ) {\n              TRANSFORMING.add(current);\n              const target = current;\n              replacements.push(() => transformBang(target));\n            }\n          }\n\n          dependents.push(current);\n\n          if ( current.shadowRoot instanceof ShadowRoot ) {\n            iterators.push(document.createTreeWalker(current.shadowRoot, Filter, Acceptor)); \n          }\n        }\n\n      let i = 0;\n      while(replacements.length) {\n        replacements.pop()();\n        if ( RESPONSIVE_MEDIATION && allDependents ) {\n          i++;\n          if ( i < batchSize ) continue;\n          i = 0;\n          if ( useFrame ) {\n            await nextFrame();\n          } else {\n            await sleep(yieldTime);\n          }\n        }\n      }\n\n      if ( allDependents ) {\n        return dependents\n          .map(actualElement)\n          .filter(el => el && !el.hasAttribute('lazy'));\n      } else return;\n    }\n\n\n\n\n    function actualElement(node) {\n      const el = node.nodeType === Node.COMMENT_NODE ? \n        node.linkedCustomElement \n        : \n        node \n      ;\n      //console.log(node, el);\n      return el;\n    }\n\n    // NOTE: I'll have to add auto-detected functions to the node\n    // before this point, so they can be found here\n    // but after (I think) vv does it's processing. (I hope we can do this with current flow)\n    function getAncestor(node, value) {\n      const oNode = node;\n      let lastNode;\n      if ( node ) {\n        const currentPath = ['this.'];\n        while( node ) {\n          if ( node[value] instanceof Function ) {\n            const retVal = {Func: node[value], path: currentPath.join(EMPTY), oNode, host: node};\n            return retVal;\n          }\n          if ( node?.paths?.has(value) ) {\n            return { host: node, Func: node?.paths?.get(value), path: value };\n          }\n          currentPath.push( ONE_HIGHER );\n\n          lastNode = node;\n\n          node = node.getRootNode().host;\n        }\n      }\n      console.warn(`Error could not dereference function ${value} starting at original node:`, oNode);\n      console.warn(`Got as high as`, lastNode);\n      return {};\n    }\n\n    function isBangTag(node) {\n      return node.nodeType === Node.COMMENT_NODE && getBangDetails(node)[0].match(DOUBLE_BARREL);\n    }\n\n    function isDocument(node) {\n      return node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||\n        node.nodeType === Node.DOCUMENT_NODE\n      ;\n    }\n\n    function getBangDetails(node) {\n      const text = node.textContent.trim();\n      const [name, ...data] = text.split(/[\\s\\t]/g);\n      return [name.trim(), data.join(' ')];\n    }\n\n    function getNodeDetails(node) {\n      switch(node.nodeType) {\n        case Node.COMMENT_NODE:\n          return getBangDetails(node);\n        case Node.ELEMENT_NODE:\n          return [node.localName];\n      }\n    }\n\n    async function cook(markup, state) {\n      let cooked = EMPTY;\n      const _top = firstState;\n      const _self = state;\n      const _host = this;\n\n      if ( ! state._top ) {\n        Object.defineProperty(state, '_top', { value: _top });\n      }\n      \n      try {\n        with({...state, ..._host.others}) {\n          cooked = await eval(\"(async function () { return await _FUNC`${{state,_host}}\"+markup+\"`; }())\");  \n        }\n        return cooked;\n      } catch(error) {\n        console.warn('cook', error);\n        say('error!', 'Template error', {markup, state, error, _host: this});\n        throw error;\n      }\n    }\n\n    async function _FUNC(strings, ...vals) {\n      const s = Array.from(strings);\n      const ret =  await _c$(s, ...vals);\n      return ret;\n    }\n\n    async function _GFUNC(strings, ...vals) {\n      const s = Array.from(strings);\n      const ret = await _s$(s, ...vals);\n      return ret;\n    }\n\n    function createElement(name, data) {\n      return toDOM(`<${name} ${data}></${name}>`).firstElementChild;\n    }\n\n    function toDOM(str) {\n      DIV.replaceChildren();\n      DIV.insertAdjacentHTML(POS, `<template>${str}</template>`);\n      return DIV.firstElementChild.content;\n    }\n\n    async function becomesTrue(check, key) {\n      const WaitKey = key || check;\n      let waiters = Waiters.get(WaitKey);\n\n      if ( ! waiters ) {\n        waiters = _becomesTrue(check).then(checkResult => {\n          setTimeout(() => Waiters.delete(WaitKey), GC_TIMEOUT);\n          return checkResult; \n        });\n        Waiters.set(WaitKey, waiters);\n      }\n      const pr = new Promise(resolve => waiters.then(resolve));\n      return pr;\n    }\n\n    async function _becomesTrue(check) {\n      return new Promise(async res => {\n        while(true) {\n          await nextFrame();\n          const v = await check();\n          if ( v ) break;\n        }\n        res(true);\n      });\n    }\n\n    // this is to optimize using becomesTrue so we don't start a new timer\n    // for every becomesTrue function call (in the case of the cache check, anyway)\n    // we can use this pattern to apply to other becomesTrue calls like loaded\n    async function cacheHasKey(key) {\n      const cacheKey = `cache:${key}`;\n      const funcKey = `checkFunc:${key}`;\n      let checkFunc = Waiters.get(funcKey);\n      if ( ! checkFunc ) {\n        checkFunc = () => CACHE.has(key);\n        Waiters.set(funcKey,checkFunc);\n      }\n      return becomesTrue(checkFunc, cacheKey);\n    }\n\n    async function sleep(ms) {\n      return new Promise(res => setTimeout(res, ms));\n    }\n    \n    async function nextFrame() {\n      return new Promise(res => requestAnimationFrame(res));\n    }\n\n    function isUnset(x) {\n      return x === undefined || x === null;\n    }\n\n    function say(mode, ...stuff) {\n      (DEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && !LIGHTHOUSE && alert(`${mode}: ${stuff.join('\\n')}`);\n      (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!',EMPTY)](...stuff);\n    }\n\n    function isMobile() {\n      const toMatch = [\n        /Android/i,\n        /webOS/i,\n        /iPhone/i,\n        /iPad/i,\n        /iPod/i,\n        /BlackBerry/i,\n        /Windows Phone/i\n      ];\n\n      return toMatch.some((toMatchItem) => {\n        return navigator.userAgent.match(toMatchItem);\n      });\n    }\n  \n    function trace(msg = EMPTY) {\n      const tracer = new Error('Trace');\n      DEBUG && console.log(msg, 'Call stack', tracer.stack);\n    }\n\n    function dateString(date) {\n      const offset = date.getTimezoneOffset()\n      date = new Date(date.getTime() - (offset*60*1000))\n      return date.toISOString().split('T')[0];\n    }\n\n    function clone(o) {\n      return JSON.parse(JS(o));\n    }\n\n    function Replacer(key, value) {\n      const obj = this;\n      if ( typeof obj[key] === \"function\" ) {\n        return value.toString();\n      } else if ( value instanceof Node ) {\n        return `${value.nodeName}//${value.nodeValue || value.outerHTML || value.textContent}`;\n      } else return value;\n    }\n}());\n\n\n\n//# sourceURL=webpack://bang.html/./src/cat.bang.js?");
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	!function() {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = function(exports, definition) {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/ensure chunk */
+/******/ 	!function() {
+/******/ 		__webpack_require__.f = {};
+/******/ 		// This file contains only the entry chunk.
+/******/ 		// The chunk loading function for additional chunks
+/******/ 		__webpack_require__.e = function(chunkId) {
+/******/ 			return Promise.all(Object.keys(__webpack_require__.f).reduce(function(promises, key) {
+/******/ 				__webpack_require__.f[key](chunkId, promises);
+/******/ 				return promises;
+/******/ 			}, []));
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/get javascript chunk filename */
+/******/ 	!function() {
+/******/ 		// This function allow to reference async chunks
+/******/ 		__webpack_require__.u = function(chunkId) {
+/******/ 			// return url for filenames based on template
+/******/ 			return "" + chunkId + ".bang.js";
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/global */
+/******/ 	!function() {
+/******/ 		__webpack_require__.g = (function() {
+/******/ 			if (typeof globalThis === 'object') return globalThis;
+/******/ 			try {
+/******/ 				return this || new Function('return this')();
+/******/ 			} catch (e) {
+/******/ 				if (typeof window === 'object') return window;
+/******/ 			}
+/******/ 		})();
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	!function() {
+/******/ 		__webpack_require__.o = function(obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); }
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/load script */
+/******/ 	!function() {
+/******/ 		var inProgress = {};
+/******/ 		var dataWebpackPrefix = "bang.html:";
+/******/ 		// loadScript function to load a script via script tag
+/******/ 		__webpack_require__.l = function(url, done, key, chunkId) {
+/******/ 			if(inProgress[url]) { inProgress[url].push(done); return; }
+/******/ 			var script, needAttach;
+/******/ 			if(key !== undefined) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				for(var i = 0; i < scripts.length; i++) {
+/******/ 					var s = scripts[i];
+/******/ 					if(s.getAttribute("src") == url || s.getAttribute("data-webpack") == dataWebpackPrefix + key) { script = s; break; }
+/******/ 				}
+/******/ 			}
+/******/ 			if(!script) {
+/******/ 				needAttach = true;
+/******/ 				script = document.createElement('script');
+/******/ 		
+/******/ 				script.charset = 'utf-8';
+/******/ 				script.timeout = 120;
+/******/ 				if (__webpack_require__.nc) {
+/******/ 					script.setAttribute("nonce", __webpack_require__.nc);
+/******/ 				}
+/******/ 				script.setAttribute("data-webpack", dataWebpackPrefix + key);
+/******/ 				script.src = url;
+/******/ 			}
+/******/ 			inProgress[url] = [done];
+/******/ 			var onScriptComplete = function(prev, event) {
+/******/ 				// avoid mem leaks in IE.
+/******/ 				script.onerror = script.onload = null;
+/******/ 				clearTimeout(timeout);
+/******/ 				var doneFns = inProgress[url];
+/******/ 				delete inProgress[url];
+/******/ 				script.parentNode && script.parentNode.removeChild(script);
+/******/ 				doneFns && doneFns.forEach(function(fn) { return fn(event); });
+/******/ 				if(prev) return prev(event);
+/******/ 			}
+/******/ 			;
+/******/ 			var timeout = setTimeout(onScriptComplete.bind(null, undefined, { type: 'timeout', target: script }), 120000);
+/******/ 			script.onerror = onScriptComplete.bind(null, script.onerror);
+/******/ 			script.onload = onScriptComplete.bind(null, script.onload);
+/******/ 			needAttach && document.head.appendChild(script);
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	!function() {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = function(exports) {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/publicPath */
+/******/ 	!function() {
+/******/ 		var scriptUrl;
+/******/ 		if (__webpack_require__.g.importScripts) scriptUrl = __webpack_require__.g.location + "";
+/******/ 		var document = __webpack_require__.g.document;
+/******/ 		if (!scriptUrl && document) {
+/******/ 			if (document.currentScript)
+/******/ 				scriptUrl = document.currentScript.src
+/******/ 			if (!scriptUrl) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				if(scripts.length) scriptUrl = scripts[scripts.length - 1].src
+/******/ 			}
+/******/ 		}
+/******/ 		// When supporting browsers where an automatic publicPath is not supported you must specify an output.publicPath manually via configuration
+/******/ 		// or pass an empty string ("") and set the __webpack_public_path__ variable from your code to use your own logic.
+/******/ 		if (!scriptUrl) throw new Error("Automatic publicPath is not supported in this browser");
+/******/ 		scriptUrl = scriptUrl.replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/[^\/]+$/, "/");
+/******/ 		__webpack_require__.p = scriptUrl;
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	!function() {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"main": 0
+/******/ 		};
+/******/ 		
+/******/ 		__webpack_require__.f.j = function(chunkId, promises) {
+/******/ 				// JSONP chunk loading for javascript
+/******/ 				var installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
+/******/ 				if(installedChunkData !== 0) { // 0 means "already installed".
+/******/ 		
+/******/ 					// a Promise means "currently loading".
+/******/ 					if(installedChunkData) {
+/******/ 						promises.push(installedChunkData[2]);
+/******/ 					} else {
+/******/ 						if(true) { // all chunks have JS
+/******/ 							// setup Promise in chunk cache
+/******/ 							var promise = new Promise(function(resolve, reject) { installedChunkData = installedChunks[chunkId] = [resolve, reject]; });
+/******/ 							promises.push(installedChunkData[2] = promise);
+/******/ 		
+/******/ 							// start chunk loading
+/******/ 							var url = __webpack_require__.p + __webpack_require__.u(chunkId);
+/******/ 							// create error before stack unwound to get useful stacktrace later
+/******/ 							var error = new Error();
+/******/ 							var loadingEnded = function(event) {
+/******/ 								if(__webpack_require__.o(installedChunks, chunkId)) {
+/******/ 									installedChunkData = installedChunks[chunkId];
+/******/ 									if(installedChunkData !== 0) installedChunks[chunkId] = undefined;
+/******/ 									if(installedChunkData) {
+/******/ 										var errorType = event && (event.type === 'load' ? 'missing' : event.type);
+/******/ 										var realSrc = event && event.target && event.target.src;
+/******/ 										error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
+/******/ 										error.name = 'ChunkLoadError';
+/******/ 										error.type = errorType;
+/******/ 										error.request = realSrc;
+/******/ 										installedChunkData[1](error);
+/******/ 									}
+/******/ 								}
+/******/ 							};
+/******/ 							__webpack_require__.l(url, loadingEnded, "chunk-" + chunkId, chunkId);
+/******/ 						} else installedChunks[chunkId] = 0;
+/******/ 					}
+/******/ 				}
+/******/ 		};
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		// no on chunks loaded
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = function(parentChunkLoadingFunction, data) {
+/******/ 			var chunkIds = data[0];
+/******/ 			var moreModules = data[1];
+/******/ 			var runtime = data[2];
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some(function(id) { return installedChunks[id] !== 0; })) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkIds[i]] = 0;
+/******/ 			}
+/******/ 		
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = self["webpackChunkbang_html"] = self["webpackChunkbang_html"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	}();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/cat.bang.js");
+/******/ 	
+/******/ })()
+;
