@@ -11,8 +11,6 @@
 
 # News
 
-New version coming. V5, builds integration with existing vanillaview API.
-
 Das konzeptionelle „Knall“-Gerüst ist eine Zeichenhilfe, die benutzerdefinierte Elemente druckt, sodass Sie Stilkapselung und komponentenbasierte Wiederverwendbarkeit integriert erhalten. Es hat auch minimale DOM-Unterschiede, JavaScript-Vorlagensyntax, keine Abhängigkeiten und muss querübersetzt werden. Entwickelt mit der Leistungsfähigkeit des Webs in HTML.
 
 Holen Sie es hier, [or on NPM @bang.html](https://npmjs.com/package/bang.html)
