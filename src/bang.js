@@ -339,8 +339,12 @@
 
       connectedCallback() {
         new Counter(this);
-        this.loadCheck = () => this.counts.check();
-        this.visibleCheck = () => this.classList?.contains('bang-styled');
+        this.loadCheck = () => this?.counts?.check?.();
+        this.visibleCheck = () => {
+          const result = this?.classList?.contains?.('bang-styled');
+          BBDEBUG && console.log(`Visible check. Result? ${result}`, this?.constructor?.name + '', this, globalThis.lastThis = this);
+          return result;
+        };
         this.loadKey = Math.random().toString(36);
         this.visibleLoadKey = Math.random().toString(36);
         say('log',name, 'connected');
