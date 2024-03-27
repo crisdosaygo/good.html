@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 rm -rf .build-temp/
 rm -rf dist/ 
@@ -14,6 +14,9 @@ cp src/err.js docs/
 cp src/err.js docs/7guis/
 
 
+if [[ -d "${HOME}/BrowserBox" ]]; then
+  mkdir -p ~/BrowserBox/src/public/voodoo/.bang.html.snapshot/src;
+fi
 cp docs/bang.js ~/BrowserBox/src/public/voodoo/.bang.html.snapshot/src/bang.js
 
 
