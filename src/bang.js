@@ -64,7 +64,7 @@
     const Started = new Set();
     const TRANSFORMING = new WeakSet();
     const Dependents = new Map();
-    const MAX_CONCURRENT_REQUESTS = 5;
+    const MAX_CONCURRENT_REQUESTS = 30;
     const RequestPipeLine = new Map();
     const RequestWaiting = [];
     class Counter {
