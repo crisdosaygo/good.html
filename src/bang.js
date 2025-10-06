@@ -36,12 +36,19 @@
     const MirrorNode = Symbol.for('[[MN]]');
     const DIV = document.createElement('div');
     const path = location.pathname;
+    const ABS_URL = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|\/)/;
+    const TEXT_DECODER = typeof TextDecoder === 'function' ? new TextDecoder() : null;
     const CONFIG = {
       htmlFile: 'markup.html',
       scriptFile: 'script.js',
       styleFile: 'style.css',
       bangKey: '_bang_key',
       componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}../components`,
+      componentBundleFile: 'components.bundle.json',
+      componentBundlePath: null,
+      componentBundleRootKey: 'components',
+      componentBundle: null,
+      useComponentBundle: false,
       allowUnset: true,
       unsetPlaceholder: EMPTY,
       EVENTS: `bond error load click pointerdown pointerup pointermove mousedown mouseup submit
@@ -61,6 +68,8 @@
     const CACHE = new Map();
     const syskeys = new Map();
     const Waiters = new Map();
+    let ComponentBundle;
+    let ComponentBundlePromise;
     const Started = new Set();
     const TRANSFORMING = new WeakSet();
     const Dependents = new Map();
@@ -943,6 +952,129 @@
       loaded().then(() => document.body.classList.add('bang-styled'));
     }
 
+    async function ensureComponentBundle() {
+      if ( ComponentBundle ) return ComponentBundle;
+
+      if ( ComponentBundlePromise ) {
+        return ComponentBundlePromise;
+      }
+
+      if ( CONFIG.componentBundle ) {
+        if ( typeof CONFIG.componentBundle === 'string' ) {
+          try {
+            const parsed = JSON.parse(CONFIG.componentBundle);
+            ComponentBundle = decodeBundleTree(parsed);
+            return ComponentBundle;
+          } catch (err) {
+            throw new ReferenceError(`Invalid JSON provided for component bundle: ${err}`);
+          }
+        } else if ( typeof CONFIG.componentBundle === 'object' ) {
+          ComponentBundle = decodeBundleTree(CONFIG.componentBundle);
+          return ComponentBundle;
+        }
+      }
+
+      const url = resolveComponentBundleUrl();
+
+      ComponentBundlePromise = pipeLinedFetch(url)
+        .then(async r => {
+          if ( !r.ok ) {
+            throw new ReferenceError(`Fetch error: ${url}, ${r.statusText}`);
+          }
+          return r.json();
+        })
+        .then(bundle => {
+          ComponentBundle = decodeBundleTree(bundle);
+          return ComponentBundle;
+        })
+        .catch(err => {
+          ComponentBundlePromise = undefined;
+          throw err;
+        });
+
+      return ComponentBundlePromise;
+    }
+
+    function resolveComponentBundleUrl() {
+      const base = (CONFIG.componentsPath || EMPTY).replace(/\/+$/, EMPTY);
+      const relative = CONFIG.componentBundlePath || CONFIG.componentBundleFile;
+
+      if ( !relative ) return `${base}/${CONFIG.componentBundleFile}`;
+      if ( ABS_URL.test(relative) ) return relative;
+
+      return `${base}/${relative.replace(/^\/+/, EMPTY)}`;
+    }
+
+    function decodeBundleTree(tree) {
+      if ( !tree || typeof tree !== 'object' ) return tree;
+      const decoded = Array.isArray(tree) ? [] : {};
+      for ( const [key, value] of Object.entries(tree) ) {
+        if ( value && typeof value === 'object' && !Array.isArray(value) ) {
+          decoded[key] = decodeBundleTree(value);
+        } else if ( typeof value === 'string' ) {
+          decoded[key] = decodeBase64ToText(value);
+        } else {
+          decoded[key] = value;
+        }
+      }
+      return decoded;
+    }
+
+    function decodeBase64ToText(value) {
+      if ( typeof value !== 'string' ) return value;
+
+      if ( typeof atob === 'function' ) {
+        const binary = atob(value);
+        if ( TEXT_DECODER ) {
+          const len = binary.length;
+          const bytes = new Uint8Array(len);
+          for ( let i = 0; i < len; i++ ) bytes[i] = binary.charCodeAt(i);
+          return TEXT_DECODER.decode(bytes);
+        }
+        let percent = '';
+        for ( let i = 0; i < binary.length; i++ ) {
+          const hex = binary.charCodeAt(i).toString(16).padStart(2, '0');
+          percent += `%${hex}`;
+        }
+        try {
+          return decodeURIComponent(percent);
+        } catch {
+          return binary;
+        }
+      }
+
+      if ( typeof Buffer === 'function' ) {
+        return Buffer.from(value, 'base64').toString('utf8');
+      }
+
+      throw new ReferenceError('No base64 decoder available in this environment.');
+    }
+
+    function getBundleRoot(bundle) {
+      if ( !bundle || typeof bundle !== 'object' ) return null;
+      if ( CONFIG.componentBundleRootKey ) {
+        return bundle[CONFIG.componentBundleRootKey] || null;
+      }
+      return bundle;
+    }
+
+    function getBundleFile(name, file) {
+      if ( !ComponentBundle ) return null;
+      let node = getBundleRoot(ComponentBundle);
+      if ( !node ) return null;
+
+      const segments = [];
+      if ( name ) segments.push(...`${name}`.split('/').filter(Boolean));
+      if ( file ) segments.push(file);
+
+      for ( const segment of segments ) {
+        if ( !node || typeof node !== 'object' ) return null;
+        node = node[segment];
+      }
+
+      return typeof node === 'string' ? node : null;
+    }
+
     async function fetchMarkup(name) {
       // cache first
         // we make any subsequent calls for name wait for the first call to complete
@@ -1007,20 +1139,43 @@
 
       if ( CACHE.has(key) ) return CACHE.get(key);
 
+      if ( CONFIG.useComponentBundle ) {
+        try {
+          const bundle = await ensureComponentBundle();
+          if ( !bundle ) {
+            throw new ReferenceError('Component bundle could not be loaded.');
+          }
+          const bundled = getBundleFile(name, file);
+          if ( typeof bundled === 'string' ) {
+            CACHE.set(key, bundled);
+            return bundled;
+          }
+          const error = new ReferenceError(`Bundle missing ${name ? `${name}/` : EMPTY}${file}`);
+          CACHE.set(key, error);
+          throw error;
+        } catch (err) {
+          const error = err instanceof Error ? err : new Error(`${err}`);
+          if ( !CACHE.has(key) ) CACHE.set(key, error);
+          throw error;
+        }
+      }
+
       const url = `${CONFIG.componentsPath}/${name ? name + '/' : EMPTY}${file}`;
-      let resp;
-      const fileText = await pipeLinedFetch(url).then(r => { 
-        if ( r.ok ) {
-          resp = r.text();
-          return resp;
-        } 
-        resp = new ReferenceError(`Fetch error: ${url}, ${r.statusText}`);
-        throw resp;
-      })
-      .then(e => e instanceof Error ? `/* no ${name}/${file} defined */` : e)
-      .finally(async () => CACHE.set(key, await resp));
-      
-      return fileText;
+      try {
+        const resp = await pipeLinedFetch(url);
+        if ( !resp.ok ) {
+          const error = new ReferenceError(`Fetch error: ${url}, ${resp.statusText}`);
+          CACHE.set(key, error);
+          throw error;
+        }
+        const text = await resp.text();
+        CACHE.set(key, text);
+        return text;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(`${err}`);
+        if ( !CACHE.has(key) ) CACHE.set(key, error);
+        throw error;
+      }
     }
 
     async function fetchStyle(name) {
