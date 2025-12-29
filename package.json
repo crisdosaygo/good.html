@@ -50,6 +50,6 @@
     "serve": "latest",
     "typescript": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "^6.0.1"
   }
 }
