@@ -1,6 +1,6 @@
 {
   "name": "bang.html",
-  "version": "10.0.1",
+  "version": "10.1.2",
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
   "main": "dist/pack.bang.js",
   "scripts": {
@@ -50,6 +50,6 @@
     "serve": "latest",
     "typescript": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "^6.0.1"
   }
 }
