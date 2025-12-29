@@ -1,31 +1,345 @@
 <!DOCTYPE html>
-<title>How to make a custom element void tag? BANG! A Web Components framework for the new age</title>
-<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<link rel=stylesheet href=style.css>
-<script src=err.js></script>
-<script type=application/javascript src=bang.js?453908345></script>
-<script>
-  bangFig({
-    useMagicClone: true,
-  });
-  bangLoaded().then(() => {
-    use('latest-greet');
-    use('warm-greeter');
-    use('greet-count');
+<html lang=en>
+<head>
+  <meta charset=utf-8>
+  <title>GOOD (BANG!) - Web Components UI toolbelt</title>
+  <meta name=viewport content="width=device-width,initial-scale=1">
+  <meta name=description content="GOOD (BANG!) is a zero-dependency Web Components UI framework with bang tags, async templating, and granular DOM updates.">
+  <link rel=icon href=favicon.ico>
+  <link rel=stylesheet href=style.css>
+  <script src=err.js></script>
+  <script src=https://unpkg.com/bang.html></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
-    setState('MyState', {
-      name: 'Uncle Bob',
-      greetCounts: {
-        value: 1
-      },
-      timings: [],
-      latestGreet: {
-        count: 0,
-        time: 'none'
+    :root {
+      --ink: #141414;
+      --paper: #f8f7f3;
+      --green: #3bb08f;
+      --green-dark: #2a7e67;
+      --sun: #f6c96b;
+      --rose: #e57fa6;
+      --blue: #4b72ff;
+      --shadow: rgba(20, 20, 20, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 10% 20%, #fff7e6, transparent 45%),
+        radial-gradient(circle at 90% 0%, #e8f7f0, transparent 42%),
+        radial-gradient(circle at 10% 90%, #fce4ef, transparent 40%),
+        var(--paper);
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      align-items: center;
+      padding: 28px 0 40px;
+    }
+
+    .hero h1 {
+      font-family: "Fraunces", serif;
+      font-size: clamp(2.8rem, 4vw, 4.2rem);
+      line-height: 1.05;
+      margin: 0 0 12px;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      max-width: 54ch;
+      margin: 0 0 20px;
+    }
+
+    .cta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-weight: 600;
+      border: 2px solid var(--ink);
+      box-shadow: 0 10px 24px -18px var(--shadow);
+      transition: transform 200ms ease, box-shadow 200ms ease;
+    }
+
+    .button.primary {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .button.ghost {
+      background: transparent;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 30px -20px var(--shadow);
+    }
+
+    .pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      background: #ffffffc4;
+      border: 1px solid #00000010;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+
+    .hero-card {
+      background: white;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 28px 60px -40px rgba(20, 20, 20, 0.35);
+      border: 1px solid #0000000d;
+    }
+
+    .hero-card h3 {
+      margin: 0 0 12px;
+    }
+
+    .hero-card pre {
+      background: #111;
+      color: #d7ffd9;
+      padding: 16px;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      overflow-x: auto;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-top: 18px;
+    }
+
+    .card {
+      background: #ffffffde;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid #0000000d;
+      box-shadow: 0 20px 40px -32px var(--shadow);
+      min-height: 140px;
+    }
+
+    .card h4 {
+      margin: 0 0 8px;
+    }
+
+    .section {
+      margin-top: 48px;
+    }
+
+    .section h2 {
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      margin: 0 0 12px;
+    }
+
+    .demo {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .demo-panel {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      border: 1px solid #00000012;
+    }
+
+    .demo-panel code {
+      display: block;
+      background: #f1f2ef;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+    }
+
+    .link-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .link-tile {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: #fffdf6;
+      border: 1px solid #00000010;
+      font-weight: 600;
+    }
+
+    .footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px dashed #0000001a;
+      font-size: 0.9rem;
+    }
+
+    .fade-up {
+      animation: fadeUp 700ms ease forwards;
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    .delay-1 { animation-delay: 100ms; }
+    .delay-2 { animation-delay: 200ms; }
+    .delay-3 { animation-delay: 300ms; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
       }
+
+      .demo {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fade-up {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+  <script>
+    bangFig({ useMagicClone: true });
+    bangLoaded().then(() => {
+      use('warm-greeter');
+      use('greet-count');
+
+      setState('MyState', {
+        name: 'Uncle Bob',
+        greetCounts: { value: 1 }
+      });
     });
-  });
-</script>
+  </script>
+</head>
 <body>
-<!warm-greeter state=MyState />
-<a href=7guis/>7 GUIs</a>
+  <div class=page>
+    <header class="hero fade-up">
+      <div>
+        <span class=pill>GOOD (BANG!) - Web Components UI toolbelt</span>
+        <h1>HTML-first UI components, with bang tags and direct DOM updates.</h1>
+        <p>GOOD keeps your UI stack simple: no build step, no VDOM, and no custom DSL. Just HTML, CSS, and a tiny runtime that upgrades bang tags into Custom Elements.</p>
+        <div class=cta>
+          <a class="button primary" href=7guis/>Launch 7GUIs demo</a>
+          <a class="button ghost" href=https://github.com/crisdosyago/good.html/tree/main/docs/components>Browse components</a>
+          <a class="button ghost" href=https://npmjs.com/package/bang.html>npm package</a>
+        </div>
+      </div>
+      <div class="hero-card fade-up delay-1">
+        <h3>Quick taste</h3>
+        <pre><code>&lt;script src=https://unpkg.com/bang.html&gt;&lt;/script&gt;
+&lt;script&gt;
+  use('sg-counter');
+  setState('ctr', {count: 0});
+&lt;/script&gt;
+&lt;!sg-counter state=ctr /&gt;</code></pre>
+      </div>
+    </header>
+
+    <section class="section fade-up delay-1">
+      <h2>Why GOOD feels different</h2>
+      <div class=grid>
+        <article class=card>
+          <h4>Bang tags</h4>
+          <p>Use `<!my-card />` and GOOD upgrades the comment node into a Custom Element.</p>
+        </article>
+        <article class=card>
+          <h4>Granular DOM updates</h4>
+          <p>Updates apply directly to text, attributes, and list items. No VDOM and no shadow DOM diffing.</p>
+        </article>
+        <article class=card>
+          <h4>File-based components</h4>
+          <p>Drop `markup.html`, `style.css`, and `script.js` in `components/name/` and you are done.</p>
+        </article>
+        <article class=card>
+          <h4>Async templating</h4>
+          <p>Promises and async functions resolve right inside `${...}` slots.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section demo fade-up delay-2">
+      <div class=demo-panel>
+        <h2>Live component</h2>
+        <p>This is the same warm-greeter used in the README tutorial, rendered via the local `components/` directory.</p>
+        <div class=demo-panel>
+          <!warm-greeter state=MyState />
+        </div>
+      </div>
+      <div class=demo-panel>
+        <h2>Component anatomy</h2>
+        <code>components/
+  warm-greeter/
+    markup.html
+    style.css
+    script.js</code>
+        <p>Each file is optional. Use only what you need.</p>
+      </div>
+    </section>
+
+    <section class="section fade-up delay-3">
+      <h2>Demos and docs</h2>
+      <div class=link-grid>
+        <a class=link-tile href=7guis/>7GUIs reference app</a>
+        <a class=link-tile href=cellophane/>Cells spreadsheet (WIP)</a>
+        <a class=link-tile href=ctr/>Simple counter</a>
+        <a class=link-tile href=https://github.com/crisdosyago/good.html/tree/main/docs/components>Component gallery source</a>
+      </div>
+    </section>
+
+    <section class="section fade-up delay-3">
+      <h2>API snapshot</h2>
+      <div class=demo-panel>
+        <code>use('my-component');
+setState('key', {value: 1});
+getState('key');
+cloneState('key');
+patchState('key', {value: 2});
+</code>
+      </div>
+    </section>
+
+    <footer class=footer>
+      <span>GOOD (BANG!) is zero-dependency and ships as a simple script tag or npm package.</span>
+    </footer>
+  </div>
+</body>
+</html>
