@@ -53,6 +53,8 @@ GOOD is a zero-dependency Web Components UI framework that favors real HTML, rea
 npm i --save bang.html
 ```
 
+Package details: https://www.npmjs.com/package/bang.html?activeTab=readme
+
 ## Component anatomy
 
 Each component lives in `components/<name>/` and can define any of the files below.
