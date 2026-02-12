@@ -42,7 +42,9 @@
     const EMPTY = '';
     const {stringify:_STR} = JSON;
     const JS = o => _STR(o, Replacer, EMPTY);
-    const isVV  = x => x?.code === CODE && Array.isArray(x.nodes);
+    const isVV  = x => (x?.code === CODE || (x?.type && ( 
+        x.type === 'MarkupObject' || x.type === 'MarkupAttrObject' 
+      ))) && Array.isArray(x?.nodes);
     const NextFunc          = () => `f${FuncCounter++}` + (Math.random()*10).toString(36).replace('.', '_');
 
   // logging
@@ -80,7 +82,7 @@
         ({state,_host} = v.shift());
         p.shift();
         v = await Promise.all(v.map(val => process(that, val, state, _host)));
-        const xyz = vanillaview(p,v);
+        const xyz = vanillaview(p,v, {_host});
         //xyz[Symbol.for('BANG-VV')] = true;
         DEBUG && console.log({state}, self.__state = state);
         return xyz;
@@ -88,7 +90,7 @@
         const laterFunc = async (state, _host) => {
           DEBUG && console.log({state}, self.__state = state);
           v = await Promise.all(v.map(val => process(that, val, state, _host)));
-          const xyz = vanillaview(p,v);
+          const xyz = vanillaview(p,v, {_host});
           //xyz[Symbol.for('BANG-VV')] = true;
           return xyz;
         };
@@ -99,11 +101,12 @@
     }
 
     export function c(p,...v) {
+      //console.error(`Using c (X) function. Not recommended`);
       return vanillaview(p,v, {useCache:false});
     }
 
   // main function (TODO: should we refactor?)
-    function vanillaview(p,v,{useCache:useCache=true}={}) {
+    function vanillaview(p,v,{useCache:useCache=true, _host}={}) {
       const retVal = {};
       let instance, cacheKey;
 
@@ -161,7 +164,18 @@
           cache[cacheKey] = retVal;
         }
         retVal.nodes.forEach(node => {
-          REMOVE_MAP.set(node, {ck:cacheKey, ik: instance.key+EMPTY});
+          const instanceKey = instance.key+EMPTY;
+          REMOVE_MAP.set(node, {ck:cacheKey, ik: instanceKey});
+          _host.destructors.add(() => {
+            DEBUG && console.log(`Destructor running for ${_host.name} to remove vv cache keys`, {cacheKey, instanceKey});
+            if ( cacheKey && instanceKey && instanceKey !== "undefined" ) {
+              if ( cache[cacheKey] ) {
+                cache[cacheKey].instances[instanceKey] = null;
+              }
+            } else if ( cacheKey ) {
+              cache[cacheKey] = null;
+            }
+          });
         });
       }
 
@@ -327,7 +341,6 @@
                 that.STATE.delete(stateKey);
                 const oKey = stateKey;
                 stateKey = new that.StateKey()+EMPTY;
-                console.log({oKey, stateKey});
               }
               that.STATE.set(stateKey, x);
               that.STATE.set(x, stateKey);
@@ -521,6 +534,14 @@
             const kill = REMOVE_MAP.get(n);
             if ( kill ) {
               killSet.add(JS(kill));
+              // NOTE:
+              // this next line is essential
+                // it checks which other VV fragments are descendents of the node being removed. And for each of those
+                // it adds the cache Keys of that fragment to the kill set, so their caches will also be killed
+                // this essential line prevents the re-rendering of cached components that are meant to be on-screen into 
+                // off-screen detached fragments, which occurs if we don't kill these caches, because their caches
+                // would indicate they need to be re-rendered at their insertion point, instad of re-created anew
+              const deps = [...REMOVE_MAP.entries()].forEach(([vvNode, k]) => n.contains(vvNode) && killSet.add(JS(k)));
             } else {
               DEBUG && console.warn(`No kill signature for`, n, REMOVE_MAP);
             }
@@ -529,7 +550,9 @@
             const {ck: cacheKey, ik: instanceKey} = JSON.parse(kill);
             try {
               if ( cacheKey && instanceKey && instanceKey !== "undefined" ) {
-                cache[cacheKey].instances[instanceKey] = null;
+                if ( cache[cacheKey] ) {
+                  cache[cacheKey].instances[instanceKey] = null;
+                }
               } else if ( cacheKey ) {
                 cache[cacheKey] = null;
               }
@@ -796,7 +819,6 @@
                 return O;
               }, {});
             }
-            console.log(eventName, funcVal, flags);
             node.removeEventListener(eventName, funcVal, flags); 
           } else {
             const index = externals.indexOf(funcVal);
@@ -828,7 +850,6 @@
       let {oldVal,node,index,name,val,lengths,oldAttrVal} = scope;
 
       let attr = node.getAttribute(name);
-
       let newAttrValue;
 
       if ( oldAttrVal === oldVal ) {
@@ -888,14 +909,11 @@
 
       const oName = name;
       let modifiers;
-      if ( name.includes(':') ) {
-        ([name, ...modifiers] = name.split(':'));
-      }
 
       if ( modifiers ) {
-        modifiers = modifiers.map(m => ([m, true]));
+        modifiers = Object.fromEntries(modifiers.map(m => ([m, true])));
         DEBUG && console.warn("not handling modifiers currently", {node, name, value, modifiers});
-        //node.addEventListener(name, funcValue, Object.fromEntries(modifiers));
+        //node.addEventListener(name, funcValue, modifiers);
       }
 
       if ( CONFIG.EVENTS.includes('on'+name) ) {
@@ -909,9 +927,8 @@
             return;
           }
         } else {
-          console.warn(`No host exists yet`);
+          DEBUG && console.warn(`No host exists yet`);
           if ( existingValue?.startsWith('this.') ) {
-            console.log('Not running replacement again for', {node, name, oName, value, existingValue});
             DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
             return;
           }
@@ -921,6 +938,7 @@
       try {
         node.setAttribute(name,isUnset(value) ? name : value);
       } catch(e) {
+        console.warn(`error`, e, {node, name, value});
       }
       // if you set style like this is fucks it up
       if ( name in node && name !== 'style' ) {

@@ -6,8 +6,9 @@
   "scripts": {
     "type": "npx tsc --allowJS --checkJS --outDir .types --target es6 src/bang.js",
     "lint": "clear && npx eslint src/bang.js || : && npx eslint src/vv/vanillaview.js",
-    "dev": "npm run clean && watch -n 5 ./scripts/cpfiles.sh & npx serve -p 8080 docs/",
-    "test": "npm run clean && watch -n 5 ./scripts/build.sh & npx serve -p 8080 docs/",
+    "dev": "npm run clean && npx serve -p 8080 docs/",
+    "test": "npm run clean && npm run freshen && npx serve -p 8080 docs/",
+    "freshen": "cp src/bang.js docs/7guis/ ; mkdir -p docs/7guis/vv/ ; cp src/vv/*.js docs/7guis/vv ",
     "7guis": "npm run clean && watch -n 5 ./scripts/build.sh & npx serve -p 8080 docs/",
     "7guis-dev": "npm run clean && watch -n 5 ./scripts/cpfiles.sh & npx serve -p 8080 docs/",
     "prod": "npm run clean && watch -n 10 npm run build& npx serve -p 8080 docs/",
