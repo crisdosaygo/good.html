@@ -280,11 +280,11 @@
         return myContentLoaded && myDependentsLoaded && styleCheck;
       }
 
-      async styleSheetsImported() {     
+      async styleSheetsImported() {
         // just a very basic version that works with the way we write components now
         // a single style import and a single stylesheet per component
 
-        // always first stylesheet is inserted by system (at top of markup template) 
+        // always first stylesheet is inserted by system (at top of markup template)
         // I think we can count on the above being true but not sure
 
         const rules = this?.shadowRoot?.styleSheets?.[0]?.cssRules;
@@ -293,7 +293,18 @@
           if ( !iRule ) {
             return true;
           }
-          await becomesTrue(() => !!iRule?.styleSheet?.rules?.length);
+          // Race two signals:
+          // 1. CSSOM check — works reliably in Chrome/Firefox
+          // 2. Fetch probe — if we can fetch the URL, it's in the HTTP/SW cache,
+          //    meaning the @import has (or will immediately have) the content.
+          //    This bypasses Safari's shadow DOM bug where CSSImportRule.styleSheet
+          //    stays null even after the imported CSS loads and applies visually.
+          await Promise.race([
+            becomesTrue(() => !!iRule?.styleSheet?.rules?.length),
+            iRule.href
+              ? fetch(iRule.href).then(r => r.ok)
+              : becomesTrue(() => !!iRule?.styleSheet?.rules?.length)
+          ]);
           return true;
         }
         return true;
