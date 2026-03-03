@@ -280,11 +280,11 @@
         return myContentLoaded && myDependentsLoaded && styleCheck;
       }
 
-      async styleSheetsImported() {     
+      async styleSheetsImported() {
         // just a very basic version that works with the way we write components now
         // a single style import and a single stylesheet per component
 
-        // always first stylesheet is inserted by system (at top of markup template) 
+        // always first stylesheet is inserted by system (at top of markup template)
         // I think we can count on the above being true but not sure
 
         const rules = this?.shadowRoot?.styleSheets?.[0]?.cssRules;
@@ -293,7 +293,18 @@
           if ( !iRule ) {
             return true;
           }
-          await becomesTrue(() => !!iRule?.styleSheet?.rules?.length);
+          // Race two signals:
+          // 1. CSSOM check — works reliably in Chrome/Firefox
+          // 2. Fetch probe — if we can fetch the URL, it's in the HTTP/SW cache,
+          //    meaning the @import has (or will immediately have) the content.
+          //    This bypasses Safari's shadow DOM bug where CSSImportRule.styleSheet
+          //    stays null even after the imported CSS loads and applies visually.
+          await Promise.race([
+            becomesTrue(() => !!iRule?.styleSheet?.rules?.length),
+            iRule.href
+              ? fetch(iRule.href).then(r => r.ok)
+              : becomesTrue(() => !!iRule?.styleSheet?.rules?.length)
+          ]);
           return true;
         }
         return true;
@@ -461,8 +472,16 @@
           } catch(e) {
             console.error(`Error evaluating component ${name}`, e, {Compose});
           }
-        }).catch(err => {  // otherwise if there is no such extension script, just use the Base class
+        }).catch(err => {  // if no extension script exists, use Base; transient network failures should retry
           BBDEBUG && say('log!', err);
+          const message = String(err?.message || err || '');
+          const isMissingScript = /Bundle missing|Fetch error:.*Not Found|Fetch error:.*404/i.test(message);
+          if ( !isMissingScript ) {
+            const scriptKey = `${CONFIG.scriptFile}:${name}`;
+            CACHE.delete(scriptKey);
+            Started.delete(scriptKey);
+            throw err;
+          }
           component = BangBase(name);
         });
       
@@ -693,7 +712,10 @@
       const result = {args, started: new Date};
       let pr;
       if ( RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
-        pr = fetch(...args).catch(err => (say('log', err), `/* ${err} */`));
+        pr = fetch(...args).catch(err => {
+          say('log', err);
+          throw err;
+        });
         result.pr = pr;
         RequestPipeLine.set(key, result);
         const complete = r => {
@@ -1173,7 +1195,13 @@
         return text;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(`${err}`);
-        if ( !CACHE.has(key) ) CACHE.set(key, error);
+        const isTransientNetworkError = /Failed to fetch|Load failed|NetworkError|The network connection was lost|fetch/i.test(error.message || '');
+        if ( isTransientNetworkError ) {
+          CACHE.delete(key);
+          Started.delete(key);
+        } else if ( !CACHE.has(key) ) {
+          CACHE.set(key, error);
+        }
         throw error;
       }
     }
@@ -1600,4 +1628,3 @@
       } else return value;
     }
 }());
-

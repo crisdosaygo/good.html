@@ -160,7 +160,7 @@ The main purpose of this repository is to continue evolving VanillaView core, ma
 
 ### Code of Conduct
 
-Dosyago has adopted a Code of Conduct that we expect project participants to adhere to. Please read [the full text](https://github.com/i5ik/vanillaviewjs/blob/main/docs/coc.md) so that you can understand what actions will and will not be tolerated.
+Dosaygo has adopted a Code of Conduct that we expect project participants to adhere to. Please read [the full text](https://github.com/i5ik/vanillaviewjs/blob/main/docs/coc.md) so that you can understand what actions will and will not be tolerated.
 
 ### Contributing Guide
 
