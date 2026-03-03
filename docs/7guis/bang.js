@@ -1018,9 +1018,10 @@
     }
 
     function resolveComponentBundleUrl() {
-      const base = (CONFIG.componentsPath || EMPTY).replace(/\/+$/, EMPTY);
-      const relative = CONFIG.componentBundlePath || CONFIG.componentBundleFile;
+      let base = (CONFIG.componentsPath || EMPTY).replace(/\/+$/, EMPTY);
+      let relative = CONFIG.componentBundlePath || CONFIG.componentBundleFile;
 
+      if ( base.endsWith('/components') ) base = base.replace(/\/components$/, '');
       if ( !relative ) return `${base}/${CONFIG.componentBundleFile}`;
       if ( ABS_URL.test(relative) ) return relative;
 
