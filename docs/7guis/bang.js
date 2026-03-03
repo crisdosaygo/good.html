@@ -1,1 +1,1631 @@
-(function(){var __webpack_modules__={226:function(__unused_webpack_module,exports,__webpack_require__){!function(e){const t=Math.random().toFixed(18),n=Symbol.for("[[IMMEDIATE]]"),o=I,r=L,s=()=>{},a=/(?:<!\-\-)?(key0.\d+)(?:\-\->)?/gm,i=/\w+=/,c=new class{beforeend(e,t){t.appendChild(e)}beforebegin(e,t){t.parentNode.insertBefore(e,t)}afterend(e,t){t.parentNode.insertBefore(e,t.nextSibling)}replace(e,t){t.parentNode.replaceChild(e,t)}afterbegin(e,t){t.insertBefore(e,t.firstChild)}innerhtml(e,t){t.replaceChildren(),t.appendChild(e)}insert(e,t){t.replaceChildren(e)}},l=new Map,u=document.createElement("div"),d="beforeend",h="",{stringify:f}=JSON,p=e=>f(e,P,h),m=e=>(e?.code===t||e?.type&&("MarkupObject"===e.type||"MarkupAttrObject"===e.type))&&Array.isArray(e?.nodes),E=()=>"f"+_+++(10*Math.random()).toString(36).replace(".","_"),g=e=>!!e&&("string"==typeof e.key||"number"==typeof e.key)&&Object.getOwnPropertyNames(e).length<=2;let _=10;const y={};async function T(e,...t){const o=this;let r,s,a=!1;0===e[0].length&&t[0].state&&(a=!0);const{key:i}=t.find(g)||{};if(a)return({state:r,_host:s}=t.shift()),e.shift(),t=await Promise.all(t.map(e=>w(o,e,r,s))),S(e,t,{_host:s});{const r=async(n,r)=>(t=await Promise.all(t.map(e=>w(o,e,n,r))),S(e,t,{_host:r}));return r[n]=!0,r}}function b(e,...t){return S(e,t,{useCache:!1})}function S(e,n,{useCache:o=!0,_host:r}={}){const s={};let a,i;if(n=n.map(G),o){a=n.find(g)||{},i=e.join("<link rel=join>");const{cached:t,firstCall:o}=function(e,t,n){let o,r=y[e];return null==r?(r=y[e]={},void 0!==n.key&&(r.instances={},r=r.instances[n.key]={}),o=!0):void 0!==n.key?r.instances?(r=r.instances[n.key],r?!0===n.kill?(r=y[e],r&&r.instances&&(r.instances[n.key]=null),r=null,o=!0):o=!1:o=!0):(r.instances={},o=!0):o=!1,{cached:r,firstCall:o}}(i,0,a);if(!o)return t.update(n),t;s.oldVals=Array.from(n)}else s.oldVals=Array.from(n);e=[...e];const c={},u=n.map(function(e){return(n,o)=>{if(g(n))return h;const r="key"+Math.random().toFixed(15);let s=r;return n.code===t&&Array.isArray(n.nodes)&&(s=`\x3c!--${s}--\x3e`),e[r]={vi:o,val:n,replacers:[]},s}}(c)),d=[];let f=h;for(;e.length>1;)f+=e.shift()+u.shift();f+=e.shift();const p=x(f),m=document.createTreeWalker(p,NodeFilter.SHOW_ALL);do{B({walker:m,vmap:c,externals:d})}while(m.nextNode());return Object.assign(s,{externals:d,v:Object.values(c),cacheKey:i,instance:a,to:C,update:j,code:t,nodes:Array.from(p.childNodes)}),o&&(void 0!==a.key?y[i].instances[a.key]=s:y[i]=s,s.nodes.forEach(e=>{const t=a.key+h;l.set(e,{ck:i,ik:t}),r.destructors.add(()=>{i&&t&&"undefined"!==t?y[i]&&(y[i].instances[t]=null):i&&(y[i]=null)})})),s}async function w(e,o,r,s){if("string"==typeof o)return o;if("number"==typeof o)return o+h;if("boolean"==typeof o)return o+h;if(o instanceof Date)return o+h;if(A(o)){if(CONFIG.allowUnset)return CONFIG.unsetPlaceholder||h;throw new TypeError(`Value cannot be unset, was: ${o}`)}if(o instanceof Promise)return await w(e,await o.catch(e=>e+h),r,s);if(o instanceof Element)return o.outerHTML;if(o instanceof Node)return o.textContent;if(m(o))return{code:t,externals:o.externals,nodes:o.nodes};const a=Array.isArray(o)&&(0===o.length||m(o[0]));if(null!==(i=o)&&i[Symbol.iterator]instanceof Function){if(a)return U(o);if(o[0]instanceof Function&&!o[0][n]){const e=N(...o);if(s.names.has(e)){const{func:t,name:n}=s.names.get(e);if(n)return s.funcs.add(e=>(e[n]=e[n]||t,n)),n}const t=E(),n=function(e){for(const t of o)try{t(e)}catch(n){console.warn("Handler in func array failed",{fun:t,e:n,ev:e,x:o})}};return s.names.set(e,{name:t,func:n}),s.funcs.add(e=>(e[t]=n,t)),`${t}(event)`}return o[0]instanceof Element||o[0]instanceof Node?{code:t,externals:[],nodes:o}:w(e,await Promise.all((await Promise.all(Array.from(o)).catch(e=>e+h)).map(t=>w(e,t,r,s))),r,s)}var i;const c=g(o),l=o.code===t&&"string"==typeof o.str;if(c||l||m(o))return o;if(o[n]&&"AsyncFunction"===Object.getPrototypeOf(o).constructor.name)return await w(e,await o(r,s),r,s);if(o[n]&&o instanceof Function)return o(r,s);if(o instanceof Function){const e=N(o);if(s.names.has(e)){const{func:t,name:n}=s.names.get(e);if(n)return s.funcs.add(e=>(e[n]=e[n]||t,n)),n}const t=E();return s.names.set(e,{name:t,func:o}),s.funcs.add(e=>(e[t]=o,t)),`${t}(event)`}{let t;if(Object.prototype.hasOwnProperty.call(o,CONFIG.bangKey)){t=new e.StateKey(o[CONFIG.bangKey])+h;const n=e.STATE.get(t);e.STATE.delete(n),e.STATE.set(t,o),e.STATE.set(o,t)}else{const n=p(o);if(e.STATE.has(o)||e.STATE.has(n)){t=(e.STATE.get(o)||e.STATE.get(n)).replace(/.json.last$/,"");const r=e.STATE.get(t+".json.last");n!==r&&(e.STATE.delete(r),t.startsWith("system-key")&&(e.STATE.delete(t),t=new e.StateKey+h),e.STATE.set(t,o),e.STATE.set(o,t))}else t=new e.StateKey+h,e.STATE.set(t,o),e.STATE.set(o,t);e.STATE.set(n,t+".json.last"),e.STATE.set(t+".json.last",n)}return t+=h,t}}function N(...e){return`${e.map(e=>e.toString()).join(";")}`}function A(e){return null==e}function C(e,t){const n=(t||"replace").toLocaleLowerCase(),o=document.createDocumentFragment();this.nodes.forEach(e=>o.appendChild(e));const r=e instanceof Node?e:document.querySelector(e);try{c[n](o,r)}catch(t){switch(t.constructor&&t.constructor.name){case"DOMException":H({error:"Error inserting template into DOM. Position must be one of: replace, beforebegin, afterbegin, beforeend, innerhtml, afterend"});break;case"TypeError":H({error:(s=e,`Error inserting template into DOM. Location ${s} was not found in the document.`)});break;default:throw t}}for(var s;this.externals.length;)this.externals.shift()()}function B({walker:e,vmap:t,externals:n}){const o=e.currentNode;if(o.shadowRoot instanceof ShadowRoot)throw new TypeError("Shadow not supported here currently");switch(o.nodeType){case Node.ELEMENT_NODE:!function({node:e,vmap:t,externals:n}){R(e).forEach(({name:o,value:r}={})=>{const s={node:e,vmap:t,externals:n,name:o,lengths:[]};a.lastIndex=0;let i=a.exec(o);for(;i;)k(i,s,{updateName:!0}),i=a.exec(o);for(a.lastIndex=0,i=a.exec(r);i;)k(i,s,{updateName:!1}),i=a.exec(r)})}({node:o,vmap:t,externals:n});break;case Node.COMMENT_NODE:case Node.TEXT_NODE:!function({node:e,vmap:t,externals:n}){const o=[],r=e.nodeValue;let s=a.exec(r);for(;s;){const{index:i}=s,c=s[1],l=t[c],u=v({node:e,index:i,lengths:o,val:l}),d=()=>{try{u(l.val)}catch(e){console.warn(`Error in replacer for key ${c}`,{val:l,error:e})}O.delete(c)};n.push(d),O.set(c,d),l.replacers.push(u),s=a.exec(r)}}({node:o,vmap:t,externals:n})}}Object.assign(T,{attrskip:r,skip:o,attrmarkup:L,markup:I,guardEmptyHandlers:function(e){return Array.isArray(e)?0==e.length?[s]:e:A(e)?s:void 0},die:H}),Object.assign(globalThis,{vanillaview:{c:b,s:T}});const O=new Map;function v(e){const{node:t}=e,n=Object.assign({},e,{oldVal:{length:20},oldNodes:[t],lastAnchor:t});return e=>{n.oldVal!=e&&(n.val.val=e,"vanillaviewobject"===F(e)?function(e,t){let{oldNodes:n,lastAnchor:o}=t;if(e.nodes.length)if(r=n,s=e.nodes,r.length==s.length&&Array.from(r).every((e,t)=>e==s[t]));else{const n=[];for(Array.from(e.nodes).forEach(e=>{if(document.contains(e.ownerDocument))for(;n.length;){const t=n.shift();e.parentNode.insertBefore(t,e)}else n.push(e)});n.length;){const e=n.shift();o.parentNode.insertBefore(e,o)}t.lastAnchor=e.nodes[e.nodes.length-1]}else{const e=function(e){let t=[...e.parentNode.childNodes].find(e=>e.isConnected&&e.nodeType==Node.COMMENT_NODE&&"vanillaview_placeholder"==e.nodeValue);return t||(t=x("\x3c!--vanillaview_placeholder--\x3e").firstChild),t}(o);o.parentNode.insertBefore(e,o.nextSibling),t.lastAnchor=e}var r,s;const a=(i=n,c=e.nodes,i=new Set(i),c=new Set(c),new Set([...i].filter(e=>!c.has(e))));var i,c;if(a.size){const e=document.createDocumentFragment(),t=new Set;a.forEach(n=>{if(e.appendChild(n),n.linkedCustomElement&&e.appendChild(n.linkedCustomElement),n.nodeType===Node.COMMENT_NODE&&n.textContent.match(/key\d+/))return;const o=l.get(n);o&&(t.add(p(o)),[...l.entries()].forEach(([e,o])=>n.contains(e)&&t.add(p(o))))}),t.forEach(e=>{const{ck:t,ik:n}=JSON.parse(e);try{t&&n&&"undefined"!==n?y[t]&&(y[t].instances[n]=null):t&&(y[t]=null)}catch(o){console.warn("Error in kill for",{kill:e,cacheKey:t,instanceKey:n})}})}for(t.oldNodes=e.nodes||[o];e.externals.length;)e.externals.shift()()}(e,n):function(e,t){let{oldVal:n,index:o,val:r,lengths:s,node:a}=t;const i=r.vi,c=20*Object.keys(s.slice(0,i)).length,l=s.slice(0,i).reduce((e,t)=>e+t,0),u=a.nodeValue;s[i]=e.length;const d=l-c,h=u.slice(0,o+d)+e+u.slice(o+d+n.length);a.nodeValue=h,a.linkedCustomElement&&h!==n&&function(e){const t=e.linkedCustomElement,n=x(`<span ${e.textContent}></span>`).firstChild,o=new Set(R(t).filter(({name:e})=>!e.startsWith("on")).map(({name:e})=>e));R(n).forEach(({name:e,value:n})=>{e!==t.localName&&(e.startsWith("on")||(t.setAttribute(e,n),o.delete(e)))}),o.forEach(e=>t.removeAttribute(e))}(a),t.oldVal=e}(e,n))}}function k(e,t,{updateName:n}){const{index:o,input:r}=e,s=Object.assign({},t,{index:o,input:r,updateName:n,val:t.vmap[e[1]],oldVal:{length:20},oldName:t.name});let a;a=n?function(e){let{oldName:t,node:n,val:o}=e;return e=>{if(t==e)return;o.val=e;const r=n.hasAttribute(t)?t:h;if(r!==e){if(r&&(n.removeAttribute(t),n[t]=void 0),e){let t,o=e=e.trim();if(i.test(e)){const n=e.indexOf("=");[o,t]=[e.slice(0,n),e.slice(n+1)]}M(n,o,t)}t=e}}}(s):function(e){const t=t=>{if(e.oldVal!=t)switch(e.val.val=t,F(t)){case"funcarray":!function(e,t){let{oldVal:n,node:o,name:r,externals:s}=t;if(n&&!Array.isArray(n)&&(n=[n]),"bond"!==r){let t={};r.includes(":")&&([r,...t]=r.split(":"),t=t.reduce((e,t)=>(e[t]=!0,e),{})),n&&n.forEach(e=>o.removeEventListener(r,e,t)),e.forEach(e=>o.addEventListener(r,e,t))}else n&&n.forEach(e=>{const t=s.indexOf(e);t>=0&&s.splice(t,1)}),e.forEach(e=>s.push(()=>e(o)));t.oldVal=e}(t,e);break;case"function":!function(e,t){let{oldVal:n,node:o,name:r,externals:s}=t;if("bond"!==r){let t={};r.includes(":")&&([r,...t]=r.split(":"),t=t.reduce((e,t)=>(e[t]=!0,e),{})),n&&o.removeEventListener(r,n,t),o.addEventListener(r,e,t),M(o,r,h)}else{if(n){const e=s.indexOf(n);e>=0&&s.splice(e,1)}s.push(()=>e(o))}t.oldVal=e}(t,e);break;case"handlers":!function(e,t){let{oldVal:n,node:o,externals:r}=t;n&&"object"==typeof n&&Object.entries(n).forEach(([e,t])=>{if("bond"!==e){let n={};e.includes(":")&&([e,...n]=e.split(":"),n=n.reduce((e,t)=>(e[t]=!0,e),{})),o.removeEventListener(e,t,n)}else{const e=r.indexOf(t);e>=0&&r.splice(e,1)}}),Object.entries(e).forEach(([e,t])=>{if("bond"!==e){let n={};e.includes(":")&&([e,...n]=e.split(":"),n=n.reduce((e,t)=>(e[t]=!0,e),{})),o.addEventListener(e,t,n)}else r.push(()=>t(o))}),t.oldVal=e}(t,e);break;case"vanillaviewobject":D(t=function(e){const t=document.createDocumentFragment();e.forEach(e=>t.appendChild(e.cloneNode(!0)));const n=document.createElement("body");return n.appendChild(t),n.innerHTML}(t.nodes),e);break;case"markupattrobject":t=t.str;default:D(t,e)}};return t(e.val.val),t}(s),s.externals.push(()=>a(s.val.val)),s.val.replacers.push(a)}function P(e,t){return"function"==typeof this[e]?t.toString():t instanceof Node?`${t.nodeName}//${t.nodeValue||t.outerHTML||t.textContent}`:t}function R(e){return e.hasAttribute?(e.hasAttribute("class")&&e.setAttribute("class",$(e.getAttribute("class"))),Array.from(e.attributes)):[]}function D(e,t){let n,{oldVal:o,node:r,index:s,name:a,val:i,lengths:c,oldAttrVal:l}=t,u=r.getAttribute(a);if(l===o)n=e;else{let r=0;const l=i.vi,d=20*Object.keys(c.slice(0,l)).length;"class"==a&&(0==(e=e.trim()).length&&(r=-1),t.val.val=e),c[l]=e.length+r;const f=c.slice(0,l).reduce((e,t)=>e+t,0)-d,p=u.slice(0,s+f),m=u.slice(s+f+o.length);if("class"==a){const t=0==o.length?" ":h;n=p+t+e+t+m}else n=p+e+m}u!==n&&M(r,a,n),t.oldVal=e,t.oldAttrVal=n}function M(e,t,n){if("class"==t&&(n=$(n)),CONFIG.EVENTS.includes("on"+t)){t="on"+t;const n=e.getAttribute(t);if(e.getRootNode().host){if(e.getRootNode().host.paths.has(n))return}else if(n?.startsWith("this."))return}try{e.setAttribute(t,A(n)?t:n)}catch(o){console.warn("error",o,{node:e,name:t,value:n})}if(t in e&&"style"!==t)try{e[t]=!!A(n)||n}catch(e){}}function F(e){const n=typeof e;return"function"===n?"function":e.code===t&&Array.isArray(e.nodes)?"vanillaviewobject":e.code===t&&"string"==typeof e.str?"markupattrobject":Array.isArray(e)&&(0===e.length||e[0].code===t&&Array.isArray(e[0].nodes))?"vanillaviewarray":!Array.isArray(e)||0!==e.length&&"function"!=typeof e[0]?"object"===n?"handlers":"default":"funcarray"}function I(e){const n=x(e=A(e)?h:e);return{type:"MarkupObject",code:t,nodes:Array.from(n.childNodes),externals:[]}}function L(e){return e=(e=A(e)?h:e).replace(/"/g,"&quot;"),{type:"MarkupAttrObject",code:t,str:e}}function $(e){return(e=e.trim()).replace(/\s+/g," ")}function x(e){return u.replaceChildren(),u.insertAdjacentHTML(d,`<template>${e}</template>`),u.firstElementChild.content}function G(e){const n=Array.isArray(e)&&(0===e.length||m(e[0])),o=A(e),r=e.code!==t&&Array.isArray(e.nodes),s="object"==typeof e;return n?U(e):g(e)||e.code===t?e:(o&&H({error:"Unset values not allowed here."}),r&&H({error:"Possible XSS / object forgery attack detected. Object code could not be verified."}),Array.isArray(e)&&e[0]instanceof Node?{code:t,nodes:e,externals:[]}:Array.isArray(e)&&e[0]instanceof Function?e:(s&&H({error:(a=e,{message:"Object values not allowed here.",x:a})}),e+h));var a}function U(e){const n=[],o=[];for(const t of e)n.push(...t.externals),o.push(...t.nodes);return{v:[],code:t,oldVals:[],nodes:o,to:C,update:j,externals:n}}function j(e){this.v.filter(({vi:t})=>function(e,t){const[n,o]=[e,t].map(F);let r;if(n!=o)r=!0;else switch(n){case"vanillaviewobject":case"funcarray":case"function":case"vanillaviewarray":case"markupattrobject":r=!0;break;default:r=p(e)!==p(t)}return r}(e[t],this.oldVals[t])).forEach(({vi:t,replacers:n})=>n.forEach(n=>n(e[t]))),this.oldVals=Array.from(e)}function H(e,t){throw e.stack=(new Error).stack.split(/\s*\n\s*/g),e}e.c=b,e.s=T}(exports),function(){const BBDEBUG=!1,SK_BBDEBUG=!1,IMMEDIATE=Symbol.for("[[IMMEDIATE]]"),NAMESPACE="b",PIPELINE_REQUESTS=!0,RANDOM_SLEEP_ON_FIRST_PRINT=!0,RESPONSIVE_MEDIATION=!0,USE_XPATH=!0,X_NS_ATTRS=`.//@*[starts-with(name(), '${NAMESPACE}:')]`,X_NEWLISTENING=document.createExpression(X_NS_ATTRS),XON_EVENT_ATTRS=".//@*[starts-with(local-name(), 'on')]",X_LISTENING=document.createExpression(XON_EVENT_ATTRS),OPTIMIZE=!0,GET_ONLY=!0,MOBILE=isMobile(),GC_TIMEOUT=1e4,EMPTY="",{stringify:_STR}=JSON,Reserved=new Set(["_self","_host","_top"]),LIGHTHOUSE=navigator.userAgent.includes("Chrome-Lighthouse"),DOUBLE_BARREL=/^\w+-(?:\w+-?)*$/,POS="beforeend",LOCAL_PATH="this.",PARENT_PATH="this.getRootNode().host.",ONE_HIGHER="getRootNode().host.",CALL_WITH_EVENT="(event)";let comp=0;const NextComponent=()=>`b${comp++}${Math.random().toString(36)}`,F=_FUNC,G=_GFUNC,FUNC_CALL=/\);?$/,MirrorNode=Symbol.for("[[MN]]"),DIV=document.createElement("div"),path=location.pathname,ABS_URL=/^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|\/)/,TEXT_DECODER="function"==typeof TextDecoder?new TextDecoder:null,CONFIG={htmlFile:"markup.html",scriptFile:"script.js",styleFile:"style.css",bangKey:"_bang_key",componentsPath:`${path}${path.endsWith("/")?EMPTY:"/"}../components`,componentBundleFile:"components.bundle.json",componentBundlePath:null,componentBundleRootKey:"components",componentBundle:null,useComponentBundle:!0,allowUnset:!0,unsetPlaceholder:EMPTY,EVENTS:"bond error load click pointerdown pointerup pointermove mousedown mouseup submit\n        mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend \n        dragmove drag mouseover mouseout focus blur focusin focusout scroll\n        input change compositionstart compositionend text paste beforepaste select cut copy\n        keydown keyup keypress compositionupdate selectionchange \n        contextmenu wheel\n      ".split(/\s+/g).filter(e=>e.length).map(e=>`[on${e}]`).join(","),delayFirstPaintUntilLoaded:!1,capBangRatioAtUnity:!1,noHandlerPassthrough:!1,useMagicClone:!0},History=[],STATE=new Map,CACHE=new Map,syskeys=new Map,Waiters=new Map;let ComponentBundle,ComponentBundlePromise;const Started=new Set,TRANSFORMING=new WeakSet,Dependents=new Map,MAX_CONCURRENT_REQUESTS=30,RequestPipeLine=new Map,RequestWaiting=[];class Counter{started=0;finished=0;constructor(e){e.counts=this,this.root=e}check(){const{root:e}=this;let t=!1;if(e===document)t=0===e.querySelectorAll(".bang-el:not([lazy])").length;else{const e=this.started>0,n=this.finished>=this.started;t=e&&n}return t}start(){this.root==document&&say("log","Counting start"),this.started++}finish(){this.root==document&&say("log","Counting finished"),this.finished++}}const SHADOW_OPTS={mode:"open",delegatesFocus:!0},OBSERVE_OPTS={subtree:!0,childList:!0,characterData:!0},INSERT="insert",ALL_DEPS={allDependents:!0},Env=Object.create(null);let LoadChecker,RequestId=0,hindex=0,observer,systemKeys=1,_c$,_s$,firstState;const BangBase=e=>class t extends HTMLElement{static#e=["state"];static get observedAttributes(){return Array.from(t.#e)}#t=e;#n=[];#o=new Set;#r=new Map;#s=new Map;#a=new Set;#i;key;constructor(){super(),this.cookMarkup=async(e,t)=>{BBDEBUG&&console.log(`Component ${this.#t}`);const n=await cook.call(this,e,t);BBDEBUG&&console.log(`Component : ${this.#t}`),BBDEBUG&&console.log(`State host: ${this.name}`),BBDEBUG&&console.log(`Will add ${this.#o.size} event handler functions`),this.name!==this.#t&&BBDEBUG&&console.info("\tComponent and _host value differ"),this.#o.forEach(e=>{try{const t=e(this);BBDEBUG&&console.log(`Applied automatic event handler function ${t} to component`,this),this.#o.delete(e)}catch(e){console.warn(e)}}),BBDEBUG&&console.log();let o=this.shadowRoot;if(o)BBDEBUG&&console.log("already has shadow",this),this.needsRefresh&&(this.cookListeners(o),this.needsRefresh=!1);else{const e=this.attachShadow(SHADOW_OPTS);observer.observe(e,OBSERVE_OPTS),await n.to(e,INSERT);const t=await findBangs(transformBang,e,ALL_DEPS);this.#n=t.map(e=>e.untilVisible()),this.cookListeners(e)}},this.markLoaded=async()=>{if(this.alreadyPrinted=!0,!this.loaded){this.counts.finish();const e=await this.untilLoaded();e?(this.loaded=e,this.setVisible(),this.isLazy||setTimeout(()=>document.counts.finish(),0)):console.warn("Not loaded",this)}}}prepareState(){}get others(){return this.#i?this.#i:{}}set others(e){this.#i=e}get destructors(){return this.#a}get paths(){return this.#s}get names(){return this.#r}get funcs(){return this.#o}get name(){return this.#t}async print(){this.alreadyPrinted||this.prepareVisibility();const e=this.handleAttrs(this.attributes);if(OPTIMIZE){const t=JS(e);if(this.alreadyPrinted&&this.lastState===t)return;this.lastState=t}return this.printShadow(e)}update(){return this.fastUpdate?this.fastUpdate():this.print()}rerender(){this.printShadow(this.state)}prepareVisibility(){this.classList.add("bang-el"),this.counts.start(),this.isLazy||document.counts.start(),this.classList.remove("bang-styled"),fetchStyle(e).catch(e=>{say("warn",e)})}async untilLoaded(){const e=(await Promise.all(this.#n)).every(e=>e),t=await becomesTrue(this.loadCheck,this.loadKey),n=await becomesTrue(()=>this.styleSheetsImported());return BBDEBUG&&console.log(new Date-self.Start),t&&e&&n}async styleSheetsImported(){const e=this?.shadowRoot?.styleSheets?.[0]?.cssRules;if(e){const t=[...e].find(e=>e instanceof CSSImportRule);return!t||(await becomesTrue(()=>!!t?.styleSheet?.rules?.length),!0)}return!0}async untilVisible(){return!!this.isLazy||await becomesTrue(this.visibleCheck,this.visibleLoadKey)}get deps(){return this.#n}updateIfChanged(e){const{didChange:t}=stateChanged(e);if(t){const n=this.getAttribute("state"),o=updateState(e);BBDEBUG&&console.log({didChange:t,oKey:n,newKey:o},this);const r=Dependents.get(this)||new Set;r.add(this),Dependents.set(o,r),r.forEach(e=>e.setAttribute("state",o))}}setVisible(){this.classList.add("bang-styled")}get state(){return getState(this.getAttribute("state"))}set state(e){const t=this.getAttribute("state");return t.startsWith("system-key:")?this.updateIfChanged(this.state):setState(t,e)}attributeChangedCallback(e,t){"state"!==e||isUnset(t)||this.update()}connectedCallback(){new Counter(this),this.loadCheck=()=>this?.counts?.check?.(),this.visibleCheck=()=>{const e=this?.classList?.contains?.("bang-styled");return BBDEBUG&&console.log(`Visible check. Result? ${e}`,this?.constructor?.name+"",this,globalThis.lastThis=this),e},this.loadKey=Math.random().toString(36),this.visibleLoadKey=Math.random().toString(36),say("log",e,"connected"),this.handleAttrs(this.attributes,{originals:!0}),this.hasAttribute("lazy")?(this.isLazy=!0,this.hasAttribute("super")?(this.superLazy=!0,loaded().then(()=>sleep(400*Math.random()).then(()=>this.print()))):RANDOM_SLEEP_ON_FIRST_PRINT?sleep(160*Math.random()).then(()=>this.print()):this.print()):this.print()}disconnectedCallback(){BBDEBUG&&console.log(`${this.name} disconnecting...`),this.alreadyPrinted=!1,this.loaded=!1,this.destructors.forEach(e=>{try{BBDEBUG&&console.log("Running destructor",e.toString()),e()}catch(t){console.warn(`Destructor for ${this.name} failed`,t,e)}}),this.needsRefresh=!0}cookListeners(e){return cookListeners(e)}handleAttrs(e,{node:t,originals:n}={}){const o={};t||(t=this);for(const{name:r,value:s}of e)isUnset(s)||handleAttribute(r,s,{node:t,originals:n,stateHolder:o,host:this});return self._states.push(o.state),o.state}printShadow(e){if(!e){BBDEBUG&&console.warn(`No state on component ${this.name}. Will pass empty state`),BBDEBUG&&console.dir(this);const t=new StateKey+"";setState(t,e={}),this.setAttribute("state",t),BBDEBUG&&console.log(`Assigned empty state to key ${t}`)}return fetchMarkup(this.#t).then(t=>this.cookMarkup(t,e)).catch(e=>BBDEBUG&&say("warn!",e)).finally(this.markLoaded)}};class StateKey extends String{constructor(e){if(BBDEBUG||SK_BBDEBUG){const e=new Error("state key").stack;self.syskeys.set(`system-key:${systemKeys+2}`,e)}super(null==e?`system-key:${systemKeys+=2}`:`client-key:${e}`)}}async function use(name){if(self.customElements.get(name))return;let component;BBDEBUG&&console.log("using",name),await fetchScript(name).then(script=>{const Base=BangBase(name),Compose=`(function () { ${Base.toString()}; return ${script}; }())`;try{with({...Env})component=eval(Compose)}catch(e){console.error(`Error evaluating component ${name}`,e,{Compose:Compose})}}).catch(e=>{BBDEBUG&&say("log!",e),component=BangBase(name)}),self.customElements.get(name)||self.customElements.define(name,component)}function setEnv(e){e&&Object.assign(Env,e)}async function schedule(e,t,{batchSize:n=1,yieldTime:o=30,strictSerial:r=!0,useFrame:s=!1}={}){const a=[];let i=0,c=0;for await(const l of e){let e;if(e=r?await t(l,i):t(l,i),a.push(e),RESPONSIVE_MEDIATION){if(i++,c++,c<n)continue;c=0,s?await nextFrame():o>-1&&await sleep(o)}}return a}function undoState(e,t=e=>e){for(;hindex>0;)if(hindex-=1,History[hindex].name===e)return setState(e,t(History[hindex].value)),!0;return!1}function redoState(e,t=e=>e){for(;hindex<History.length-1;)if(hindex+=1,History[hindex].name===e)return setState(e,t(History[hindex].value)),!0;return!1}function bangFig(e={}){console.log(e),Object.assign(CONFIG,e)}function immediate(e){if(!(e instanceof Function))throw new TypeError(`immediate can only be called on a function. Recieved: ${e}`);e[IMMEDIATE]||Object.defineProperty(e,IMMEDIATE,{value:!0,configurable:!1,enumerable:!1,writable:!1})}function runCode(context,str){with({...Env,...context})return eval(str)}function stateChanged(e){const t=STATE.get(e),n=STATE.get(t+".json.last"),o=JS(e);return{key:t,didChange:n!==o,stateJSON:o,oStateJSON:n}}function updateState(e,t){if(!(t=t||STATE.get(e)))throw console.warn("no key for state",e),new ReferenceError("Key must exist to update state.");const n=t,o=STATE.get(t+".json.last"),r=JS(e);STATE.delete(o),STATE.set(t,e),BBDEBUG&&console.log({key:t,state:e});const s=Dependents.get(n);if(t.startsWith("system-key:"))try{STATE.delete(t),STATE.delete(t+".json.last"),t=new StateKey+"",STATE.set(t,e),STATE.set(e,t),s&&s.forEach(e=>e.setAttribute("state",t)),BBDEBUG&&console.log({key:t,oKey:n})}catch(e){console.warn(e)}return s&&Dependents.set(t,s),STATE.set(t+".json.last",r),STATE.set(r,t+".json.last"),t}function getViews(e){const t=STATE.get(e),n=Dependents.get(t);return n?Array.from(n):(console.warn("No acquirers for key"),[])}function setState(e,t,{rerender:n=!0,save:o=!1}={}){const r=JS(t);BBDEBUG&&console.log({jss:r,state:t});let s=e+".json.last";if(GET_ONLY&&STATE.has(e)?STATE.get(s)!==r&&(e=updateState(t,e),BBDEBUG&&console.log({key:e},"no where to put")):(STATE.set(e,t),STATE.set(t,e),STATE.set(r,s),STATE.set(s,r)),o&&(hindex=Math.min(hindex+1,History.length),History.splice(hindex,0,{name:e,value:clone(t)})),n){const t=Dependents.get(e);t&&t.forEach(e=>e.update())}return firstState||(firstState=t,BBDEBUG&&console.log(`Set first state at key ${e}`,t)),!0}function getState(e){return STATE.get(e)}function patchState(e,t){return setState(e,t,{rerender:!1})}function cloneState(e,t=GET_ONLY){if(t)return STATE.get(e);if(STATE.has(e))return clone(STATE.get(e));throw new ReferenceError(`State store does not have the key ${e}`)}async function loaded(){return becomesTrue(LoadChecker)}async function bangLoaded(){return becomesTrue(bangLoadedCheck)}function bangLoadedCheck(){return"function"==typeof _c$}async function pipeLinedFetch(...e){if(!PIPELINE_REQUESTS)return fetch(...e);const t=nextRequestId(),n={args:e,started:new Date};let o;if(RequestPipeLine.size<MAX_CONCURRENT_REQUESTS){o=fetch(...e).catch(e=>(say("log",e),`/* ${e} */`)),n.pr=o,RequestPipeLine.set(t,n);const r=e=>{const n=RequestPipeLine.get(t);if(n.finished=new Date,n.duration=n.finished-n.started,RequestPipeLine.delete(t),RequestWaiting.length&&RequestPipeLine.size<MAX_CONCURRENT_REQUESTS){const e=RequestWaiting.shift();fetch(...e.args).then(r).then(t=>(e.resolve(t),t)).catch(t=>(e.reject(t),t)),RequestPipeLine.set(t,e)}return e};o.then(r)}else{let e,t;o=new Promise((n,o)=>(e=n,t=o)),n.resolve=e,n.reject=t,RequestWaiting.push(n)}return o}function nextRequestId(){return`${RequestId++}${Math.random().toString(36)}`}function cookListeners(e){const t=e.getRootNode().host;BBDEBUG&&console.log({root:e,that:t});const n=select(e,USE_XPATH?X_LISTENING:CONFIG.EVENTS);BBDEBUG&&console.log({listening:n}),USE_XPATH?n.forEach(({name:e,value:n,ownerElement:o})=>handleAttribute(e,n,{node:o,originals:!0,host:t})):n.forEach(e=>t.handleAttrs(e.attributes,{node:e,originals:!0})),USE_XPATH&&select(e,X_NEWLISTENING).forEach(({name:e,value:n,ownerElement:o})=>handleNewAttribute(e,n,{node:o,originals:!0,host:t}))}function handleAttribute(e,t,{node:n,originals:o,stateHolder:r,host:s}={}){if(BBDEBUG&&console.log({name:e,value:t,node:n,originals:o,stateHolder:r}),"state"===e){const e=t.trim(),s=getState(e);if(isUnset(s))return console.warn(n),self.STATE=STATE,void console.warn(new ReferenceError(`\n            <${n.localName}> constructor passed state key ${e} which is unset. It must be set.\n          `));if(r.state=s,!o)return;{let t=Dependents.get(e);t||(t=new Set,Dependents.set(e,t)),t.add(n),Dependents.set(n,t)}}else if(o){if(!e.startsWith("on"))return;if(t=t.trim(),n.getRootNode().host.paths.has(t))return;if(!(t=t.replace(/\(event\)$/,"")))return;const{Func:s,host:a,path:i}=getAncestor(n,t);if("onbond"===e){if(s){BBDEBUG&&console.log("Dereference bond function",s,n);try{s(n)}catch(a){console.warn("bond function error",{error:a,name:e,value:t,node:n,originals:o,stateHolder:r,Func:s})}}else console.warn("bond function Not dereferencable",{name:e,value:t,node:n,originals:o,stateHolder:r});return}if(!i||t.startsWith(i))return;const c=t.match(FUNC_CALL)?EMPTY:CALL_WITH_EVENT,l=`${i}${t}${c}`;a.paths.set(l,s),n.setAttribute(e,l),BBDEBUG&&console.log("Adding destructor",a,e),t.match(/^f\d+_/)&&a.destructors.add(()=>n.removeAttribute(e))}}function handleNewAttribute(e,t,{node:n,Host:o}){if(!(t=t.trim()))return;const[r,...s]=e.split(":");if(r!==NAMESPACE)throw new TypeError(`Irregular namespace ${r}`);const a=s.pop(),i=Object.fromEntries(s.map(e=>[e,!0]));if(n.getRootNode().host.paths.has(t))return;if(!(t=t.replace(/\(event\)$/,"")))return;const{Func:c,host:l,path:u}=getAncestor(n,t);if(BBDEBUG&&console.log(n,{value:t,path:u}),!u||t.startsWith(u))return;const d=t.match(FUNC_CALL)?EMPTY:CALL_WITH_EVENT,h=`${u}${t}${d}`;l.paths.set(h,c);const f=new Function("event",`return ${h}`);n.addEventListener(a,f,i),t.match(/^f\d+_/)&&l.destructors.add(()=>{n.removeEventListener(a,f,i)})}function select(e,t){try{if(USE_XPATH){const n=[];let o;if(e instanceof DocumentFragment)for(const r of e.children){let e;for(o=t instanceof XPathExpression?t.evaluate(r,XPathResult.ORDERED_NODE_ITERATOR_TYPE):document.evaluate(t,r,null,XPathResult.ORDERED_NODE_ITERATOR_TYPE,null);e=o.iterateNext();)n.push(e)}else{let r;for(o=t instanceof XPathExpression?t.evaluate(e,XPathResult.ORDERED_NODE_ITERATOR_TYPE):document.evaluate(t,e,null,XPathResult.ORDERED_NODE_ITERATOR_TYPE,null);r=o.iterateNext();)n.push(r)}return n}return BBDEBUG&&console.log("non xpath",t),e.querySelectorAll?e.querySelectorAll(t):[]}catch(e){console.warn(e)}}async function install(){BBDEBUG&&(self.Start=new Date),new Counter(document),LoadChecker=()=>document.counts.check(),self._states=[],self.syskeys=syskeys,Object.assign(globalThis,{Dependents:Dependents,STATE:STATE,Env:Env,CONFIG:CONFIG,F:F,setEnv:setEnv,use:use,setState:setState,getState:getState,patchState:patchState,cloneState:cloneState,loaded:loaded,sleep:sleep,bangFig:bangFig,bangLoaded:bangLoaded,isMobile:isMobile,trace:trace,undoState:undoState,redoState:redoState,stateChanged:stateChanged,getViews:getViews,updateState:updateState,isUnset:isUnset,EMPTY:EMPTY,dateString:dateString,runCode:runCode,schedule:schedule,immediate:immediate,...BBDEBUG?{STATE:STATE,CACHE:CACHE,TRANSFORMING:TRANSFORMING,Started:Started,BangBase:BangBase}:{}});const e=globalThis.vanillaview||await __webpack_require__.e(311).then(__webpack_require__.bind(__webpack_require__,311)),{s:t,c:n}=e,o={STATE:STATE,CONFIG:CONFIG,StateKey:StateKey,JS:JS};_c$=t.bind(o),_s$=n.bind(o),o._c$=_c$,o._s$=_s$,globalThis.Fskip=t.skip,CONFIG.delayFirstPaintUntilLoaded&&becomesTrue(()=>document.body).then(()=>document.body.classList.add("bang-el")),observer=new MutationObserver(transformBangs),observer.observe(document,OBSERVE_OPTS),await findBangs(transformBang),loaded().then(()=>document.body.classList.add("bang-styled"))}async function ensureComponentBundle(){if(ComponentBundle)return ComponentBundle;if(ComponentBundlePromise)return ComponentBundlePromise;if(CONFIG.componentBundle)if("string"==typeof CONFIG.componentBundle)try{const e=JSON.parse(CONFIG.componentBundle);return ComponentBundle=decodeBundleTree(e),ComponentBundle}catch(e){throw new ReferenceError(`Invalid JSON provided for component bundle: ${e}`)}else if("object"==typeof CONFIG.componentBundle)return ComponentBundle=decodeBundleTree(CONFIG.componentBundle),ComponentBundle;const e=resolveComponentBundleUrl();return ComponentBundlePromise=pipeLinedFetch(e).then(async t=>{if(!t.ok)throw new ReferenceError(`Fetch error: ${e}, ${t.statusText}`);return t.json()}).then(e=>(ComponentBundle=decodeBundleTree(e),ComponentBundle)).catch(e=>{throw ComponentBundlePromise=void 0,e}),ComponentBundlePromise}function resolveComponentBundleUrl(){let e=(CONFIG.componentsPath||EMPTY).replace(/\/+$/,EMPTY),t=CONFIG.componentBundlePath||CONFIG.componentBundleFile;return e.endsWith("/components")&&(e=e.replace(/\/components$/,"")),t?ABS_URL.test(t)?t:`${e}/${t.replace(/^\/+/,EMPTY)}`:`${e}/${CONFIG.componentBundleFile}`}function decodeBundleTree(e){if(!e||"object"!=typeof e)return e;const t=Array.isArray(e)?[]:{};for(const[n,o]of Object.entries(e))o&&"object"==typeof o&&!Array.isArray(o)?t[n]=decodeBundleTree(o):t[n]="string"==typeof o?decodeBase64ToText(o):o;return t}function decodeBase64ToText(e){if("string"!=typeof e)return e;if("function"==typeof atob){const t=atob(e);if(TEXT_DECODER){const e=t.length,n=new Uint8Array(e);for(let o=0;o<e;o++)n[o]=t.charCodeAt(o);return TEXT_DECODER.decode(n)}let n="";for(let e=0;e<t.length;e++)n+=`%${t.charCodeAt(e).toString(16).padStart(2,"0")}`;try{return decodeURIComponent(n)}catch{return t}}if("function"==typeof Buffer)return Buffer.from(e,"base64").toString("utf8");throw new ReferenceError("No base64 decoder available in this environment.")}function getBundleRoot(e){return e&&"object"==typeof e?CONFIG.componentBundleRootKey?e[CONFIG.componentBundleRootKey]||null:e:null}function getBundleFile(e,t){if(!ComponentBundle)return null;let n=getBundleRoot(ComponentBundle);if(!n)return null;const o=[];e&&o.push(...`${e}`.split("/").filter(Boolean)),t&&o.push(t);for(const e of o){if(!n||"object"!=typeof n)return null;n=n[e]}return"string"==typeof n?n:null}async function fetchMarkup(e){const t=`markup:${e}`;Started.has(t)?CACHE.has(t)||await cacheHasKey(t):Started.add(t);const n=`style${e}`,o=`${CONFIG.componentsPath}/${e}`;if(CACHE.has(t)){const e=CACHE.get(t);if(CACHE.get(n),Error,!(CACHE.get(n)instanceof Error&&e.includes(`href=${o}/${CONFIG.styleFile}`)))return e}const r=`${o}/${CONFIG.htmlFile}`;let s;return await pipeLinedFetch(r).then(async t=>{let o=EMPTY;return o=t.ok?await t.text():"<slot></slot>",s=CACHE.get(n)instanceof Error?`\n          <style>\n            ${await fetchFile(EMPTY,CONFIG.styleFile).catch(e=>`/* ${e+EMPTY} */`)}\n          </style>${o}`:`\n          <style>\n            ${await fetchFile(EMPTY,CONFIG.styleFile).catch(e=>`/* ${e+EMPTY} */`)}\n            ${await fetchStyle(e)}\n          </style>${o}`,s}).finally(async()=>CACHE.set(t,await s))}async function fetchFile(e,t){const n=`${t}:${e}`;if(Started.has(n)?CACHE.has(n)||await cacheHasKey(n):Started.add(n),CACHE.has(n))return CACHE.get(n);if(CONFIG.useComponentBundle)try{if(!await ensureComponentBundle())throw new ReferenceError("Component bundle could not be loaded.");const o=getBundleFile(e,t);if("string"==typeof o)return CACHE.set(n,o),o;const r=new ReferenceError(`Bundle missing ${e?`${e}/`:EMPTY}${t}`);throw CACHE.set(n,r),r}catch(e){const t=e instanceof Error?e:new Error(`${e}`);throw CACHE.has(n)||CACHE.set(n,t),t}const o=`${CONFIG.componentsPath}/${e?e+"/":EMPTY}${t}`;try{const e=await pipeLinedFetch(o);if(!e.ok){const t=new ReferenceError(`Fetch error: ${o}, ${e.statusText}`);throw CACHE.set(n,t),t}const t=await e.text();return CACHE.set(n,t),t}catch(e){const t=e instanceof Error?e:new Error(`${e}`);throw CACHE.has(n)||CACHE.set(n,t),t}}async function fetchStyle(e){return fetchFile(e,CONFIG.styleFile)}async function fetchScript(e){return fetchFile(e,CONFIG.scriptFile)}async function transformBangs(e){for(const t of e)for(const e of t.addedNodes)e.nodeType!==Node.TEXT_NODE&&(cookListeners(e),await findBangs(transformBang,e))}function transformBang(e){const[t,n]=getBangDetails(e),o=createElement(t,n);e.linkedCustomElement=o,o[MirrorNode]=e,e.parentNode.replaceChild(o,e)}async function findBangs(e,t=document.documentElement,{allDependents:n=!1,batchSize:o=100,yieldTime:r=0,useFrame:s=!0}={}){if(t.noFindBang)return n?[]:void 0;const a=n?e=>e.nodeType===Node.COMMENT_NODE||e.nodeType===Node.ELEMENT_NODE:e=>e.nodeType===Node.COMMENT_NODE,i=n?NodeFilter.SHOW_COMMENT|NodeFilter.SHOW_ELEMENT:NodeFilter.SHOW_COMMENT,c=n?getNodeDetails:getBangDetails,l=n?NodeFilter.FILTER_SKIP:NodeFilter.FILTER_REJECT,u={acceptNode(e){if(a(e)){const[t]=c(e);return t.match(DOUBLE_BARREL)?NodeFilter.FILTER_ACCEPT:l}return isDocument(e)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP}},d=[],h=[],f=[];let p,m=document.createTreeWalker(t,i,u);for(d.push(m);;){if(p=m?.nextNode(),!p){if(d.length){if(m=d.shift(),p=m.currentNode,isBangTag(p)&&!TRANSFORMING.has(p)){TRANSFORMING.add(p);const e=p;h.push(()=>transformBang(e))}continue}break}if(p.nodeType===Node.COMMENT_NODE&&!TRANSFORMING.has(p)){TRANSFORMING.add(p);const e=p;h.push(()=>transformBang(e))}f.push(p),p.shadowRoot instanceof ShadowRoot&&d.push(document.createTreeWalker(p.shadowRoot,i,u))}let E=0;for(;h.length;)if(h.pop()(),RESPONSIVE_MEDIATION&&n){if(E++,E<o)continue;E=0,s?await nextFrame():await sleep(r)}return n?f.map(actualElement).filter(e=>e&&!e.hasAttribute("lazy")):void 0}function actualElement(e){return e.nodeType===Node.COMMENT_NODE?e.linkedCustomElement:e}function getAncestor(e,t){const n=e;let o;if(e){const r=["this."];for(;e;){if(e[t]instanceof Function)return{Func:e[t],path:r.join(EMPTY),oNode:n,host:e};if(e?.paths?.has(t))return{host:e,Func:e?.paths?.get(t),path:t};r.push(ONE_HIGHER),o=e,e=e.getRootNode().host}}return console.warn(`Error could not dereference function ${t} starting at original node:`,n),console.warn("Got as high as",o),{}}function isBangTag(e){return e.nodeType===Node.COMMENT_NODE&&getBangDetails(e)[0].match(DOUBLE_BARREL)}function isDocument(e){return e.nodeType===Node.DOCUMENT_FRAGMENT_NODE||e.nodeType===Node.DOCUMENT_NODE}function getBangDetails(e){const t=e.textContent.trim(),[n,...o]=t.split(/[\s\t]/g);return[n.trim(),o.join(" ")]}function getNodeDetails(e){switch(e.nodeType){case Node.COMMENT_NODE:return getBangDetails(e);case Node.ELEMENT_NODE:return[e.localName]}}async function cook(markup,state){let cooked=EMPTY;const _top=firstState,_self=state,_host=this;state._top||Object.defineProperty(state,"_top",{value:_top});try{with({...Env,...state,..._host.others})cooked=await eval("(async function () { return await _FUNC`${{state,_host}}"+markup+"`; }())");return cooked}catch(error){throw console.warn("cook",error),say("error!","Template error",{markup:markup,state:state,error:error,_host:this}),error}}async function _FUNC(e,...t){const n=Array.from(e);return await _c$(n,...t)}async function _GFUNC(e,...t){const n=Array.from(e);return await _s$(n,...t)}function createElement(e,t){return toDOM(`<${e} ${t}></${e}>`).firstElementChild}function toDOM(e){return DIV.replaceChildren(),DIV.insertAdjacentHTML(POS,`<template>${e}</template>`),DIV.firstElementChild.content}async function becomesTrue(e,t){const n=t||e;let o=Waiters.get(n);return o||(o=_becomesTrue(e).then(e=>(setTimeout(()=>Waiters.delete(n),GC_TIMEOUT),e)),Waiters.set(n,o)),new Promise(e=>o.then(e))}async function _becomesTrue(e){return new Promise(async t=>{for(;await nextFrame(),!await e(););t(!0)})}async function cacheHasKey(e){const t=`cache:${e}`,n=`checkFunc:${e}`;let o=Waiters.get(n);return o||(o=()=>CACHE.has(e),Waiters.set(n,o)),becomesTrue(o,t)}async function sleep(e){return new Promise(t=>setTimeout(t,e))}async function nextFrame(){return new Promise(e=>requestAnimationFrame(e))}function isUnset(e){return null==e}function say(e,...t){(BBDEBUG||"error"===e||e.endsWith("!"))&&MOBILE&&!LIGHTHOUSE&&alert(`${e}: ${t.join("\n")}`),(BBDEBUG||"error"===e||e.endsWith("!"))&&console[e.replace("!",EMPTY)](...t)}function isMobile(){return[/Android/i,/webOS/i,/iPhone/i,/iPad/i,/iPod/i,/BlackBerry/i,/Windows Phone/i].some(e=>navigator.userAgent.match(e))}function trace(e=EMPTY){const t=new Error("Trace");BBDEBUG&&console.log(e,"Call stack",t.stack)}function dateString(e){const t=e.getTimezoneOffset();return(e=new Date(e.getTime()-60*t*1e3)).toISOString().split("T")[0]}function clone(e){return console.log(CONFIG),CONFIG.useMagicClone?magicClone(e):JSON.parse(JS(e))}function magicClone(e){if(console.log("using magic clone"),null===e||"object"!=typeof e)return e;try{let t=Object.create(Object.getPrototypeOf(e));return Object.getOwnPropertyNames(e).forEach(n=>{let o=Object.getOwnPropertyDescriptor(e,n);Object.defineProperty(t,n,o)}),t}catch(e){return console.error("Error in magicClone:",e),null}}function JS(e){return CONFIG.useMagicClone?magicStringify(e):_STR(e,Replacer,EMPTY)}function magicStringify(e){const t=new WeakSet;try{return JSON.stringify(function e(n){if(null===n||"object"!=typeof n)return n;if(t.has(n))return"[Circular]";if(t.add(n),"Object"===n?.constructor?.name||Array.isArray(n)){let t=Array.isArray(n)?[]:{};return Object.getOwnPropertyNames(n).forEach(o=>{let r=Object.getOwnPropertyDescriptor(n,o);t[o]="object"==typeof r.value?e(r.value):r.get?n[o]:r.value}),t}return n}(e),Replacer,EMPTY)}catch(e){return console.error("Error in magicStringify:",e),null}}function Replacer(e,t){return"function"==typeof this[e]?t.toString():t instanceof Node?`${t.nodeName}//${t.nodeValue||t.outerHTML||t.textContent}`:t}install()}()}},__webpack_module_cache__={},inProgress,dataWebpackPrefix;function __webpack_require__(e){var t=__webpack_module_cache__[e];if(void 0!==t)return t.exports;var n=__webpack_module_cache__[e]={exports:{}};return __webpack_modules__[e].call(n.exports,n,n.exports,__webpack_require__),n.exports}__webpack_require__.m=__webpack_modules__,__webpack_require__.d=function(e,t){for(var n in t)__webpack_require__.o(t,n)&&!__webpack_require__.o(e,n)&&Object.defineProperty(e,n,{enumerable:!0,get:t[n]})},__webpack_require__.f={},__webpack_require__.e=function(e){return Promise.all(Object.keys(__webpack_require__.f).reduce(function(t,n){return __webpack_require__.f[n](e,t),t},[]))},__webpack_require__.u=function(e){return e+".bang.js"},__webpack_require__.g=function(){if("object"==typeof globalThis)return globalThis;try{return this||new Function("return this")()}catch(e){if("object"==typeof window)return window}}(),__webpack_require__.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},inProgress={},dataWebpackPrefix="bang.html:",__webpack_require__.l=function(e,t,n,o){if(inProgress[e])inProgress[e].push(t);else{var r,s;if(void 0!==n)for(var a=document.getElementsByTagName("script"),i=0;i<a.length;i++){var c=a[i];if(c.getAttribute("src")==e||c.getAttribute("data-webpack")==dataWebpackPrefix+n){r=c;break}}r||(s=!0,(r=document.createElement("script")).charset="utf-8",__webpack_require__.nc&&r.setAttribute("nonce",__webpack_require__.nc),r.setAttribute("data-webpack",dataWebpackPrefix+n),r.src=e),inProgress[e]=[t];var l=function(t,n){r.onerror=r.onload=null,clearTimeout(u);var o=inProgress[e];if(delete inProgress[e],r.parentNode&&r.parentNode.removeChild(r),o&&o.forEach(function(e){return e(n)}),t)return t(n)},u=setTimeout(l.bind(null,void 0,{type:"timeout",target:r}),12e4);r.onerror=l.bind(null,r.onerror),r.onload=l.bind(null,r.onload),s&&document.head.appendChild(r)}},__webpack_require__.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},function(){var e;__webpack_require__.g.importScripts&&(e=__webpack_require__.g.location+"");var t=__webpack_require__.g.document;if(!e&&t&&(t.currentScript&&"SCRIPT"===t.currentScript.tagName.toUpperCase()&&(e=t.currentScript.src),!e)){var n=t.getElementsByTagName("script");if(n.length)for(var o=n.length-1;o>-1&&(!e||!/^http(s?):/.test(e));)e=n[o--].src}if(!e)throw new Error("Automatic publicPath is not supported in this browser");e=e.replace(/^blob:/,"").replace(/#.*$/,"").replace(/\?.*$/,"").replace(/\/[^\/]+$/,"/"),__webpack_require__.p=e}(),function(){var e={792:0};__webpack_require__.f.j=function(t,n){var o=__webpack_require__.o(e,t)?e[t]:void 0;if(0!==o)if(o)n.push(o[2]);else{var r=new Promise(function(n,r){o=e[t]=[n,r]});n.push(o[2]=r);var s=__webpack_require__.p+__webpack_require__.u(t),a=new Error;__webpack_require__.l(s,function(n){if(__webpack_require__.o(e,t)&&(0!==(o=e[t])&&(e[t]=void 0),o)){var r=n&&("load"===n.type?"missing":n.type),s=n&&n.target&&n.target.src;a.message="Loading chunk "+t+" failed.\n("+r+": "+s+")",a.name="ChunkLoadError",a.type=r,a.request=s,o[1](a)}},"chunk-"+t,t)}};var t=function(t,n){var o,r,s=n[0],a=n[1],i=n[2],c=0;if(s.some(function(t){return 0!==e[t]})){for(o in a)__webpack_require__.o(a,o)&&(__webpack_require__.m[o]=a[o]);i&&i(__webpack_require__)}for(t&&t(n);c<s.length;c++)r=s[c],__webpack_require__.o(e,r)&&e[r]&&e[r][0](),e[r]=0},n=self.webpackChunkbang_html=self.webpackChunkbang_html||[];n.forEach(t.bind(null,0)),n.push=t.bind(null,n.push.bind(n))}();var __webpack_exports__=__webpack_require__(226)})();
+/* eslint-disable no-setter-return, no-with, no-constant-condition, no-async-promise-executor */
+(function () {
+  // constants, classes, config and state
+    const BBDEBUG = false;
+    const SK_BBDEBUG = false;
+    const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
+    const NAMESPACE = 'b';
+    const PIPELINE_REQUESTS = true;
+    const RANDOM_SLEEP_ON_FIRST_PRINT = true;
+    const RESPONSIVE_MEDIATION = true;
+    const USE_XPATH = true;
+    const X_NS_ATTRS = `.//@*[starts-with(name(), '${NAMESPACE}:')]`;
+    const X_NEWLISTENING = document.createExpression(X_NS_ATTRS);
+    const XON_EVENT_ATTRS = `.//@*[starts-with(local-name(), 'on')]`;
+    const X_LISTENING = document.createExpression(XON_EVENT_ATTRS);
+    const OPTIMIZE = true;
+    const GET_ONLY = true;
+    const MOBILE = isMobile();
+    const GC_TIMEOUT = 10000;
+    //const GENERATOR = (function*(){yield}()).constructor;
+    const EMPTY = '';
+    const {stringify:_STR} = JSON;
+    const Reserved = new Set(['_self', '_host', '_top']);
+    const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
+    const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
+    const POS = 'beforeend';
+    const LOCAL_PATH = 'this.';
+    const PARENT_PATH = 'this.getRootNode().host.';
+    const ONE_HIGHER = 'getRootNode().host.';
+    const CALL_WITH_EVENT = '(event)';
+    let comp = 0;
+    const NextComponent = () => `b${comp++}${Math.random().toString(36)}`;
+    const F = _FUNC; 
+    const G = _GFUNC;
+    const FUNC_CALL = /\);?$/;
+    const MirrorNode = Symbol.for('[[MN]]');
+    const DIV = document.createElement('div');
+    const path = location.pathname;
+    const ABS_URL = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|\/)/;
+    const TEXT_DECODER = typeof TextDecoder === 'function' ? new TextDecoder() : null;
+    const CONFIG = {
+      htmlFile: 'markup.html',
+      scriptFile: 'script.js',
+      styleFile: 'style.css',
+      bangKey: '_bang_key',
+      componentsPath: `${path}${path.endsWith('/') ? EMPTY : '/'}../components`,
+      componentBundleFile: 'components.bundle.json',
+      componentBundlePath: null,
+      componentBundleRootKey: 'components',
+      componentBundle: null,
+      useComponentBundle: false,
+      allowUnset: true,
+      unsetPlaceholder: EMPTY,
+      EVENTS: `bond error load click pointerdown pointerup pointermove mousedown mouseup submit
+        mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
+        dragmove drag mouseover mouseout focus blur focusin focusout scroll
+        input change compositionstart compositionend text paste beforepaste select cut copy
+        keydown keyup keypress compositionupdate selectionchange 
+        contextmenu wheel
+      `.split(/\s+/g).filter(s => s.length).map(e => `[on${e}]`).join(','),
+      delayFirstPaintUntilLoaded: false,
+      capBangRatioAtUnity: false,
+      noHandlerPassthrough: false,
+      useMagicClone: true,
+    }
+    const History = [];
+    const STATE = new Map();
+    const CACHE = new Map();
+    const syskeys = new Map();
+    const Waiters = new Map();
+    let ComponentBundle;
+    let ComponentBundlePromise;
+    const Started = new Set();
+    const TRANSFORMING = new WeakSet();
+    const Dependents = new Map();
+    const MAX_CONCURRENT_REQUESTS = 30;
+    const RequestPipeLine = new Map();
+    const RequestWaiting = [];
+    class Counter {
+      started = 0;
+      finished = 0;
+
+      constructor(root) {
+        root.counts = this;
+        this.root = root;
+      }
+
+      check() {
+        const {root} = this;
+        const isTopLevel = root === document;
+        let loaded = false;
+
+        if ( isTopLevel ) {
+          const noSwiftDescendents = root.querySelectorAll('.bang-el:not([lazy])').length === 0;
+          loaded = noSwiftDescendents;
+        } else {
+          const nonZeroCheck = this.started > 0;
+          const finishedCheck = this.finished >= this.started;
+          loaded = nonZeroCheck && finishedCheck;
+        }
+
+        return loaded;
+      }
+
+      start() {
+        if ( this.root == document ) say('log', 'Counting start');
+        this.started++;
+      }
+
+      finish() {
+        if ( this.root == document ) say('log', 'Counting finished');
+        this.finished++;
+      }
+    }
+    const SHADOW_OPTS = {mode:'open', delegatesFocus: true};
+    const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
+    const INSERT = 'insert';
+    const ALL_DEPS = {allDependents: true};
+    const Env = Object.create(null); // storage for 'environment variables' (add to with setEnv)
+    let LoadChecker;
+    let RequestId = 0;
+    let hindex = 0;
+    let observer; // global mutation observer
+    let systemKeys = 1;
+    let _c$;
+    let _s$;
+    let firstState;
+
+    const BangBase = (name) => class Base extends HTMLElement {
+      static #activeAttrs = ['state']; // we listen for changes to these attributes only
+      static get observedAttributes() {
+        return Array.from(Base.#activeAttrs);
+      }
+      #name = name;
+      #dependents = [];
+      #funcs = new Set();
+      #names = new Map();
+      #paths = new Map();
+      #destructors = new Set();
+      #others;
+      key;
+
+      constructor() {
+        super();
+        this.cookMarkup = async (markup, state) => {
+          const _host = this;
+          BBDEBUG && console.log(`Component ${this.#name}`);
+          const cooked = await cook.call(this, markup, state);
+          BBDEBUG && console.log(`Component : ${this.#name}`);
+          BBDEBUG && console.log(`State host: ${_host.name}`);
+          BBDEBUG && console.log(`Will add ${this.#funcs.size} event handler functions`);
+          if ( _host.name !== this.#name ) {
+            BBDEBUG && console.info(`\tComponent and _host value differ`);
+          }
+          this.#funcs.forEach(t => {
+            try {
+              const funcName = t(this);
+              BBDEBUG && console.log(`Applied automatic event handler function ${funcName} to component`, this);
+              this.#funcs.delete(t);
+            } catch(e) {
+              console.warn(e);
+            }
+          });
+          BBDEBUG && console.log();
+          let shadow = this.shadowRoot;
+          if ( ! shadow ) {
+            const shadow = this.attachShadow(SHADOW_OPTS);
+            observer.observe(shadow, OBSERVE_OPTS);
+            await cooked.to(shadow, INSERT);
+            // add dependents
+            const deps = await findBangs(transformBang, shadow, ALL_DEPS);
+            this.#dependents = deps.map(node => node.untilVisible());
+            this.cookListeners(shadow);
+          } else {
+            BBDEBUG && console.log('already has shadow', this);
+            if ( this.needsRefresh ) {
+              this.cookListeners(shadow);
+              this.needsRefresh = false;
+            }
+          }
+        }
+        this.markLoaded = async () => {
+          this.alreadyPrinted = true;
+          if ( ! this.loaded ) {
+            this.counts.finish();
+            const loaded = await this.untilLoaded();
+            if ( loaded ) {
+              this.loaded = loaded;
+              this.setVisible();
+              if ( ! this.isLazy ) {
+                setTimeout(() => document.counts.finish(), 0);
+              }
+            } else {
+              console.warn('Not loaded', this);
+              // right now this never happens
+            }
+          }
+        }
+      }
+
+      prepareState() {
+        // set others to be merged into the with
+      }
+
+      get others() {
+        if ( ! this.#others ) return {}
+        return this.#others;
+      }
+
+      set others(newOthers) {
+        this.#others = newOthers;
+      }
+
+      get destructors() {
+        return this.#destructors;
+      }
+
+      get paths() {
+        return this.#paths;
+      }
+
+      get names() {
+        return this.#names;
+      }
+
+      get funcs() {
+        return this.#funcs;
+      }
+
+      get name() {
+        return this.#name;
+      }
+
+      // BANG! API methods
+      async print() {
+        if ( !this.alreadyPrinted ) {
+          this.prepareVisibility();
+        }
+        const state = this.handleAttrs(this.attributes);
+        if ( OPTIMIZE ) {
+          const nextState = JS(state);
+          if ( this.alreadyPrinted && this.lastState === nextState ) {
+            return;
+          }
+          this.lastState = nextState;
+        }
+        return this.printShadow(state)
+      }
+
+      update() {
+        if ( this.fastUpdate ) {
+          return this.fastUpdate();
+        } else {
+          return this.print();
+        }
+      }
+
+      rerender() {
+        this.printShadow(this.state);
+      }
+
+      prepareVisibility() {
+        this.classList.add('bang-el');
+        this.counts.start();
+        if ( !this.isLazy ) {
+          document.counts.start();
+        }
+        this.classList.remove('bang-styled');
+        // we prefetch the style
+        fetchStyle(name).catch(err => {
+          say('warn', err);
+        });
+      }
+
+      async untilLoaded() {
+        const myDependentsLoaded = (await Promise.all(this.#dependents)).every(visible => visible);
+        const myContentLoaded = await becomesTrue(this.loadCheck, this.loadKey);
+        const styleCheck = await becomesTrue(() => this.styleSheetsImported());
+        BBDEBUG && console.log(new Date - self.Start);
+        return myContentLoaded && myDependentsLoaded && styleCheck;
+      }
+
+      async styleSheetsImported() {
+        // just a very basic version that works with the way we write components now
+        // a single style import and a single stylesheet per component
+
+        // always first stylesheet is inserted by system (at top of markup template)
+        // I think we can count on the above being true but not sure
+
+        const rules = this?.shadowRoot?.styleSheets?.[0]?.cssRules;
+        if ( rules ) {
+          const iRule = [...rules].find(rule => rule instanceof CSSImportRule);
+          if ( !iRule ) {
+            return true;
+          }
+          // Race two signals:
+          // 1. CSSOM check — works reliably in Chrome/Firefox
+          // 2. Fetch probe — if we can fetch the URL, it's in the HTTP/SW cache,
+          //    meaning the @import has (or will immediately have) the content.
+          //    This bypasses Safari's shadow DOM bug where CSSImportRule.styleSheet
+          //    stays null even after the imported CSS loads and applies visually.
+          await Promise.race([
+            becomesTrue(() => !!iRule?.styleSheet?.rules?.length),
+            iRule.href
+              ? fetch(iRule.href).then(r => r.ok)
+              : becomesTrue(() => !!iRule?.styleSheet?.rules?.length)
+          ]);
+          return true;
+        }
+        return true;
+      }
+
+      async untilVisible() {
+        if ( this.isLazy ) return true;
+        return await becomesTrue(this.visibleCheck, this.visibleLoadKey);
+      }
+
+      get deps() {
+        return this.#dependents;
+      }
+
+      //FIXME this has a problem
+      updateIfChanged(state) {
+        const {didChange} = stateChanged(state);
+        if ( didChange ) {
+          const oKey = this.getAttribute('state');
+          const newKey = updateState(state);
+          BBDEBUG && console.log({didChange, oKey, newKey}, this);
+          const views = Dependents.get(this) || new Set();
+          views.add(this);
+          Dependents.set(newKey, views);
+          views.forEach(view => view.setAttribute('state', newKey));
+        }
+      }
+
+      setVisible() {
+        this.classList.add('bang-styled');
+      }
+
+      get state() {
+        const key = this.getAttribute('state');
+        return getState(key); //(key);
+      }
+
+      set state(newValue) {
+        const key = this.getAttribute('state');
+        if ( key.startsWith('system-key:') ) {
+          return this.updateIfChanged(this.state);
+        }
+        return setState(key, newValue);
+      }
+
+      // Web Components methods
+      attributeChangedCallback(name, oldValue) {
+        if ( name === 'state' && !isUnset(oldValue) ) {
+          this.update();
+        }
+      }
+
+      connectedCallback() {
+        new Counter(this);
+        this.loadCheck = () => this?.counts?.check?.();
+        this.visibleCheck = () => {
+          const result = this?.classList?.contains?.('bang-styled');
+          BBDEBUG && console.log(`Visible check. Result? ${result}`, this?.constructor?.name + '', this, globalThis.lastThis = this);
+          return result;
+        };
+        this.loadKey = Math.random().toString(36);
+        this.visibleLoadKey = Math.random().toString(36);
+        say('log',name, 'connected');
+        this.handleAttrs(this.attributes, {originals: true});
+        if ( this.hasAttribute('lazy') ) {
+          this.isLazy = true;
+          if ( this.hasAttribute('super') ) {
+            this.superLazy = true;
+            loaded().then(() => sleep(400*Math.random()).then(() => this.print()));
+          } else {
+            if ( RANDOM_SLEEP_ON_FIRST_PRINT ) {
+              sleep(160*Math.random()).then(() => this.print());
+            } else {
+              this.print();
+            }
+          }
+        } else {
+          this.print();
+        }
+      }
+
+      disconnectedCallback() {
+        BBDEBUG && console.log(`${this.name} disconnecting...`);
+        this.alreadyPrinted = false;
+        this.loaded = false;
+        this.destructors.forEach(d => {
+          try {
+            BBDEBUG && console.log(`Running destructor`, d.toString());
+            d();
+          } catch(e) {
+            console.warn(`Destructor for ${this.name} failed`, e, d);
+          }
+        });
+        this.needsRefresh = true;
+      }
+
+      // private methods
+      cookListeners(root) {
+        return cookListeners(root);
+      }
+
+      handleAttrs(attrs, {node, originals} = {}) {
+        const stateHolder = {};
+
+        if ( ! node ) node = this;
+
+        // we can optimize this method more, we only get attrs if originals == true
+        // otherwise we just get and process the single 'state' attr 
+        // this is a lot more performant
+        for( const {name,value} of attrs ) {
+          if ( isUnset(value) ) continue;
+          handleAttribute(name, value, {node, originals, stateHolder, host: this});
+        }
+
+        self._states.push(stateHolder.state);
+
+        return stateHolder.state;
+      }
+
+      printShadow(state) {
+        if ( ! state ) {
+          BBDEBUG && console.warn(`No state on component ${this.name}. Will pass empty state`);
+          BBDEBUG && console.dir(this);
+          //throw new TypeError(`No state`);
+          const stateKey = new StateKey()+''; 
+          state = {};
+          setState(stateKey, state);
+          this.setAttribute('state', stateKey);
+          BBDEBUG && console.log(`Assigned empty state to key ${stateKey}`);
+        }
+        return fetchMarkup(this.#name).then(markup => this.cookMarkup(markup, state))
+        .catch(err => BBDEBUG && say('warn!',err))
+        .finally(this.markLoaded);
+      }
+    };
+
+    class StateKey extends String {
+      constructor (keyNumber) {
+        if ( BBDEBUG || SK_BBDEBUG ) {
+          const stack = (new Error('state key')).stack;
+          self.syskeys.set(`system-key:${systemKeys+2}`, stack);
+        }
+        if ( keyNumber == undefined ) super(`system-key:${systemKeys+=2}`); 
+        else super(`client-key:${keyNumber}`);
+      }
+    }
+
+  install();
+
+  // API
+    async function use(name) {
+      if ( self.customElements.get(name) ) return;
+
+      BBDEBUG && console.log('using', name);
+
+      let component;
+      await fetchScript(name)
+        .then(script => { // if there's a script that extends base, evaluate it to be component
+          const Base = BangBase(name);
+          const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;
+          try {
+            with({...Env}) {
+              component = eval(Compose);
+            }
+          } catch(e) {
+            console.error(`Error evaluating component ${name}`, e, {Compose});
+          }
+        }).catch(err => {  // if no extension script exists, use Base; transient network failures should retry
+          BBDEBUG && say('log!', err);
+          const message = String(err?.message || err || '');
+          const isMissingScript = /Bundle missing|Fetch error:.*Not Found|Fetch error:.*404/i.test(message);
+          if ( !isMissingScript ) {
+            const scriptKey = `${CONFIG.scriptFile}:${name}`;
+            CACHE.delete(scriptKey);
+            Started.delete(scriptKey);
+            throw err;
+          }
+          component = BangBase(name);
+        });
+      
+      if ( self.customElements.get(name) ) return;
+
+      self.customElements.define(name, component);
+    }
+
+    function setEnv(env) {
+      if ( env ) {
+        Object.assign(Env, env);
+      }
+    }
+    
+    // run a map of a list of work with configurable breaks in between
+    // to let the main thread breathe at the same time 
+    async function schedule(list, func, {
+          batchSize: batchSize = 1,
+          yieldTime: yieldTime = 30,
+          strictSerial: strictSerial = true,
+          useFrame: useFrame = false
+        } = {}) {
+      // note list can be async iterable
+      const results = [];
+      let i = 0;
+      let currentBatch = 0;
+      for await ( const item of list ) {
+        let result;
+        if ( strictSerial ) {
+          result = await func(item, i);
+        } else {
+          result = func(item, i);
+        }
+        results.push(result);
+
+        if ( RESPONSIVE_MEDIATION ) {
+          i++;
+          currentBatch++;
+          if ( currentBatch < batchSize ) continue;
+          currentBatch = 0;
+
+          if ( useFrame ) {
+            await nextFrame();
+          } else if ( yieldTime > -1 ) {
+            await sleep(yieldTime);
+          }
+        }
+      }
+      return results;
+    }
+
+    function undoState(key, transform = x => x) {
+      while( hindex > 0 ) {
+        hindex -= 1;
+        if ( History[hindex].name === key ) {
+          setState(key, transform(History[hindex].value));
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function redoState(key, transform = x => x) {
+      while( hindex < History.length - 1 ) {
+        hindex += 1;
+        if ( History[hindex].name === key ) {
+          setState(key, transform(History[hindex].value));
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function bangFig(newConfig = {}) {
+      console.log(newConfig);
+      Object.assign(CONFIG, newConfig);
+    }
+
+    function immediate(f) {
+      if ( !(f instanceof Function) ) {
+        throw new TypeError(`immediate can only be called on a function. Recieved: ${f}`);
+      }
+
+      if ( f[IMMEDIATE] ) return;
+
+      Object.defineProperty(f, IMMEDIATE, {value: true, configurable: false, enumerable: false, writable: false});
+    }
+
+    function runCode(context, str) {
+      with({...Env, ...context}) {
+        return eval(str); 
+      }
+    }
+
+    function stateChanged(obj) {
+      const key = STATE.get(obj);
+      const oStateJSON = STATE.get(key+'.json.last');
+      const stateJSON = JS(obj);
+      return {key, didChange: oStateJSON !== stateJSON, stateJSON, oStateJSON};
+    }
+
+    function updateState(state, key) {
+      key = key || STATE.get(state);
+      if ( ! key ) {
+        console.warn('no key for state', state);
+        throw new ReferenceError(`Key must exist to update state.`);
+      }
+      const oKey = key;
+      const oStateJSON = STATE.get(key+'.json.last');
+      const stateJSON = JS(state);
+      STATE.delete(oStateJSON);
+      STATE.set(key, state);
+      BBDEBUG && console.log({key, state});
+      const views = Dependents.get(oKey);
+      if ( key.startsWith('system-key:') ) {
+        try {
+          STATE.delete(key);
+          STATE.delete(key+'.json.last');
+          key = new StateKey()+'';
+          STATE.set(key, state);
+          STATE.set(state, key);
+          if ( views ) {
+            views.forEach(view => view.setAttribute('state', key));
+          }
+          BBDEBUG && console.log({key, oKey});
+        } catch(e) {
+          console.warn(e);
+        }
+      }
+      if ( views ) {
+        Dependents.set(key, views);
+      }
+      STATE.set(key+'.json.last', stateJSON);
+      STATE.set(stateJSON, key+'.json.last');
+      return key;
+    }
+
+    function getViews(obj) {
+      const key = STATE.get(obj);
+      const acquirers = Dependents.get(key);
+      if ( acquirers ) {
+        return Array.from(acquirers);
+      } else {
+        console.warn('No acquirers for key');
+        return [];
+      }
+    }
+
+    function setState(key, state, {
+      rerender: rerender = true, 
+      save: save = false
+    } = {}) {
+      const jss = JS(state);
+      BBDEBUG && console.log({jss, state});
+      let lk = key+'.json.last';
+      if ( GET_ONLY ) {
+        if ( !STATE.has(key) ) {
+          STATE.set(key, state);
+          STATE.set(state, key);
+          STATE.set(jss,lk);
+          STATE.set(lk,jss);
+        } else {
+          const oStateJSON = STATE.get(lk);
+          /*if ( stateChanged(oState).didChange ) {*/
+          if ( oStateJSON !== jss ) {
+            key = updateState(state, key);
+            BBDEBUG && console.log({key}, 'no where to put');
+          }
+        }
+      } else {
+        STATE.set(key, state);
+        STATE.set(state, key);
+        STATE.set(jss,lk);
+        STATE.set(lk,jss);
+      }
+
+      if ( save ) {
+        hindex = Math.min(hindex+1, History.length);
+        History.splice(hindex, 0, {name: key, value: clone(state)});
+      }
+
+      if ( rerender ) { // re-render only those components depending on that key
+        const acquirers = Dependents.get(key);
+        if ( acquirers ) acquirers.forEach(host => host.update());
+      }
+
+      if ( ! firstState ) {
+        firstState = state; 
+        BBDEBUG && console.log(`Set first state at key ${key}`, state);
+      }
+      
+      return true;
+    }
+
+    function getState(key) {
+      return STATE.get(key);
+    }
+
+    function patchState(key, state) {
+      return setState(key, state, {rerender: false});
+    }
+
+    function cloneState(key, getOnly = GET_ONLY) {
+      if ( getOnly ) return STATE.get(key);
+      if ( STATE.has(key) ) return clone(STATE.get(key));
+      else {
+        throw new ReferenceError(`State store does not have the key ${key}`);
+      }
+    }
+
+    async function loaded() {
+      return becomesTrue(LoadChecker);
+    }
+
+    async function bangLoaded() {
+      return becomesTrue(bangLoadedCheck);
+    }
+
+    function bangLoadedCheck() {
+      const c_defined = typeof _c$ === "function";
+      return c_defined;
+    }
+
+  // network pipelining (for performance)
+    async function pipeLinedFetch(...args) {
+      if ( !PIPELINE_REQUESTS ) return fetch(...args);
+      const key = nextRequestId();
+      const result = {args, started: new Date};
+      let pr;
+      if ( RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
+        pr = fetch(...args).catch(err => {
+          say('log', err);
+          throw err;
+        });
+        result.pr = pr;
+        RequestPipeLine.set(key, result);
+        const complete = r => {
+          const result = RequestPipeLine.get(key);
+          result.finished = new Date;
+          result.duration = result.finished - result.started;
+          RequestPipeLine.delete(key); 
+          if ( RequestWaiting.length && RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
+            const result = RequestWaiting.shift();
+            const req = fetch(...result.args);
+            req.then(complete).then(r => (result.resolve(r), r)).catch(e => (result.reject(e), e));
+            RequestPipeLine.set(key, result);
+          }
+          return r;
+        };
+        pr.then(complete);
+      } else {
+        let resolve, reject;
+        pr = new Promise((res,rej) => (resolve = res, reject = rej));
+        result.resolve = resolve;
+        result.reject = reject;
+        RequestWaiting.push(result);
+      }
+      return pr;
+    }
+
+    function nextRequestId() {
+      return `${RequestId++}${Math.random().toString(36)}`;
+    }
+
+  // helpers
+    function cookListeners(root) {
+      const that = root.getRootNode().host;
+      BBDEBUG && console.log({root, that});
+      const listening = select(root, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
+      BBDEBUG && console.log({listening});
+      if ( USE_XPATH ) {
+        listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true, host: that}));
+      } else {
+        listening.forEach(node => that.handleAttrs(node.attributes, {node, originals: true}));
+      }
+
+      if ( USE_XPATH ) {
+        // new style event listeners (only with XPath)
+        const newListening = select(root, X_NEWLISTENING);
+        newListening.forEach(({name, value, ownerElement:node}) => handleNewAttribute(name, value, {node, originals: true, host: that}));
+      }
+    }
+
+    function handleAttribute(name, value, {node, originals, stateHolder, host: Host} = {}) {
+      BBDEBUG && console.log({name, value, node, originals, stateHolder});
+      if ( name === 'state' ) {
+        const stateKey = value.trim(); 
+        const stateObject = getState(stateKey); // cloneState(stateKey);
+        
+        if ( isUnset(stateObject) ) {
+          console.warn(node);
+          self.STATE = STATE;
+          console.warn(new ReferenceError(`
+            <${node.localName}> constructor passed state key ${stateKey} which is unset. It must be set.
+          `));
+          return;
+        }
+        
+        stateHolder.state = stateObject;
+
+        if ( originals ) {
+          let acquirers = Dependents.get(stateKey);
+          if ( ! acquirers ) {
+            acquirers = new Set();
+            Dependents.set(stateKey, acquirers);
+          }
+          acquirers.add(node);
+          Dependents.set(node, acquirers);
+        } else return;
+      } else if ( originals ) { // set event handlers to custom element class instance methods
+        if ( ! name.startsWith('on') ) return;
+        value = value.trim();
+
+        if ( node.getRootNode().host.paths.has(value) ) return;
+        //console.log('1', value, [...node.getRootNode().host.paths.keys()]);
+
+        value = value.replace(/\(event\)$/, '');
+        if ( ! value ) return;
+
+        //if ( value.startsWith('this.') ) return;
+
+        const {Func,host,path} = getAncestor(node, value);
+
+        if ( name === 'onbond' ) {
+          if ( Func ) {
+            BBDEBUG && console.log(`Dereference bond function`, Func, node);
+            try {
+              Func(node);
+              //FIXME: should this actually be removed ? 
+              //node.removeAttribute(name);
+            } catch(error) {
+              console.warn(`bond function error`, {error, name, value, node, originals, stateHolder, Func});
+            }
+          } else {
+            console.warn(`bond function Not dereferencable`, {name, value, node, originals, stateHolder});
+          }
+          return;
+        }
+
+        if ( !path || value.startsWith(path) ) return;
+
+        // Conditional logic explained:
+          // don't add a function call bracket if
+          // 1. it already has one
+          // 2. the reference is not a function
+        const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
+        const val = `${path}${value}${ender}`;
+        host.paths.set(val, Func); 
+        node.setAttribute(name, val);
+        BBDEBUG && console.log(`Adding destructor`, host, name);
+        if ( value.match(/^f\d+_/) ) {
+          host.destructors.add(() => node.removeAttribute(name));
+        }
+      }
+    }
+
+    function handleNewAttribute(name, value, {node, Host}) {
+      value = value.trim();
+      if ( ! value ) return;
+
+      const [nameSpace, ...flags] = name.split(':');
+      
+      if ( nameSpace !== NAMESPACE ) {
+        throw new TypeError(`Irregular namespace ${nameSpace}`);
+      }
+
+      const eventName = flags.pop();
+      const flagObj = Object.fromEntries(flags.map(f => [f, true]));
+
+      if ( node.getRootNode().host.paths.has(value) ) return;
+
+      value = value.replace(/\(event\)$/, '');
+      if ( ! value ) return;
+
+      const {Func,host,path} = getAncestor(node, value);
+
+      BBDEBUG && console.log(node, {value, path});
+
+      if ( !path || value.startsWith(path) ) return;
+
+      // Conditional logic explained:
+        // don't add a function call bracket if
+        // 1. it already has one
+        // 2. the reference is not a function
+      const ender = value.match(FUNC_CALL) ? EMPTY : CALL_WITH_EVENT;
+      const val = `${path}${value}${ender}`;
+      host.paths.set(val, Func); 
+      const handler = new Function('event', `return ${val}`);
+      node.addEventListener(
+        eventName, 
+        handler,
+        flagObj
+      );
+      if ( value.match(/^f\d+_/) ) {
+        host.destructors.add(() => {
+          node.removeEventListener(
+            eventName, 
+            handler,
+            flagObj
+          );
+        });
+      }
+    }
+
+    function select(context, selector) {
+      try {
+        if ( USE_XPATH ) {
+          const results = [];
+          let xresult;
+          if ( context instanceof DocumentFragment ) {
+            for( const elContext of context.children ) {
+              if ( selector instanceof XPathExpression ) {
+                xresult = selector.evaluate(elContext, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+              } else {
+                xresult = document.evaluate(selector, elContext, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+              }
+              let node;
+              /* eslint-disable no-cond-assign */
+              while(node = xresult.iterateNext()) {
+                results.push(node);
+              } 
+              /* eslint-enable no-cond-assign */
+            }
+          } else {
+            if ( selector instanceof XPathExpression ) {
+              xresult = selector.evaluate(context, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+            } else {
+              xresult = document.evaluate(selector, context, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+            }
+            let node;
+            /* eslint-disable no-cond-assign */
+            while(node = xresult.iterateNext()) {
+              results.push(node);
+            }
+            /* eslint-enable no-cond-assign */
+          }
+          return results;
+        } else {
+          BBDEBUG && console.log('non xpath', selector);
+          return context.querySelectorAll ? context.querySelectorAll(selector) : [];
+        }
+      } catch(e) {
+        console.warn(e);
+      }
+    }
+
+    async function install() {
+      BBDEBUG && (self.Start = new Date);
+      new Counter(document);
+      LoadChecker = () => document.counts.check();
+
+      self._states = [];
+      self.syskeys = syskeys;
+      Object.assign(globalThis, {
+        Dependents,
+        STATE,
+        Env,
+        CONFIG,
+        F,
+        setEnv,
+        use, setState, getState, patchState, cloneState, loaded, 
+        sleep, bangFig, bangLoaded, isMobile, trace,
+        undoState, redoState, stateChanged, getViews, updateState,
+        isUnset,  EMPTY, 
+        dateString,
+        runCode, schedule,
+        immediate,
+        ...( BBDEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
+      });
+
+      const module = globalThis.vanillaview || (await import('./vv/vanillaview.js'));
+      const {s,c} = module;
+      const That = {STATE,CONFIG,StateKey,JS}; 
+      _c$ = s.bind(That);
+      _s$ = c.bind(That);
+      That._c$ = _c$;
+      That._s$ = _s$;
+
+      globalThis.Fskip = s.skip;
+
+      if ( CONFIG.delayFirstPaintUntilLoaded ) {
+        becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
+      }
+
+      observer = new MutationObserver(transformBangs);
+      /* we are interested in bang nodes (which start as comments) */
+      observer.observe(document, OBSERVE_OPTS);
+      await findBangs(transformBang); 
+      
+      loaded().then(() => document.body.classList.add('bang-styled'));
+    }
+
+    async function ensureComponentBundle() {
+      if ( ComponentBundle ) return ComponentBundle;
+
+      if ( ComponentBundlePromise ) {
+        return ComponentBundlePromise;
+      }
+
+      if ( CONFIG.componentBundle ) {
+        if ( typeof CONFIG.componentBundle === 'string' ) {
+          try {
+            const parsed = JSON.parse(CONFIG.componentBundle);
+            ComponentBundle = decodeBundleTree(parsed);
+            return ComponentBundle;
+          } catch (err) {
+            throw new ReferenceError(`Invalid JSON provided for component bundle: ${err}`);
+          }
+        } else if ( typeof CONFIG.componentBundle === 'object' ) {
+          ComponentBundle = decodeBundleTree(CONFIG.componentBundle);
+          return ComponentBundle;
+        }
+      }
+
+      const url = resolveComponentBundleUrl();
+
+      ComponentBundlePromise = pipeLinedFetch(url)
+        .then(async r => {
+          if ( !r.ok ) {
+            throw new ReferenceError(`Fetch error: ${url}, ${r.statusText}`);
+          }
+          return r.json();
+        })
+        .then(bundle => {
+          ComponentBundle = decodeBundleTree(bundle);
+          return ComponentBundle;
+        })
+        .catch(err => {
+          ComponentBundlePromise = undefined;
+          throw err;
+        });
+
+      return ComponentBundlePromise;
+    }
+
+    function resolveComponentBundleUrl() {
+      let base = (CONFIG.componentsPath || EMPTY).replace(/\/+$/, EMPTY);
+      let relative = CONFIG.componentBundlePath || CONFIG.componentBundleFile;
+
+      if ( base.endsWith('/components') ) base = base.replace(/\/components$/, '');
+      if ( !relative ) return `${base}/${CONFIG.componentBundleFile}`;
+      if ( ABS_URL.test(relative) ) return relative;
+
+      return `${base}/${relative.replace(/^\/+/, EMPTY)}`;
+    }
+
+    function decodeBundleTree(tree) {
+      if ( !tree || typeof tree !== 'object' ) return tree;
+      const decoded = Array.isArray(tree) ? [] : {};
+      for ( const [key, value] of Object.entries(tree) ) {
+        if ( value && typeof value === 'object' && !Array.isArray(value) ) {
+          decoded[key] = decodeBundleTree(value);
+        } else if ( typeof value === 'string' ) {
+          decoded[key] = decodeBase64ToText(value);
+        } else {
+          decoded[key] = value;
+        }
+      }
+      return decoded;
+    }
+
+    function decodeBase64ToText(value) {
+      if ( typeof value !== 'string' ) return value;
+
+      if ( typeof atob === 'function' ) {
+        const binary = atob(value);
+        if ( TEXT_DECODER ) {
+          const len = binary.length;
+          const bytes = new Uint8Array(len);
+          for ( let i = 0; i < len; i++ ) bytes[i] = binary.charCodeAt(i);
+          return TEXT_DECODER.decode(bytes);
+        }
+        let percent = '';
+        for ( let i = 0; i < binary.length; i++ ) {
+          const hex = binary.charCodeAt(i).toString(16).padStart(2, '0');
+          percent += `%${hex}`;
+        }
+        try {
+          return decodeURIComponent(percent);
+        } catch {
+          return binary;
+        }
+      }
+
+      if ( typeof Buffer === 'function' ) {
+        return Buffer.from(value, 'base64').toString('utf8');
+      }
+
+      throw new ReferenceError('No base64 decoder available in this environment.');
+    }
+
+    function getBundleRoot(bundle) {
+      if ( !bundle || typeof bundle !== 'object' ) return null;
+      if ( CONFIG.componentBundleRootKey ) {
+        return bundle[CONFIG.componentBundleRootKey] || null;
+      }
+      return bundle;
+    }
+
+    function getBundleFile(name, file) {
+      if ( !ComponentBundle ) return null;
+      let node = getBundleRoot(ComponentBundle);
+      if ( !node ) return null;
+
+      const segments = [];
+      if ( name ) segments.push(...`${name}`.split('/').filter(Boolean));
+      if ( file ) segments.push(file);
+
+      for ( const segment of segments ) {
+        if ( !node || typeof node !== 'object' ) return null;
+        node = node[segment];
+      }
+
+      return typeof node === 'string' ? node : null;
+    }
+
+    async function fetchMarkup(name) {
+      // cache first
+        // we make any subsequent calls for name wait for the first call to complete
+        // otherwise we create many in parallel without benefitting from caching
+
+      const key = `markup:${name}`;
+
+      if ( Started.has(key) ) {
+        if ( ! CACHE.has(key) ) await cacheHasKey(key);
+      } else Started.add(key);
+
+      const styleKey = `style${name}`;
+      const baseUrl = `${CONFIG.componentsPath}/${name}`;
+      if ( CACHE.has(key) ) {
+        const markup = CACHE.get(key);
+        if ( CACHE.get(styleKey) instanceof Error ) { 
+          /*comp && comp.setVisible(); */
+        }
+        
+        // if there is an error style and we are still includig that link
+        // we generate and cache the markup again to omit such a link element
+        if ( CACHE.get(styleKey) instanceof Error && markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {
+          // then we need to set the cache for markup again and remove the link to the stylesheet which failed 
+        } else {
+          /* comp && comp.setVisible(); */
+          return markup;
+        }
+      }
+      
+      const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;
+      let resp;
+      const markupText = await pipeLinedFetch(markupUrl).then(async r => { 
+        let text = EMPTY;
+        if ( r.ok ) text = await r.text();
+        else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
+      
+        if ( CACHE.get(styleKey) instanceof Error ) { 
+          resp = `
+          <style>
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
+          </style>${text}` 
+        } else {
+          // inlining styles for increase speed */
+          resp = `
+          <style>
+            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
+            ${await fetchStyle(name)}
+          </style>${text}`;
+        }
+        
+        return resp;
+      }).finally(async () => CACHE.set(key, await resp));
+      return markupText;
+    }
+
+    async function fetchFile(name, file) {
+      const key = `${file}:${name}`;
+
+      if ( Started.has(key) ) {
+        if ( ! CACHE.has(key) ) await cacheHasKey(key);
+      } else Started.add(key);
+
+      if ( CACHE.has(key) ) return CACHE.get(key);
+
+      if ( CONFIG.useComponentBundle ) {
+        try {
+          const bundle = await ensureComponentBundle();
+          if ( !bundle ) {
+            throw new ReferenceError('Component bundle could not be loaded.');
+          }
+          const bundled = getBundleFile(name, file);
+          if ( typeof bundled === 'string' ) {
+            CACHE.set(key, bundled);
+            return bundled;
+          }
+          const error = new ReferenceError(`Bundle missing ${name ? `${name}/` : EMPTY}${file}`);
+          CACHE.set(key, error);
+          throw error;
+        } catch (err) {
+          const error = err instanceof Error ? err : new Error(`${err}`);
+          if ( !CACHE.has(key) ) CACHE.set(key, error);
+          throw error;
+        }
+      }
+
+      const url = `${CONFIG.componentsPath}/${name ? name + '/' : EMPTY}${file}`;
+      try {
+        const resp = await pipeLinedFetch(url);
+        if ( !resp.ok ) {
+          const error = new ReferenceError(`Fetch error: ${url}, ${resp.statusText}`);
+          CACHE.set(key, error);
+          throw error;
+        }
+        const text = await resp.text();
+        CACHE.set(key, text);
+        return text;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(`${err}`);
+        const isTransientNetworkError = /Failed to fetch|Load failed|NetworkError|The network connection was lost|fetch/i.test(error.message || '');
+        if ( isTransientNetworkError ) {
+          CACHE.delete(key);
+          Started.delete(key);
+        } else if ( !CACHE.has(key) ) {
+          CACHE.set(key, error);
+        }
+        throw error;
+      }
+    }
+
+    async function fetchStyle(name) {
+      return fetchFile(name, CONFIG.styleFile);
+    }
+
+    async function fetchScript(name) {
+      return fetchFile(name, CONFIG.scriptFile);
+    }
+
+    // search and transform each added subtree
+    async function transformBangs(records) {
+      for( const record of records ) {
+        for( const node of record.addedNodes ) {
+          if ( node.nodeType !== Node.TEXT_NODE ) {
+            cookListeners(node);
+            await findBangs(transformBang, node);
+          }
+        }
+      }
+    }
+
+    function transformBang(current) {
+      const [name, data] = getBangDetails(current);
+
+      // replace the bang node (comment) with its actual custom element node
+      const actualElement = createElement(name, data);
+      current.linkedCustomElement = actualElement;
+      actualElement[MirrorNode] = current;
+      current.parentNode.replaceChild(actualElement, current);
+    }
+
+    async function findBangs(callback, root = document.documentElement, {
+          allDependents: allDependents = false,
+          batchSize: batchSize = 100,
+          yieldTime: yieldTime = 0,
+          useFrame: useFrame = true
+        } = {}) {
+      if ( root.noFindBang ) return allDependents ? [] : void 0;
+      const found = allDependents ? 
+        node => node.nodeType === Node.COMMENT_NODE || 
+          node.nodeType === Node.ELEMENT_NODE 
+        :
+        node => node.nodeType === Node.COMMENT_NODE
+      ;
+      const Filter = allDependents ? 
+        NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_ELEMENT
+        :
+        NodeFilter.SHOW_COMMENT
+      ;
+      const Details = allDependents ? 
+        getNodeDetails  
+        :
+        getBangDetails
+      ;
+      const Return = allDependents ? NodeFilter.FILTER_SKIP : NodeFilter.FILTER_REJECT;
+      const Acceptor = {
+        acceptNode(node) {
+          if ( found(node) ) {
+            const [name] = Details(node); 
+            if ( name.match(DOUBLE_BARREL) ) return NodeFilter.FILTER_ACCEPT;
+            else return Return; 
+          } else if ( isDocument(node) ) {
+            return NodeFilter.FILTER_ACCEPT;
+          } else return NodeFilter.FILTER_SKIP;
+        }
+      };
+      // FIXME: do we need to walk through shadows here?
+      const iterators = [];
+      const replacements = [];
+      const dependents = [];
+
+      let iterator = document.createTreeWalker(root, Filter, Acceptor);
+      let current;
+
+      iterators.push(iterator);
+
+      // handle any descendents
+        while (true) {
+          current = iterator?.nextNode();
+          if ( ! current ) {
+            if ( iterators.length ) {
+              iterator = iterators.shift();
+              current = iterator.currentNode;
+              // Note:
+                // we need isBangTag here because a node that doesn't pass 
+                // Acceptor.accept will stop show up as the first currentNode
+                // in a tree iterator
+              if ( isBangTag(current) ) {
+                if ( !TRANSFORMING.has(current) ) {
+                  TRANSFORMING.add(current);
+                  const target = current;
+                  replacements.push(() => transformBang(target));
+                }
+              }
+              continue;
+            } else break;
+          }
+
+          // handle root node
+            // Note:
+              // it's a special case because it will be present in the iteration even if
+              // the NodeFilter would filter it out if it were not the root
+            // Note:
+              // a small optimization is replace isBangTag by the following check
+              // we don't need isBangTag here because it's already passed the 
+              // equivalent check in Acceptor.acceptNode
+          if ( current.nodeType === Node.COMMENT_NODE ) {
+            if ( !TRANSFORMING.has(current) ) {
+              TRANSFORMING.add(current);
+              const target = current;
+              replacements.push(() => transformBang(target));
+            }
+          }
+
+          dependents.push(current);
+
+          if ( current.shadowRoot instanceof ShadowRoot ) {
+            iterators.push(document.createTreeWalker(current.shadowRoot, Filter, Acceptor)); 
+          }
+        }
+
+      let i = 0;
+      while(replacements.length) {
+        replacements.pop()();
+        if ( RESPONSIVE_MEDIATION && allDependents ) {
+          i++;
+          if ( i < batchSize ) continue;
+          i = 0;
+          if ( useFrame ) {
+            await nextFrame();
+          } else {
+            await sleep(yieldTime);
+          }
+        }
+      }
+
+      if ( allDependents ) {
+        return dependents
+          .map(actualElement)
+          .filter(el => el && !el.hasAttribute('lazy'));
+      } else return;
+    }
+
+
+
+
+    function actualElement(node) {
+      const el = node.nodeType === Node.COMMENT_NODE ? 
+        node.linkedCustomElement 
+        : 
+        node 
+      ;
+      //console.log(node, el);
+      return el;
+    }
+
+    // NOTE: I'll have to add auto-detected functions to the node
+    // before this point, so they can be found here
+    // but after (I think) vv does it's processing. (I hope we can do this with current flow)
+    function getAncestor(node, value) {
+      const oNode = node;
+      let lastNode;
+      if ( node ) {
+        const currentPath = ['this.'];
+        while( node ) {
+          if ( node[value] instanceof Function ) {
+            const retVal = {Func: node[value], path: currentPath.join(EMPTY), oNode, host: node};
+            return retVal;
+          }
+          if ( node?.paths?.has(value) ) {
+            return { host: node, Func: node?.paths?.get(value), path: value };
+          }
+          currentPath.push( ONE_HIGHER );
+
+          lastNode = node;
+
+          node = node.getRootNode().host;
+        }
+      }
+      console.warn(`Error could not dereference function ${value} starting at original node:`, oNode);
+      console.warn(`Got as high as`, lastNode);
+      return {};
+    }
+
+    function isBangTag(node) {
+      return node.nodeType === Node.COMMENT_NODE && getBangDetails(node)[0].match(DOUBLE_BARREL);
+    }
+
+    function isDocument(node) {
+      return node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||
+        node.nodeType === Node.DOCUMENT_NODE
+      ;
+    }
+
+    function getBangDetails(node) {
+      const text = node.textContent.trim();
+      const [name, ...data] = text.split(/[\s\t]/g);
+      return [name.trim(), data.join(' ')];
+    }
+
+    function getNodeDetails(node) {
+      switch(node.nodeType) {
+        case Node.COMMENT_NODE:
+          return getBangDetails(node);
+        case Node.ELEMENT_NODE:
+          return [node.localName];
+      }
+    }
+
+    async function cook(markup, state) {
+      let cooked = EMPTY;
+      const _top = firstState;
+      const _self = state;
+      const _host = this;
+
+      if ( ! state._top ) {
+        Object.defineProperty(state, '_top', { value: _top });
+      }
+      
+      try {
+        with({...Env, ...state, ..._host.others}) {
+          cooked = await eval("(async function () { return await _FUNC`${{state,_host}}"+markup+"`; }())");  
+        }
+        return cooked;
+      } catch(error) {
+        console.warn('cook', error);
+        say('error!', 'Template error', {markup, state, error, _host: this});
+        throw error;
+      }
+    }
+
+    async function _FUNC(strings, ...vals) {
+      const s = Array.from(strings);
+      const ret =  await _c$(s, ...vals);
+      return ret;
+    }
+
+    async function _GFUNC(strings, ...vals) {
+      const s = Array.from(strings);
+      const ret = await _s$(s, ...vals);
+      return ret;
+    }
+
+    function createElement(name, data) {
+      return toDOM(`<${name} ${data}></${name}>`).firstElementChild;
+    }
+
+    function toDOM(str) {
+      DIV.replaceChildren();
+      DIV.insertAdjacentHTML(POS, `<template>${str}</template>`);
+      return DIV.firstElementChild.content;
+    }
+
+    async function becomesTrue(check, key) {
+      const WaitKey = key || check;
+      let waiters = Waiters.get(WaitKey);
+
+      if ( ! waiters ) {
+        waiters = _becomesTrue(check).then(checkResult => {
+          setTimeout(() => Waiters.delete(WaitKey), GC_TIMEOUT);
+          return checkResult; 
+        });
+        Waiters.set(WaitKey, waiters);
+      }
+      const pr = new Promise(resolve => waiters.then(resolve));
+      return pr;
+    }
+
+    async function _becomesTrue(check) {
+      return new Promise(async res => {
+        while(true) {
+          await nextFrame();
+          const v = await check();
+          if ( v ) break;
+        }
+        res(true);
+      });
+    }
+
+    // this is to optimize using becomesTrue so we don't start a new timer
+    // for every becomesTrue function call (in the case of the cache check, anyway)
+    // we can use this pattern to apply to other becomesTrue calls like loaded
+    async function cacheHasKey(key) {
+      const cacheKey = `cache:${key}`;
+      const funcKey = `checkFunc:${key}`;
+      let checkFunc = Waiters.get(funcKey);
+      if ( ! checkFunc ) {
+        checkFunc = () => CACHE.has(key);
+        Waiters.set(funcKey,checkFunc);
+      }
+      return becomesTrue(checkFunc, cacheKey);
+    }
+
+    async function sleep(ms) {
+      return new Promise(res => setTimeout(res, ms));
+    }
+    
+    async function nextFrame() {
+      return new Promise(res => requestAnimationFrame(res));
+    }
+
+    function isUnset(x) {
+      return x === undefined || x === null;
+    }
+
+    function say(mode, ...stuff) {
+      (BBDEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && !LIGHTHOUSE && alert(`${mode}: ${stuff.join('\n')}`);
+      (BBDEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!',EMPTY)](...stuff);
+    }
+
+    function isMobile() {
+      const toMatch = [
+        /Android/i,
+        /webOS/i,
+        /iPhone/i,
+        /iPad/i,
+        /iPod/i,
+        /BlackBerry/i,
+        /Windows Phone/i
+      ];
+
+      return toMatch.some((toMatchItem) => {
+        return navigator.userAgent.match(toMatchItem);
+      });
+    }
+  
+    function trace(msg = EMPTY) {
+      const tracer = new Error('Trace');
+      BBDEBUG && console.log(msg, 'Call stack', tracer.stack);
+    }
+
+    function dateString(date) {
+      const offset = date.getTimezoneOffset()
+      date = new Date(date.getTime() - (offset*60*1000))
+      return date.toISOString().split('T')[0];
+    }
+
+    function clone(o) {
+      console.log(CONFIG);
+      if ( CONFIG.useMagicClone ) {
+        return magicClone(o);
+      }
+      return JSON.parse(JS(o));
+    }
+
+    function magicClone(o) {
+      console.log('using magic clone');
+      // Check if the input is an object. Non-objects (like primitives) are returned as is.
+      if (o === null || typeof o !== 'object') {
+        return o;
+      }
+
+      try {
+        // Create a new object with the same prototype as the original.
+        let clone = Object.create(Object.getPrototypeOf(o));
+
+        // Copy each property (including getters, setters, and regular properties).
+        Object.getOwnPropertyNames(o).forEach(prop => {
+          let descriptor = Object.getOwnPropertyDescriptor(o, prop);
+          Object.defineProperty(clone, prop, descriptor);
+        });
+
+        return clone;
+      } catch (error) {
+        // Handle errors (e.g., non-clonable objects) and possibly log them.
+        console.error('Error in magicClone:', error);
+        return null; // Or any other fallback value as per your error handling strategy.
+      }
+    }
+
+    function JS(o) {
+      if ( CONFIG.useMagicClone ) {
+        return magicStringify(o); 
+      }
+      return _STR(o, Replacer, EMPTY);
+    }
+
+    function magicStringify(obj) {
+      const seenObjects = new WeakSet();
+
+      function serialize(o) {
+        if (o === null || typeof o !== 'object') {
+          return o;
+        }
+
+        // Detect circular references
+        if (seenObjects.has(o)) {
+          return '[Circular]';
+        }
+        seenObjects.add(o);
+
+        if (o?.constructor?.name === 'Object' || Array.isArray(o)) {
+          let plainObj = Array.isArray(o) ? [] : {};
+
+          Object.getOwnPropertyNames(o).forEach(prop => {
+            let descriptor = Object.getOwnPropertyDescriptor(o, prop);
+            plainObj[prop] = (typeof descriptor.value === 'object') ? serialize(descriptor.value) : (descriptor.get ? o[prop] : descriptor.value);
+          });
+
+          return plainObj;
+        } else {
+          // Non-plain objects are returned as is
+          return o;
+        }
+      }
+
+      try {
+        return JSON.stringify(serialize(obj), Replacer, EMPTY);
+      } catch (error) {
+        console.error('Error in magicStringify:', error);
+        return null;
+      }
+    }
+
+    function Replacer(key, value) {
+      const obj = this;
+      if ( typeof obj[key] === "function" ) {
+        return value.toString();
+      } else if ( value instanceof Node ) {
+        return `${value.nodeName}//${value.nodeValue || value.outerHTML || value.textContent}`;
+      } else return value;
+    }
+}());
