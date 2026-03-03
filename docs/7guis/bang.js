@@ -1018,9 +1018,16 @@
     }
 
     function resolveComponentBundleUrl() {
-      const base = (CONFIG.componentsPath || EMPTY).replace(/\/+$/, EMPTY);
-      const relative = CONFIG.componentBundlePath || CONFIG.componentBundleFile;
+      let base, relative;
+      if ( CONFIG.useComponentBundle ) {
+        base = (CONFIG.componentsPath || EMPTY).replace(/\/+$/, EMPTY);
+        relative = CONFIG.componentBundlePath || CONFIG.componentBundleFile;
 
+        if ( base.endsWith('/components') ) base = base.replace(/\/components$/, '');
+      } else {
+        base = (CONFIG.componentsPath || EMPTY).replace(/\/+$/, EMPTY);
+        relative = CONFIG.componentBundlePath || CONFIG.componentBundleFile;
+      }
       if ( !relative ) return `${base}/${CONFIG.componentBundleFile}`;
       if ( ABS_URL.test(relative) ) return relative;
 
