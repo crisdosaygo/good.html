@@ -44,8 +44,6 @@
   "devDependencies": {
     "css-loader": "latest",
     "eslint": "latest",
-    "html-loader": "latest",
-    "html-webpack-plugin": "latest",
     "roadroller": "latest",
     "rollup": "latest",
     "serve": "latest",
