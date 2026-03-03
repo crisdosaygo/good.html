@@ -1,6 +1,10 @@
 class CircleDrawer extends Base {
   static Radius = 32;
 
+  PreventSubmit(event) {
+    event.preventDefault();
+  }
+
   AddCircle(clickEvent) {
     if ( clickEvent.target.matches('sg-circle') ) return;
     const {clientX,clientY} = clickEvent;

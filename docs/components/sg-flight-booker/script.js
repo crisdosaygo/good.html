@@ -1,4 +1,8 @@
 class Component extends Base {
+  PreventSubmit(event) {
+    event.preventDefault();
+  }
+
   SetValence(inputEvent) {
     this.showValidity(inputEvent.target);
 

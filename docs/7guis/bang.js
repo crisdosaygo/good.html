@@ -472,11 +472,10 @@
           } catch(e) {
             console.error(`Error evaluating component ${name}`, e, {Compose});
           }
-        }).catch(err => {  // if no extension script exists, use Base; transient network failures should retry
+        }).catch(err => {  // missing script file is allowed; network failures should retry
           BBDEBUG && say('log!', err);
-          const message = String(err?.message || err || '');
-          const isMissingScript = /Bundle missing|Fetch error:.*Not Found|Fetch error:.*404/i.test(message);
-          if ( !isMissingScript ) {
+          const isMissingScript = isMissingFileError(err, CONFIG.scriptFile);
+          if ( ! isMissingScript ) {
             const scriptKey = `${CONFIG.scriptFile}:${name}`;
             CACHE.delete(scriptKey);
             Started.delete(scriptKey);
@@ -1104,56 +1103,86 @@
       return typeof node === 'string' ? node : null;
     }
 
+    function attachBangErrorDetails(error, details = {}) {
+      if ( ! (error instanceof Error) ) {
+        return error;
+      }
+      const current = error.bang && typeof error.bang === 'object' ? error.bang : {};
+      error.bang = {...current, ...details};
+      return error;
+    }
+
+    function makeBangReferenceError(message, details = {}) {
+      return attachBangErrorDetails(new ReferenceError(message), details);
+    }
+
+    function isMissingFileError(error, expectedFile) {
+      const details = error?.bang;
+      if ( !details || details.file !== expectedFile ) return false;
+      if ( details.kind === 'bundle_missing' ) return true;
+      return details.kind === 'http' && details.status === 404;
+    }
+
+    function isTransientNetworkError(error) {
+      const details = error?.bang;
+      if ( details?.kind ) {
+        return details.kind === 'network';
+      }
+      return /Failed to fetch|Load failed|NetworkError|The network connection was lost|fetch/i.test(error?.message || '');
+    }
+
     async function fetchMarkup(name) {
       // cache first
-        // we make any subsequent calls for name wait for the first call to complete
-        // otherwise we create many in parallel without benefitting from caching
-
+      // we make any subsequent calls for name wait for the first call to complete
+      // otherwise we create many in parallel without benefitting from caching
       const key = `markup:${name}`;
 
       if ( Started.has(key) ) {
         if ( ! CACHE.has(key) ) await cacheHasKey(key);
-      } else Started.add(key);
-
-      const styleKey = `style${name}`;
-      const baseUrl = `${CONFIG.componentsPath}/${name}`;
-      if ( CACHE.has(key) ) {
-        const markup = CACHE.get(key);
-        if ( CACHE.get(styleKey) instanceof Error ) { 
-          /*comp && comp.setVisible(); */
-        }
-        
-        // if there is an error style and we are still includig that link
-        // we generate and cache the markup again to omit such a link element
-        if ( CACHE.get(styleKey) instanceof Error && markup.includes(`href=${baseUrl}/${CONFIG.styleFile}`) ) {
-          // then we need to set the cache for markup again and remove the link to the stylesheet which failed 
-        } else {
-          /* comp && comp.setVisible(); */
-          return markup;
-        }
+      } else {
+        Started.add(key);
       }
-      
+
+      if ( CACHE.has(key) ) {
+        return CACHE.get(key);
+      }
+
+      const baseUrl = `${CONFIG.componentsPath}/${name}`;
       const markupUrl = `${baseUrl}/${CONFIG.htmlFile}`;
       let resp;
-      const markupText = await pipeLinedFetch(markupUrl).then(async r => { 
+      const markupText = await pipeLinedFetch(markupUrl).then(async r => {
         let text = EMPTY;
-        if ( r.ok ) text = await r.text();
-        else text = `<slot></slot>`;        // if no markup is given we just insert all content within the custom element
-      
-        if ( CACHE.get(styleKey) instanceof Error ) { 
-          resp = `
-          <style>
-            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
-          </style>${text}` 
+        if ( r.ok ) {
+          text = await r.text();
+        } else if ( r.status === 404 ) {
+          // Missing markup is a valid component shape: render light DOM through a slot.
+          text = `<slot></slot>`;
         } else {
-          // inlining styles for increase speed */
-          resp = `
-          <style>
-            ${await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`)}
-            ${await fetchStyle(name)}
-          </style>${text}`;
+          throw makeBangReferenceError(`Fetch error: ${markupUrl}, ${r.status}`, {
+            kind: 'http',
+            name,
+            file: CONFIG.htmlFile,
+            url: markupUrl,
+            status: r.status,
+            statusText: r.statusText || EMPTY
+          });
         }
-        
+
+        const baseStyle = await fetchFile(EMPTY, CONFIG.styleFile).catch(err => `/* ${err+EMPTY} */`);
+        let componentStyle = EMPTY;
+        try {
+          componentStyle = await fetchStyle(name);
+        } catch (err) {
+          if ( ! isMissingFileError(err, CONFIG.styleFile) ) {
+            throw err;
+          }
+        }
+
+        resp = `
+          <style>
+            ${baseStyle}
+            ${componentStyle}
+          </style>${text}`;
         return resp;
       }).finally(async () => CACHE.set(key, await resp));
       return markupText;
@@ -1172,14 +1201,23 @@
         try {
           const bundle = await ensureComponentBundle();
           if ( !bundle ) {
-            throw new ReferenceError('Component bundle could not be loaded.');
+            throw makeBangReferenceError('Component bundle could not be loaded.', {
+              kind: 'bundle_unavailable',
+              name,
+              file
+            });
           }
           const bundled = getBundleFile(name, file);
           if ( typeof bundled === 'string' ) {
             CACHE.set(key, bundled);
             return bundled;
           }
-          const error = new ReferenceError(`Bundle missing ${name ? `${name}/` : EMPTY}${file}`);
+          const error = makeBangReferenceError(`Bundle missing ${name ? `${name}/` : EMPTY}${file}`, {
+            kind: 'bundle_missing',
+            name,
+            file,
+            status: 404
+          });
           CACHE.set(key, error);
           throw error;
         } catch (err) {
@@ -1193,7 +1231,14 @@
       try {
         const resp = await pipeLinedFetch(url);
         if ( !resp.ok ) {
-          const error = new ReferenceError(`Fetch error: ${url}, ${resp.statusText}`);
+          const error = makeBangReferenceError(`Fetch error: ${url}, ${resp.status}`, {
+            kind: 'http',
+            name,
+            file,
+            url,
+            status: resp.status,
+            statusText: resp.statusText || EMPTY
+          });
           CACHE.set(key, error);
           throw error;
         }
@@ -1202,8 +1247,8 @@
         return text;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(`${err}`);
-        const isTransientNetworkError = /Failed to fetch|Load failed|NetworkError|The network connection was lost|fetch/i.test(error.message || '');
-        if ( isTransientNetworkError ) {
+        if ( isTransientNetworkError(error) ) {
+          attachBangErrorDetails(error, {kind: 'network', name, file, url});
           CACHE.delete(key);
           Started.delete(key);
         } else if ( !CACHE.has(key) ) {

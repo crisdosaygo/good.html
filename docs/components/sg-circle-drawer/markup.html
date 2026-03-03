@@ -3,7 +3,7 @@
     onclick=CloseSizer
     state=${_self}
   >
-  <form class=layout onsubmit="event.preventDefault();">
+  <form class=layout onsubmit=PreventSubmit>
     <fieldset class=history>
       <button name=action value=undo ${selected ? 'disabled' : ''} onclick=Undo>Undo</button>
       <button name=action value=redo ${selected ? 'disabled' : ''} onclick=Redo>Redo</button>

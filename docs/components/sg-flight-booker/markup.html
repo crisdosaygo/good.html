@@ -1,5 +1,5 @@
 <sg-frame state=${_self}>
-  <form class=layout onsubmit="event.preventDefault();">
+  <form class=layout onsubmit=PreventSubmit>
     <select required name=valence oninput=SetValence>
       <option ${valence === 'one-way' ? 'selected': ''} value=one-way>One-way flight</option>
       <option ${valence === 'round-trip' ? 'selected': ''} value=round-trip>Round-trip flight</option>

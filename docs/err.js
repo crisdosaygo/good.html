@@ -1,0 +1,1 @@
+/* Error hook placeholder for docs pages. */
