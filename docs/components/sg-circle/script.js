@@ -1,0 +1,1 @@
+class Circle extends Base {}

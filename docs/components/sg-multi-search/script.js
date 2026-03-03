@@ -1,6 +1,10 @@
 class Component extends Base {
   static DEFAULT_TYPE = 'text';
 
+  PreventSubmit(event) {
+    event.preventDefault();
+  }
+
   get type() {
     return this.getAttribute('type') || Component.DEFAULT_TYPE;
   }
