@@ -472,8 +472,16 @@
           } catch(e) {
             console.error(`Error evaluating component ${name}`, e, {Compose});
           }
-        }).catch(err => {  // otherwise if there is no such extension script, just use the Base class
+        }).catch(err => {  // if no extension script exists, use Base; transient network failures should retry
           BBDEBUG && say('log!', err);
+          const message = String(err?.message || err || '');
+          const isMissingScript = /Bundle missing|Fetch error:.*Not Found|Fetch error:.*404/i.test(message);
+          if ( !isMissingScript ) {
+            const scriptKey = `${CONFIG.scriptFile}:${name}`;
+            CACHE.delete(scriptKey);
+            Started.delete(scriptKey);
+            throw err;
+          }
           component = BangBase(name);
         });
       
@@ -704,7 +712,10 @@
       const result = {args, started: new Date};
       let pr;
       if ( RequestPipeLine.size < MAX_CONCURRENT_REQUESTS ) {
-        pr = fetch(...args).catch(err => (say('log', err), `/* ${err} */`));
+        pr = fetch(...args).catch(err => {
+          say('log', err);
+          throw err;
+        });
         result.pr = pr;
         RequestPipeLine.set(key, result);
         const complete = r => {
@@ -1184,7 +1195,13 @@
         return text;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(`${err}`);
-        if ( !CACHE.has(key) ) CACHE.set(key, error);
+        const isTransientNetworkError = /Failed to fetch|Load failed|NetworkError|The network connection was lost|fetch/i.test(error.message || '');
+        if ( isTransientNetworkError ) {
+          CACHE.delete(key);
+          Started.delete(key);
+        } else if ( !CACHE.has(key) ) {
+          CACHE.set(key, error);
+        }
         throw error;
       }
     }
@@ -1611,4 +1628,3 @@
       } else return value;
     }
 }());
-
