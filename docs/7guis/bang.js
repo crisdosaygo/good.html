@@ -48,7 +48,7 @@
       componentBundlePath: null,
       componentBundleRootKey: 'components',
       componentBundle: null,
-      useComponentBundle: false,
+      useComponentBundle: true,
       allowUnset: true,
       unsetPlaceholder: EMPTY,
       EVENTS: `bond error load click pointerdown pointerup pointermove mousedown mouseup submit
