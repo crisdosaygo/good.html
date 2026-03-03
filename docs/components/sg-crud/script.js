@@ -1,4 +1,8 @@
 class Component extends Base {
+  PreventSubmit(event) {
+    event.preventDefault();
+  }
+
   UpdateSelected(clickEvent) {
     const {form, state, name} = this.getSelected(clickEvent);
 

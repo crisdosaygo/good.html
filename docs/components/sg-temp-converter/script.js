@@ -1,4 +1,8 @@
 class Component extends Base {
+  PreventSubmit(event) {
+    event.preventDefault();
+  }
+
   SetKelvin(inputEvent) {
     if ( !inputEvent.target.closest('form').reportValidity() ) return;
     const {target: targ} = inputEvent;
