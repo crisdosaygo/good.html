@@ -200,9 +200,11 @@
           this.alreadyPrinted = true;
           if ( ! this.loaded ) {
             this.counts.finish();
+            console.log(`[TD] markLoaded <${this.#name}> awaiting untilLoaded...`);
             const loaded = await this.untilLoaded();
             if ( loaded ) {
               this.loaded = loaded;
+              console.log(`[TD] markLoaded <${this.#name}> setVisible (adding bang-styled)`);
               this.setVisible();
               if ( ! this.isLazy ) {
                 setTimeout(() => document.counts.finish(), 0);
@@ -897,7 +899,18 @@
       const eventName = flags.pop();
       const flagObj = Object.fromEntries(flags.map(f => [f, true]));
 
-      if ( node.getRootNode().host.paths.has(value) ) return;
+      if ( node.getRootNode().host?.paths?.has(value) ) return;
+
+      // Guard: handle already-transformed values from VV cache-hit DOM
+      if ( value.startsWith('this.getRootNode().host.') ) {
+        const bareValue = value.replace(/^this\.getRootNode\(\)\.host\./, '').replace(/\(event\)$/, '');
+        if ( bareValue ) {
+          console.log(`[TD] handleNewAttribute RE-RESOLVE <${node.getRootNode().host?.localName||'?'}> attr=${name} bare="${bareValue}"`);
+          value = bareValue;
+        } else {
+          return;
+        }
+      }
 
       value = value.replace(/\(event\)$/, '');
       if ( ! value ) return;
