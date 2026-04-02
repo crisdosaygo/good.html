@@ -145,22 +145,11 @@
         this.cookMarkup = async (markup, state) => {
           const _host = this;
           // Early guard: skip cook entirely if element is already disconnected
-          // This prevents stale VV cache entries from being created by cook() running
-          // on elements that were removed from DOM by a VV SWAP but still had pending updates
-          if ( ! this.isConnected ) {
-            console.log(`[TD] cookMarkup EARLY-ABORT <${this.#name}> not connected — skipping cook entirely`);
-            return;
-          }
-          const hasShadow = !!this.shadowRoot;
-          console.log(`[TD] cookMarkup START <${this.#name}> isConnected=${this.isConnected} hasShadow=${hasShadow} needsRefresh=${this.needsRefresh} funcs=${this.#funcs.size} names=${this.#names.size} paths=${this.#paths.size} destructors=${this.#destructors.size}`);
+          if ( ! this.isConnected ) return;
           BBDEBUG && console.log(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state);
-          console.log(`[TD] cookMarkup AFTER-COOK <${this.#name}> isConnected=${this.isConnected} needsRefresh=${this.needsRefresh} cooked.nodes=${cooked?.nodes?.length}`);
           // Post-cook guard: element may have disconnected during async cook
-          if ( ! this.isConnected ) {
-            console.log(`[TD] cookMarkup ABORT <${this.#name}> disconnected during cook — skipping render`);
-            return;
-          }
+          if ( ! this.isConnected ) return;
           BBDEBUG && console.log(`Component : ${this.#name}`);
           BBDEBUG && console.log(`State host: ${_host.name}`);
           BBDEBUG && console.log(`Will add ${this.#funcs.size} event handler functions`);
@@ -179,7 +168,6 @@
           BBDEBUG && console.log();
           let shadow = this.shadowRoot;
           if ( ! shadow ) {
-            console.log(`[TD] cookMarkup FIRST-SHADOW <${this.#name}> attaching shadow`);
             const shadow = this.attachShadow(SHADOW_OPTS);
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
@@ -190,7 +178,6 @@
           } else {
             BBDEBUG && console.log('already has shadow', this);
             if ( this.needsRefresh ) {
-              console.log(`[TD] cookMarkup REFRESH-SHADOW <${this.#name}> isConnected=${this.isConnected} clearing ${shadow.childNodes.length} children`);
               // Clear stale shadow content and re-insert fresh cooked result
               while ( shadow.firstChild ) shadow.removeChild(shadow.firstChild);
               await cooked.to(shadow, INSERT);
@@ -198,8 +185,6 @@
               this.#dependents = deps.map(node => node.untilVisible());
               this.cookListeners(shadow);
               this.needsRefresh = false;
-            } else {
-              console.log(`[TD] cookMarkup SKIP-SHADOW <${this.#name}> (needsRefresh=false, shadow has ${shadow.childNodes.length} children)`);
             }
           }
         }
@@ -207,11 +192,9 @@
           this.alreadyPrinted = true;
           if ( ! this.loaded ) {
             this.counts.finish();
-            console.log(`[TD] markLoaded <${this.#name}> awaiting untilLoaded...`);
             const loaded = await this.untilLoaded();
             if ( loaded ) {
               this.loaded = loaded;
-              console.log(`[TD] markLoaded <${this.#name}> setVisible (adding bang-styled)`);
               this.setVisible();
               if ( ! this.isLazy ) {
                 setTimeout(() => document.counts.finish(), 0);
@@ -266,13 +249,7 @@
         if ( OPTIMIZE ) {
           const nextState = JS(state);
           if ( this.alreadyPrinted && this.lastState === nextState ) {
-            if ( this.#name === 'bb-view' ) {
-              console.log(`[TD] print <bb-view> OPTIMIZE-SKIP chromeUI=${state.chromeUI}`);
-            }
             return;
-          }
-          if ( this.#name === 'bb-view' ) {
-            console.log(`[TD] print <bb-view> WILL-RENDER chromeUI=${state.chromeUI} alreadyPrinted=${this.alreadyPrinted}`);
           }
           this.lastState = nextState;
         }
@@ -297,7 +274,11 @@
         if ( !this.isLazy ) {
           document.counts.start();
         }
-        this.classList.remove('bang-styled');
+        // Skip the hide step on reconnecting elements to prevent flash.
+        // First-time elements (never connected before) get hidden until rendered.
+        if ( ! this._bangWasConnected ) {
+          this.classList.remove('bang-styled');
+        }
         // we prefetch the style
         fetchStyle(name).catch(err => {
           say('warn', err);
@@ -390,7 +371,6 @@
       }
 
       connectedCallback() {
-        console.log(`[TD] connectedCallback <${this.#name}> hasShadow=${!!this.shadowRoot} needsRefresh=${this.needsRefresh} paths=${this.#paths.size} names=${this.#names.size}`);
         new Counter(this);
         this.loadCheck = () => this?.counts?.check?.();
         this.visibleCheck = () => {
@@ -420,7 +400,7 @@
       }
 
       disconnectedCallback() {
-        console.log(`[TD] disconnectedCallback <${this.#name}> isConnected=${this.isConnected} destructors=${this.#destructors.size} paths=${this.#paths.size} names=${this.#names.size} funcs=${this.#funcs.size}`);
+        this._bangWasConnected = true;
         this.alreadyPrinted = false;
         this.loaded = false;
         // Remove from state acquirers to prevent stale updates on disconnected elements
@@ -428,7 +408,6 @@
         const acquirers = Dependents.get(this);
         if ( acquirers ) {
           acquirers.delete(this);
-          console.log(`[TD]   removed from acquirers (remaining=${acquirers.size})`);
         }
         Dependents.delete(this);
         this.destructors.forEach(d => {
@@ -674,9 +653,6 @@
       rerender: rerender = true, 
       save: save = false
     } = {}) {
-      if ( key === 'bbpro' ) {
-        console.log(`[TD] setState(bbpro) chromeUI=${state.chromeUI} (type=${typeof state.chromeUI}) contextMenuActive=${state.contextMenuActive}`);
-      }
       const jss = JS(state);
       BBDEBUG && console.log({jss, state});
       let lk = key+'.json.last';
@@ -709,15 +685,12 @@
       if ( rerender ) { // re-render only those components depending on that key
         const acquirers = Dependents.get(key);
         if ( acquirers ) {
-          const names = [...acquirers].map(h => `<${h.localName}>(connected=${h.isConnected})`);
-          console.log(`[TD] setState key=${key} acquirers=[${names.join(', ')}]`);
           acquirers.forEach(host => host.update());
         }
       }
 
       if ( ! firstState ) {
         firstState = state; 
-        self._bang_firstState = firstState;
         BBDEBUG && console.log(`Set first state at key ${key}`, state);
       }
       
@@ -844,18 +817,14 @@
         value = value.trim();
 
         const pathsHas = node.getRootNode().host?.paths?.has(value);
-        const hostName = node.getRootNode().host?.localName || 'none';
-        console.log(`[TD] handleAttribute <${hostName}> attr=${name} value="${value.substring(0,60)}" paths.has=${pathsHas}`);
         if ( pathsHas ) return;
 
         // Guard: handle already-transformed values from VV cache-hit DOM.
-        // These look like "this.getRootNode().host.fXXX(event)" from a previous element
-        // instance. Strip the path prefix back to the bare function name so it can be
+        // Strip the path prefix back to the bare function name so it can be
         // re-resolved against the new host element.
         if ( value.startsWith('this.getRootNode().host.') ) {
           const bareValue = value.replace(/^this\.getRootNode\(\)\.host\./, '').replace(/\(event\)$/, '');
           if ( bareValue ) {
-            console.log(`[TD] handleAttribute RE-RESOLVE <${hostName}> attr=${name} bare="${bareValue}" (was "${value.substring(0,60)}")`);
             value = bareValue;
           } else {
             return;
@@ -922,7 +891,6 @@
       if ( value.startsWith('this.getRootNode().host.') ) {
         const bareValue = value.replace(/^this\.getRootNode\(\)\.host\./, '').replace(/\(event\)$/, '');
         if ( bareValue ) {
-          console.log(`[TD] handleNewAttribute RE-RESOLVE <${node.getRootNode().host?.localName||'?'}> attr=${name} bare="${bareValue}"`);
           value = bareValue;
         } else {
           return;
@@ -1500,12 +1468,10 @@
         const currentPath = ['this.'];
         while( node ) {
           if ( node[value] instanceof Function ) {
-            console.log(`[TD] getAncestor FOUND "${value}" on <${node.localName||'?'}> path=${currentPath.join(EMPTY)}`);
             const retVal = {Func: node[value], path: currentPath.join(EMPTY), oNode, host: node};
             return retVal;
           }
           if ( node?.paths?.has(value) ) {
-            console.log(`[TD] getAncestor FOUND-IN-PATHS "${value}" on <${node.localName||'?'}>`);
             return { host: node, Func: node?.paths?.get(value), path: value };
           }
           currentPath.push( ONE_HIGHER );
@@ -1515,9 +1481,8 @@
           node = node.getRootNode().host;
         }
       }
-      console.warn(`[TD] getAncestor FAILED "${value}" starting at <${oNode?.localName||'?'}> got as high as <${lastNode?.localName||'?'}>`);
-      console.warn(`Error could not dereference function ${value} starting at original node:`, oNode);
-      console.warn(`Got as high as`, lastNode);
+      // Keep this warning — it indicates a real dereference failure
+      console.warn(`Could not dereference function ${value} starting at:`, oNode, `got as high as:`, lastNode);
       return {};
     }
 
@@ -1551,10 +1516,6 @@
       const _top = firstState;
       const _self = state;
       const _host = this;
-
-      if ( _host.name === 'bb-view' ) {
-        console.log(`[TD] cook <bb-view> chromeUI=${state.chromeUI} (type=${typeof state.chromeUI}) contextMenuActive=${state.contextMenuActive} firstState===state? ${firstState === state} firstState.chromeUI=${firstState?.chromeUI}`);
-      }
 
       if ( ! state._top ) {
         Object.defineProperty(state, '_top', { value: _top });
