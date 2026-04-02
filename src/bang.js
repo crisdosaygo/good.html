@@ -174,6 +174,11 @@
           } else {
             BBDEBUG && console.log('already has shadow', this);
             if ( this.needsRefresh ) {
+              // Clear stale shadow content and re-insert fresh cooked result
+              while ( shadow.firstChild ) shadow.removeChild(shadow.firstChild);
+              await cooked.to(shadow, INSERT);
+              const deps = await findBangs(transformBang, shadow, ALL_DEPS);
+              this.#dependents = deps.map(node => node.untilVisible());
               this.cookListeners(shadow);
               this.needsRefresh = false;
             }
@@ -390,6 +395,13 @@
         BBDEBUG && console.log(`${this.name} disconnecting...`);
         this.alreadyPrinted = false;
         this.loaded = false;
+        // Remove from state acquirers to prevent stale updates on disconnected elements
+        // (reconnect will re-add via connectedCallback → handleAttrs)
+        const acquirers = Dependents.get(this);
+        if ( acquirers ) {
+          acquirers.delete(this);
+        }
+        Dependents.delete(this);
         this.destructors.forEach(d => {
           try {
             BBDEBUG && console.log(`Running destructor`, d.toString());
@@ -398,6 +410,8 @@
             console.warn(`Destructor for ${this.name} failed`, e, d);
           }
         });
+        // Clear stale function-path registrations from previous render
+        this.#paths.clear();
         this.needsRefresh = true;
       }
 
