@@ -149,6 +149,11 @@
           BBDEBUG && console.log(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state);
           console.log(`[TD] cookMarkup AFTER-COOK <${this.#name}> isConnected=${this.isConnected} needsRefresh=${this.needsRefresh} cooked.nodes=${cooked?.nodes?.length}`);
+          // Guard: if element was disconnected during async cook, abandon render
+          if ( ! this.isConnected ) {
+            console.log(`[TD] cookMarkup ABORT <${this.#name}> disconnected during cook — skipping render`);
+            return;
+          }
           BBDEBUG && console.log(`Component : ${this.#name}`);
           BBDEBUG && console.log(`State host: ${_host.name}`);
           BBDEBUG && console.log(`Will add ${this.#funcs.size} event handler functions`);
@@ -823,6 +828,20 @@
         const hostName = node.getRootNode().host?.localName || 'none';
         console.log(`[TD] handleAttribute <${hostName}> attr=${name} value="${value.substring(0,60)}" paths.has=${pathsHas}`);
         if ( pathsHas ) return;
+
+        // Guard: handle already-transformed values from VV cache-hit DOM.
+        // These look like "this.getRootNode().host.fXXX(event)" from a previous element
+        // instance. Strip the path prefix back to the bare function name so it can be
+        // re-resolved against the new host element.
+        if ( value.startsWith('this.getRootNode().host.') ) {
+          const bareValue = value.replace(/^this\.getRootNode\(\)\.host\./, '').replace(/\(event\)$/, '');
+          if ( bareValue ) {
+            console.log(`[TD] handleAttribute RE-RESOLVE <${hostName}> attr=${name} bare="${bareValue}" (was "${value.substring(0,60)}")`);
+            value = bareValue;
+          } else {
+            return;
+          }
+        }
         //console.log('1', value, [...node.getRootNode().host.paths.keys()]);
 
         value = value.replace(/\(event\)$/, '');
