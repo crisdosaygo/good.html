@@ -118,9 +118,11 @@
         const {cached,firstCall} = isCached(cacheKey,v,instance);
        
         if ( ! firstCall ) {
+          console.log(`[TD] VV CACHE-HIT host=<${_host?.name||'?'}> key="${cacheKey.substring(0,80)}..." nodes=${cached?.nodes?.length}`);
           cached.update(v);
           return cached;
         } else {
+          console.log(`[TD] VV CACHE-MISS host=<${_host?.name||'?'}> key="${cacheKey.substring(0,80)}..." (firstCall=true)`);
           retVal.oldVals = Array.from(v);
         }
       } else {
@@ -229,14 +231,13 @@
           if ( _host.names.has(character) ) {
             const {func: existingFunc, name: existingName} = _host.names.get(character);
             if ( existingName ) {
-              DEBUG && console.log(`Name exists!`, x, existingName);
-              DEBUG && console.log(`Adding ${existingName} adder`, existingFunc);
+              console.log(`[TD] VV process REUSE-FUNC-ARRAY host=<${_host?.name||'?'}> name=${existingName}`);
               _host.funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
               return existingName;
             }
           }
           const randomName = NextFunc();
-          DEBUG && console.log({definedFunction: randomName, source: 1});
+          console.log(`[TD] VV process NEW-FUNC-ARRAY host=<${_host?.name||'?'}> name=${randomName}`);
 
           const func = (
             function(ev) {
@@ -251,9 +252,7 @@
           );
 
           _host.names.set(character, {name:randomName, func});
-          DEBUG && console.log(`Adding ${randomName} adder`, func, _host);
           _host.funcs.add(component => (component[randomName] = func, randomName));
-          DEBUG && console.log('name', randomName, func);
           return `${randomName}(event)`;
         } else if ( x[0] instanceof Element || x[0] instanceof Node ) {
           return {code:CODE, externals: [], nodes: x};
@@ -289,18 +288,15 @@
         if ( _host.names.has(character) ) {
           const {func: existingFunc, name: existingName} = _host.names.get(character);
           if ( existingName ) {
-            DEBUG && console.log(`Name exists!`, x, existingName);
-            DEBUG && console.log(`Adding ${existingName} adder`, existingFunc);
+            console.log(`[TD] VV process REUSE-FUNC host=<${_host?.name||'?'}> name=${existingName}`);
             _host.funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
             return existingName;
           }
         }
         const name = NextFunc();
+        console.log(`[TD] VV process NEW-FUNC host=<${_host?.name||'?'}> name=${name}`);
         _host.names.set(character, {name, func:x});
-        DEBUG && console.log(`Adding ${name} adder`, x, _host);
         _host.funcs.add(component => (component[name] = x, name)); 
-        DEBUG && console.log({definedFunction:name, source: 2});
-        DEBUG && console.log('name', name, x);
         return `${name}(event)`;
       }
 
@@ -477,6 +473,8 @@
 
       function handleMarkupInNode(newVal, state) {
         let {oldNodes,lastAnchor} = state;
+        const removedNames = [];
+        const addedNames = [];
         if ( newVal.nodes.length ) {
           if ( sameOrder(oldNodes,newVal.nodes) ) {
             // do nothing
@@ -523,6 +521,9 @@
         // if nodes are not included we can just remove them
         const dn = diffNodes(oldNodes,newVal.nodes);
         if ( dn.size ) {
+          const removedDesc = [...dn].map(n => `<${n.localName||n.nodeName}>`).join(',');
+          const addedDesc = newVal.nodes.map(n => `<${n.localName||n.nodeName}>`).join(',');
+          console.log(`[TD] VV handleMarkupInNode SWAP removed=[${removedDesc}] added=[${addedDesc}] killCount=${dn.size}`);
           const f = document.createDocumentFragment();
           const killSet = new Set();
           dn.forEach(n => {
@@ -921,15 +922,14 @@
 
         const existingValue = node.getAttribute(name);
         if ( node.getRootNode().host ) {
-          //console.log(node, [...node.getRootNode().host.paths.keys()]);
           if ( node.getRootNode().host.paths.has(existingValue) ) {
-            DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
+            console.log(`[TD] reliablySetAttr SKIP-PATHS <${node.localName}> ${name} existing="${existingValue?.substring(0,60)}"`);
             return;
           }
         } else {
           DEBUG && console.warn(`No host exists yet`);
           if ( existingValue?.startsWith('this.') ) {
-            DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
+            console.log(`[TD] reliablySetAttr SKIP-THIS <${node.localName}> ${name} existing="${existingValue?.substring(0,60)}"`);
             return;
           }
         }

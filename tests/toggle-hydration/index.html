@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+  <meta charset=utf-8>
+  <title>Toggle Hydration Bug Reproduction</title>
+  <meta name=viewport content="width=device-width,initial-scale=1">
+  <script src="../../src/bang.js"></script>
+  <style>
+    body {
+      font-family: monospace;
+      margin: 20px;
+      background: #fafafa;
+    }
+    #test-controls {
+      background: #fff3e0;
+      border: 2px solid #ff9800;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    #test-controls h1 { margin-top: 0; font-size: 18px; }
+    #test-controls button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    #auto-toggle { background: #f44336; color: white; border: none; }
+    #manual-toggle { background: #2196f3; color: white; border: none; }
+    #check-health { background: #4caf50; color: white; border: none; }
+    .result-pass { color: #4caf50; font-weight: bold; }
+    .result-fail { color: #f44336; font-weight: bold; }
+    #test-log {
+      background: #263238;
+      color: #aed581;
+      padding: 12px;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      margin-top: 12px;
+    }
+    #error-log {
+      background: #4a0000;
+      color: #ff8a80;
+      padding: 12px;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      margin-top: 12px;
+    }
+    #health-results {
+      margin-top: 12px;
+      padding: 8px;
+      background: white;
+      border: 1px solid #ccc;
+    }
+  </style>
+  <script>
+    bangFig({
+      useComponentBundle: false,
+      componentsPath: 'components'
+    });
+
+    const originalConsoleWarn = console.warn;
+    const errorMessages = [];
+    console.warn = function(...args) {
+      const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
+      if (msg.includes('dereference') || msg.includes('getAncestor') || msg.includes('could not')) {
+        errorMessages.push(msg);
+        const el = document.getElementById('error-log');
+        if (el) el.textContent += msg + '\n';
+      }
+      originalConsoleWarn.apply(console, args);
+    };
+
+    const originalConsoleError = console.error;
+    console.error = function(...args) {
+      const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
+      errorMessages.push('ERROR: ' + msg);
+      const el = document.getElementById('error-log');
+      if (el) el.textContent += 'ERROR: ' + msg + '\n';
+      originalConsoleError.apply(console, args);
+    };
+
+    bangLoaded().then(() => {
+      use('toggle-parent');
+      use('toggle-child');
+      use('toggle-status');
+
+      setState('TestState', {
+        showChild: true,
+        toggleCount: 0,
+        childClicks: 0
+      });
+
+      document.getElementById('test-log').textContent += 'Framework loaded. Initial state set.\n';
+    });
+
+    function checkHealth() {
+      const results = document.getElementById('health-results');
+      const checks = [];
+      let allPass = true;
+
+      // Check 1: toggle-child exists in DOM when showChild is true
+      const parent = document.querySelector('toggle-parent');
+      const parentShadow = parent?.shadowRoot;
+      const child = parentShadow?.querySelector('toggle-child');
+      const state = getState('TestState');
+
+      if (state.showChild) {
+        const childExists = !!child;
+        checks.push({ name: 'Child exists when showChild=true', pass: childExists });
+        if (!childExists) allPass = false;
+
+        if (child) {
+          // Check 2: child shadow root exists
+          const childShadow = child.shadowRoot;
+          const hasShadow = !!childShadow;
+          checks.push({ name: 'Child has shadow root', pass: hasShadow });
+          if (!hasShadow) allPass = false;
+
+          if (childShadow) {
+            // Check 3: buttons exist
+            const buttons = childShadow.querySelectorAll('button');
+            const hasButtons = buttons.length >= 2;
+            checks.push({ name: `Child has buttons (found ${buttons.length})`, pass: hasButtons });
+            if (!hasButtons) allPass = false;
+
+            // Check 4: onclick handlers are functions that work
+            for (const btn of buttons) {
+              const onclickAttr = btn.getAttribute('onclick');
+              const hasOnclick = !!onclickAttr;
+              checks.push({ name: `Button "${btn.textContent}" has onclick="${onclickAttr}"`, pass: hasOnclick });
+              if (!hasOnclick) allPass = false;
+
+              // Check 5: handler can be resolved
+              if (onclickAttr && onclickAttr.includes('this.getRootNode().host.')) {
+                const funcMatch = onclickAttr.match(/this\.getRootNode\(\)\.host\.(\w+)/);
+                if (funcMatch) {
+                  const funcName = funcMatch[1];
+                  const hostEl = child;
+                  const funcExists = typeof hostEl[funcName] === 'function';
+                  checks.push({ name: `  → host.${funcName} is a function`, pass: funcExists });
+                  if (!funcExists) allPass = false;
+                }
+              }
+            }
+          }
+        }
+      } else {
+        const childAbsent = !child;
+        checks.push({ name: 'Child absent when showChild=false', pass: childAbsent });
+        if (!childAbsent) allPass = false;
+      }
+
+      // Check 6: status component works
+      const status = parentShadow?.querySelector('toggle-status');
+      const statusShadow = status?.shadowRoot;
+      const statusHasButton = !!statusShadow?.querySelector('button');
+      checks.push({ name: 'Status component has button', pass: statusHasButton });
+      if (!statusHasButton) allPass = false;
+
+      if (statusShadow) {
+        const statusBtn = statusShadow.querySelector('button');
+        const statusOnclick = statusBtn?.getAttribute('onclick');
+        checks.push({ name: `Status button onclick="${statusOnclick}"`, pass: !!statusOnclick });
+        if (statusOnclick && statusOnclick.includes('this.getRootNode().host.')) {
+          const funcMatch = statusOnclick.match(/this\.getRootNode\(\)\.host\.(\w+)/);
+          if (funcMatch) {
+            const funcName = funcMatch[1];
+            const funcExists = typeof status[funcName] === 'function';
+            checks.push({ name: `  → host.${funcName} is a function`, pass: funcExists });
+            if (!funcExists) allPass = false;
+          }
+        }
+      }
+
+      // Check 7: no dereference errors
+      const noErrors = errorMessages.length === 0;
+      checks.push({ name: `No dereference errors (${errorMessages.length} found)`, pass: noErrors });
+      if (!noErrors) allPass = false;
+
+      // Render results
+      let html = `<strong>${allPass ? '✅ ALL PASS' : '❌ FAILURES DETECTED'}</strong> (toggle cycle #${state.toggleCount})<br>`;
+      for (const c of checks) {
+        html += `<span class="${c.pass ? 'result-pass' : 'result-fail'}">${c.pass ? '✓' : '✗'} ${c.name}</span><br>`;
+      }
+      results.innerHTML = html;
+      document.getElementById('test-log').textContent += 
+        `Health check: ${allPass ? 'PASS' : 'FAIL'} (cycle #${state.toggleCount})\n`;
+      return allPass;
+    }
+
+    async function autoToggle() {
+      const log = document.getElementById('test-log');
+      log.textContent += '\n=== AUTO TOGGLE TEST ===\n';
+
+      for (let i = 0; i < 4; i++) {
+        log.textContent += `\n--- Toggle ${i+1} (hide) ---\n`;
+        const state = cloneState('TestState');
+        state.showChild = false;
+        state.toggleCount = (state.toggleCount || 0) + 1;
+        setState('TestState', state);
+
+        await new Promise(r => setTimeout(r, 500));
+
+        log.textContent += `--- Toggle ${i+1} (show) ---\n`;
+        const state2 = cloneState('TestState');
+        state2.showChild = true;
+        state2.toggleCount = (state2.toggleCount || 0) + 1;
+        setState('TestState', state2);
+
+        await new Promise(r => setTimeout(r, 1000));
+
+        const passed = checkHealth();
+        log.textContent += `Cycle ${i+1}: ${passed ? 'PASS ✅' : 'FAIL ❌'}\n`;
+        if (!passed) {
+          log.textContent += 'STOPPING — failure detected.\n';
+          return;
+        }
+      }
+      log.textContent += '\n=== ALL 4 CYCLES PASSED ===\n';
+    }
+  </script>
+</head>
+<body>
+  <div id="test-controls">
+    <h1>🔧 Toggle Hydration Bug Reproduction</h1>
+    <p>
+      Tests the disconnect→reconnect flow that breaks event handler hydration.
+      First time: handlers may silently lose binding. Second time: "could not dereference" errors.
+    </p>
+    <button id="auto-toggle" onclick="autoToggle()">Auto Toggle (4 cycles)</button>
+    <button id="manual-toggle" onclick="checkHealth()">Check Health</button>
+    <button onclick="document.getElementById('error-log').textContent=''; errorMessages.length=0;">Clear Errors</button>
+    <div id="health-results"></div>
+    <div id="error-log"></div>
+  </div>
+
+  <div id="app">
+    <!toggle-parent state=TestState />
+  </div>
+
+  <div id="test-log"></div>
+</body>
+</html>

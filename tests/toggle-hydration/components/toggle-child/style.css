@@ -1,0 +1,15 @@
+.child-wrapper {
+  background: #e8f5e9;
+  border: 1px solid #4caf50;
+  padding: 12px;
+  border-radius: 4px;
+}
+.child-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+.child-status {
+  font-weight: bold;
+}
