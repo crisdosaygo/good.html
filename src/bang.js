@@ -144,8 +144,11 @@
         super();
         this.cookMarkup = async (markup, state) => {
           const _host = this;
+          const hasShadow = !!this.shadowRoot;
+          console.log(`[TD] cookMarkup START <${this.#name}> isConnected=${this.isConnected} hasShadow=${hasShadow} needsRefresh=${this.needsRefresh} funcs=${this.#funcs.size} names=${this.#names.size} paths=${this.#paths.size} destructors=${this.#destructors.size}`);
           BBDEBUG && console.log(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state);
+          console.log(`[TD] cookMarkup AFTER-COOK <${this.#name}> isConnected=${this.isConnected} needsRefresh=${this.needsRefresh} cooked.nodes=${cooked?.nodes?.length}`);
           BBDEBUG && console.log(`Component : ${this.#name}`);
           BBDEBUG && console.log(`State host: ${_host.name}`);
           BBDEBUG && console.log(`Will add ${this.#funcs.size} event handler functions`);
@@ -164,6 +167,7 @@
           BBDEBUG && console.log();
           let shadow = this.shadowRoot;
           if ( ! shadow ) {
+            console.log(`[TD] cookMarkup FIRST-SHADOW <${this.#name}> attaching shadow`);
             const shadow = this.attachShadow(SHADOW_OPTS);
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
@@ -174,6 +178,7 @@
           } else {
             BBDEBUG && console.log('already has shadow', this);
             if ( this.needsRefresh ) {
+              console.log(`[TD] cookMarkup REFRESH-SHADOW <${this.#name}> isConnected=${this.isConnected} clearing ${shadow.childNodes.length} children`);
               // Clear stale shadow content and re-insert fresh cooked result
               while ( shadow.firstChild ) shadow.removeChild(shadow.firstChild);
               await cooked.to(shadow, INSERT);
@@ -181,6 +186,8 @@
               this.#dependents = deps.map(node => node.untilVisible());
               this.cookListeners(shadow);
               this.needsRefresh = false;
+            } else {
+              console.log(`[TD] cookMarkup SKIP-SHADOW <${this.#name}> (needsRefresh=false, shadow has ${shadow.childNodes.length} children)`);
             }
           }
         }
@@ -363,6 +370,7 @@
       }
 
       connectedCallback() {
+        console.log(`[TD] connectedCallback <${this.#name}> hasShadow=${!!this.shadowRoot} needsRefresh=${this.needsRefresh} paths=${this.#paths.size} names=${this.#names.size}`);
         new Counter(this);
         this.loadCheck = () => this?.counts?.check?.();
         this.visibleCheck = () => {
@@ -392,7 +400,7 @@
       }
 
       disconnectedCallback() {
-        BBDEBUG && console.log(`${this.name} disconnecting...`);
+        console.log(`[TD] disconnectedCallback <${this.#name}> isConnected=${this.isConnected} destructors=${this.#destructors.size} paths=${this.#paths.size} names=${this.#names.size} funcs=${this.#funcs.size}`);
         this.alreadyPrinted = false;
         this.loaded = false;
         // Remove from state acquirers to prevent stale updates on disconnected elements
@@ -400,6 +408,7 @@
         const acquirers = Dependents.get(this);
         if ( acquirers ) {
           acquirers.delete(this);
+          console.log(`[TD]   removed from acquirers (remaining=${acquirers.size})`);
         }
         Dependents.delete(this);
         this.destructors.forEach(d => {
@@ -410,8 +419,6 @@
             console.warn(`Destructor for ${this.name} failed`, e, d);
           }
         });
-        // Clear stale function-path registrations from previous render
-        this.#paths.clear();
         this.needsRefresh = true;
       }
 
@@ -678,7 +685,11 @@
 
       if ( rerender ) { // re-render only those components depending on that key
         const acquirers = Dependents.get(key);
-        if ( acquirers ) acquirers.forEach(host => host.update());
+        if ( acquirers ) {
+          const names = [...acquirers].map(h => `<${h.localName}>(connected=${h.isConnected})`);
+          console.log(`[TD] setState key=${key} acquirers=[${names.join(', ')}]`);
+          acquirers.forEach(host => host.update());
+        }
       }
 
       if ( ! firstState ) {
@@ -808,7 +819,10 @@
         if ( ! name.startsWith('on') ) return;
         value = value.trim();
 
-        if ( node.getRootNode().host.paths.has(value) ) return;
+        const pathsHas = node.getRootNode().host?.paths?.has(value);
+        const hostName = node.getRootNode().host?.localName || 'none';
+        console.log(`[TD] handleAttribute <${hostName}> attr=${name} value="${value.substring(0,60)}" paths.has=${pathsHas}`);
+        if ( pathsHas ) return;
         //console.log('1', value, [...node.getRootNode().host.paths.keys()]);
 
         value = value.replace(/\(event\)$/, '');
@@ -1437,10 +1451,12 @@
         const currentPath = ['this.'];
         while( node ) {
           if ( node[value] instanceof Function ) {
+            console.log(`[TD] getAncestor FOUND "${value}" on <${node.localName||'?'}> path=${currentPath.join(EMPTY)}`);
             const retVal = {Func: node[value], path: currentPath.join(EMPTY), oNode, host: node};
             return retVal;
           }
           if ( node?.paths?.has(value) ) {
+            console.log(`[TD] getAncestor FOUND-IN-PATHS "${value}" on <${node.localName||'?'}>`);
             return { host: node, Func: node?.paths?.get(value), path: value };
           }
           currentPath.push( ONE_HIGHER );
@@ -1450,6 +1466,7 @@
           node = node.getRootNode().host;
         }
       }
+      console.warn(`[TD] getAncestor FAILED "${value}" starting at <${oNode?.localName||'?'}> got as high as <${lastNode?.localName||'?'}>`);
       console.warn(`Error could not dereference function ${value} starting at original node:`, oNode);
       console.warn(`Got as high as`, lastNode);
       return {};

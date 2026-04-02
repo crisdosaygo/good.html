@@ -1,0 +1,12 @@
+<div class="parent-wrapper">
+  <h2>Toggle Parent</h2>
+  <div class="controls">
+    <button onclick=ToggleChild>Toggle Child</button>
+    <span>showChild: ${_self.showChild}</span>
+    <span>Cycle #${_self.toggleCount || 0}</span>
+  </div>
+  <div class="child-container">
+    ${_self.showChild ? F`<toggle-child state=TestState></toggle-child>` : F`<!-- child hidden -->`}
+  </div>
+  <toggle-status state=TestState></toggle-status>
+</div>
