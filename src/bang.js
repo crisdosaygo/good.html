@@ -144,12 +144,19 @@
         super();
         this.cookMarkup = async (markup, state) => {
           const _host = this;
+          // Early guard: skip cook entirely if element is already disconnected
+          // This prevents stale VV cache entries from being created by cook() running
+          // on elements that were removed from DOM by a VV SWAP but still had pending updates
+          if ( ! this.isConnected ) {
+            console.log(`[TD] cookMarkup EARLY-ABORT <${this.#name}> not connected — skipping cook entirely`);
+            return;
+          }
           const hasShadow = !!this.shadowRoot;
           console.log(`[TD] cookMarkup START <${this.#name}> isConnected=${this.isConnected} hasShadow=${hasShadow} needsRefresh=${this.needsRefresh} funcs=${this.#funcs.size} names=${this.#names.size} paths=${this.#paths.size} destructors=${this.#destructors.size}`);
           BBDEBUG && console.log(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state);
           console.log(`[TD] cookMarkup AFTER-COOK <${this.#name}> isConnected=${this.isConnected} needsRefresh=${this.needsRefresh} cooked.nodes=${cooked?.nodes?.length}`);
-          // Guard: if element was disconnected during async cook, abandon render
+          // Post-cook guard: element may have disconnected during async cook
           if ( ! this.isConnected ) {
             console.log(`[TD] cookMarkup ABORT <${this.#name}> disconnected during cook — skipping render`);
             return;
@@ -259,7 +266,13 @@
         if ( OPTIMIZE ) {
           const nextState = JS(state);
           if ( this.alreadyPrinted && this.lastState === nextState ) {
+            if ( this.#name === 'bb-view' ) {
+              console.log(`[TD] print <bb-view> OPTIMIZE-SKIP chromeUI=${state.chromeUI}`);
+            }
             return;
+          }
+          if ( this.#name === 'bb-view' ) {
+            console.log(`[TD] print <bb-view> WILL-RENDER chromeUI=${state.chromeUI} alreadyPrinted=${this.alreadyPrinted}`);
           }
           this.lastState = nextState;
         }
@@ -661,6 +674,9 @@
       rerender: rerender = true, 
       save: save = false
     } = {}) {
+      if ( key === 'bbpro' ) {
+        console.log(`[TD] setState(bbpro) chromeUI=${state.chromeUI} (type=${typeof state.chromeUI}) contextMenuActive=${state.contextMenuActive}`);
+      }
       const jss = JS(state);
       BBDEBUG && console.log({jss, state});
       let lk = key+'.json.last';
@@ -701,6 +717,7 @@
 
       if ( ! firstState ) {
         firstState = state; 
+        self._bang_firstState = firstState;
         BBDEBUG && console.log(`Set first state at key ${key}`, state);
       }
       
@@ -1534,6 +1551,10 @@
       const _top = firstState;
       const _self = state;
       const _host = this;
+
+      if ( _host.name === 'bb-view' ) {
+        console.log(`[TD] cook <bb-view> chromeUI=${state.chromeUI} (type=${typeof state.chromeUI}) contextMenuActive=${state.contextMenuActive} firstState===state? ${firstState === state} firstState.chromeUI=${firstState?.chromeUI}`);
+      }
 
       if ( ! state._top ) {
         Object.defineProperty(state, '_top', { value: _top });
