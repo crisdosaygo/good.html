@@ -497,7 +497,7 @@
             } else {
               const insertable = [];
               Array.from(newVal.nodes).forEach(node => {
-                const inserted = document.contains(node.ownerDocument);
+                const inserted = node.isConnected;
                 if ( ! inserted ) {
                   insertable.push(node);
                 } else {
@@ -923,13 +923,11 @@
         if ( node.getRootNode().host ) {
           //console.log(node, [...node.getRootNode().host.paths.keys()]);
           if ( node.getRootNode().host.paths.has(existingValue) ) {
-            DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
             return;
           }
         } else {
           DEBUG && console.warn(`No host exists yet`);
           if ( existingValue?.startsWith('this.') ) {
-            DEBUG && console.log('Not running replacement again for', {node, name, oName, value, existingValue});
             return;
           }
         }
@@ -1110,6 +1108,14 @@
         }
 
         if ( Array.isArray(v) && v[0] instanceof Function ) {
+          return v;
+        }
+
+        // A bare function is a legitimate event-handler value (getType handles
+        // 'function' via updateAttrWithFunctionValue). Without this pass-through
+        // it falls to v+EMPTY below and is coerced to its own source text,
+        // which breaks any click=${fn} inside an s`` (G) template.
+        if ( v instanceof Function ) {
           return v;
         }
 

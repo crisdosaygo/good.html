@@ -26,6 +26,7 @@
     use('sg-table');
     use('sg-cell');
     use('sg-frame');
+    use('sg-fn-handlers');
 
     const compKey = Math.random().toFixed(18);
     const State = {
@@ -130,6 +131,26 @@
     }
     setState('multi', multi, {save:true});
     setState('cells2', cells2, {save:true});
+
+    // Regression widget for the guardAndTransformVal function-coercion fix:
+    // a handler function carried in DATA (like BrowserBox modal otherButton)
+    // rendered inside a nested G template, next to a literal-arrow-in-G.
+    const fnh = {
+      key: Math.random().toFixed(18),
+      title: 'Function Handlers in G Templates',
+      sourceUrl: 'https://github.com/crisdosaygo/good.html',
+      tick: 0,
+      litCount: 0,
+      topCount: 0,
+      churning: false,
+      gPanel: { count: 0, onClick: null },
+    };
+    fnh.gPanel.onClick = (click) => {
+      click.stopPropagation();
+      fnh.gPanel.count++;
+      setState('fnh', fnh);
+    };
+    setState('fnh', fnh);
   });
 </script>
 <style>
@@ -153,6 +174,8 @@
   </div>
   
   <!sg-multi-search state=multi />
+  <hr>
+  <!sg-fn-handlers state=fnh />
 </main>
 <a target=_blank rel=noreferrer href=https://github.com/eugenkiss/7guis>What is 7GUIs?</a>
 <br>
