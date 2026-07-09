@@ -14,9 +14,12 @@ cp src/err.js docs/
 cp src/err.js docs/7guis/
 
 
+# Optional convenience copy into a local BrowserBox checkout. Must stay inside
+# the guard: when ~/BrowserBox is absent an unguarded cp fails the whole build,
+# and (because prepublishOnly runs this) publishes then ship without dist/.
 if [[ -d "${HOME}/BrowserBox" ]]; then
   mkdir -p ~/BrowserBox/src/public/voodoo/.bang.html.snapshot/src;
+  cp docs/bang.js ~/BrowserBox/src/public/voodoo/.bang.html.snapshot/src/bang.js
 fi
-cp docs/bang.js ~/BrowserBox/src/public/voodoo/.bang.html.snapshot/src/bang.js
 
 
