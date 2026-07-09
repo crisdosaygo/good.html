@@ -1,0 +1,17 @@
+<sg-frame state=${_self}>
+  <p>
+    Handlers inside a nested <code>G</code> template — formerly dead (source-text coercion),
+    now live. Churn re-renders this component every second; counts must keep rising when clicked.
+  </p>
+  <p>churn tick: <b>${tick}</b></p>
+  <p>
+    ${gPanel ?
+      G`<button click=${gPanel.onClick}>Data fn in G — clicked ${gPanel.count}</button>
+        <button click=${click => _host.litClick(click)}>Literal fn in G — clicked ${litCount}</button>`
+      :
+      G`<!-- panel off -->`
+    }
+    <button click=${click => _host.topClick(click)}>Top-level control — clicked ${topCount}</button>
+    <button click=${click => _host.toggleChurn(click)}>${churning ? 'Stop churn' : 'Start churn'}</button>
+  </p>
+</sg-frame>

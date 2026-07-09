@@ -49,6 +49,6 @@
     "serve": "latest",
     "typescript": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "^7.2.1"
   }
 }

@@ -1111,6 +1111,14 @@
           return v;
         }
 
+        // A bare function is a legitimate event-handler value (getType handles
+        // 'function' via updateAttrWithFunctionValue). Without this pass-through
+        // it falls to v+EMPTY below and is coerced to its own source text,
+        // which breaks any click=${fn} inside an s`` (G) template.
+        if ( v instanceof Function ) {
+          return v;
+        }
+
         if ( isObject ) die({error: OBJ(v)});
 
         return v+EMPTY;

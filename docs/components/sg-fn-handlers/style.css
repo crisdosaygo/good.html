@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+p {
+  margin: 0.5em 0;
+}
+
+button {
+  margin-right: 0.5em;
+}
+
+code {
+  background: rgba(0,0,0,0.07);
+  padding: 0 0.3em;
+  border-radius: 3px;
+}
