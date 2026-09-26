@@ -103,6 +103,38 @@ export function registerRenderContracts({it, assert, getPage, loadTestPage}) {
     assert.deepEqual(await getPage().evaluate(() => renderContract.calls), ['new-left']);
   });
 
+  it('render contract: a superseded initial render still waits for its visible children', async () => {
+    await loadTestPage();
+    await getPage().evaluate(async () => {
+      const gate = {};
+      gate.promise = new Promise(resolve => { gate.resolve = resolve; });
+      globalThis.renderContract = {calls: [], started: [], gates: new Map([['child', gate]])};
+      const state = {fixtureId: 'parent', chain: false, left: 'left', right: 'right', label: 'initial', items: [], childState: 'ContractChild'};
+      setState('RenderContract', state);
+      setState('ContractChild', {...state, fixtureId: 'child', label: 'child', childState: null});
+      await use('render-contract');
+      const host = document.createElement('render-contract');
+      host.setAttribute('state', 'RenderContract');
+      const attach = host.attachShadow.bind(host);
+      host.attachShadow = options => {
+        const shadow = attach(options);
+        // A state update racing first insertion, as initial app metadata does.
+        queueMicrotask(() => setState('RenderContract', {...state, label: 'newer'}));
+        return shadow;
+      };
+      document.body.appendChild(host);
+    });
+    await waitLabel('newer');
+    await getPage().waitForFunction(() => renderContract.started.includes('child'));
+    await getPage().evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await getPage().evaluate(() => document.querySelector('render-contract').classList.contains('bang-styled')), false,
+      'parent must not announce readiness with its child still missing');
+    await getPage().evaluate(() => renderContract.gates.get('child').resolve('child'));
+    await getPage().waitForFunction(() => document.querySelector('render-contract').classList.contains('bang-styled'));
+    await click('.left');
+    assert.deepEqual(await getPage().evaluate(() => renderContract.calls), ['left']);
+  });
+
   it('render contract: disconnect invalidates pending work across reconnect', async () => {
     await mount();
     await holdOlderRender();

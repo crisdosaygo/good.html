@@ -168,28 +168,21 @@
           BBDEBUG && console.log();
           let shadow = this.shadowRoot;
           if ( ! shadow ) {
-            const shadow = this.attachShadow(SHADOW_OPTS);
+            shadow = this.attachShadow(SHADOW_OPTS);
             observer.observe(shadow, OBSERVE_OPTS);
+            this.needsRefresh = true;
+          }
+          if ( this.needsRefresh ) {
+            // A newer initial render inherits unfinished mounting work. Keep
+            // this obligation until that render has wired and found children.
+            while ( shadow.firstChild ) shadow.removeChild(shadow.firstChild);
             await cooked.to(shadow, INSERT);
             if (!render.isCurrent()) return;
-            // add dependents
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
             if (!render.isCurrent()) return;
             this.#dependents = deps.map(node => node.untilVisible());
             this.cookListeners(shadow);
-          } else {
-            BBDEBUG && console.log('already has shadow', this);
-            if ( this.needsRefresh ) {
-              // Clear stale shadow content and re-insert fresh cooked result
-              while ( shadow.firstChild ) shadow.removeChild(shadow.firstChild);
-              await cooked.to(shadow, INSERT);
-              if (!render.isCurrent()) return;
-              const deps = await findBangs(transformBang, shadow, ALL_DEPS);
-              if (!render.isCurrent()) return;
-              this.#dependents = deps.map(node => node.untilVisible());
-              this.cookListeners(shadow);
-              this.needsRefresh = false;
-            }
+            this.needsRefresh = false;
           }
         }
         this.markLoaded = async (render) => {
@@ -248,7 +241,9 @@
 
       // BANG! API methods
       async print() {
-        if ( !this.alreadyPrinted ) {
+        // One readiness obligation per connection, even when initial renders
+        // overlap. Superseded renders cannot finish the winning render's load.
+        if ( !this.alreadyPrinted && this.counts.started === 0 ) {
           this.prepareVisibility();
         }
         const state = this.handleAttrs(this.attributes);

@@ -33,3 +33,6 @@ also stops on a failed bundling command. No GitHub CI is required.
 Use `npm publish --dry-run` to exercise that complete gate without publishing.
 `npm run test:bundle` checks an already-built bundle. The older `npm test`
 command remains the interactive demo server.
+Initial mounting is also covered: a state update between shadow creation and
+mount completion must retain the child-readiness obligation and eventually make
+the parent visible. This guards missing controls during app startup.
