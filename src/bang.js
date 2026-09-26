@@ -137,19 +137,19 @@
       #names = new Map();
       #paths = new Map();
       #destructors = new Set();
+      #render;
       #others;
       key;
 
       constructor() {
         super();
-        this.cookMarkup = async (markup, state) => {
+        this.cookMarkup = async (markup, state, render = this.startRender()) => {
           const _host = this;
-          // Early guard: skip cook entirely if element is already disconnected
-          if ( ! this.isConnected ) return;
+          if ( ! render.isCurrent() ) return;
           BBDEBUG && console.log(`Component ${this.#name}`);
-          const cooked = await cook.call(this, markup, state);
-          // Post-cook guard: element may have disconnected during async cook
-          if ( ! this.isConnected ) return;
+          const cooked = await cook.call(this, markup, state, render);
+          if ( ! render.isCurrent() ) return;
+          this.applyRenderHandlers(render);
           BBDEBUG && console.log(`Component : ${this.#name}`);
           BBDEBUG && console.log(`State host: ${_host.name}`);
           BBDEBUG && console.log(`Will add ${this.#funcs.size} event handler functions`);
@@ -171,8 +171,10 @@
             const shadow = this.attachShadow(SHADOW_OPTS);
             observer.observe(shadow, OBSERVE_OPTS);
             await cooked.to(shadow, INSERT);
+            if (!render.isCurrent()) return;
             // add dependents
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
+            if (!render.isCurrent()) return;
             this.#dependents = deps.map(node => node.untilVisible());
             this.cookListeners(shadow);
           } else {
@@ -181,18 +183,22 @@
               // Clear stale shadow content and re-insert fresh cooked result
               while ( shadow.firstChild ) shadow.removeChild(shadow.firstChild);
               await cooked.to(shadow, INSERT);
+              if (!render.isCurrent()) return;
               const deps = await findBangs(transformBang, shadow, ALL_DEPS);
+              if (!render.isCurrent()) return;
               this.#dependents = deps.map(node => node.untilVisible());
               this.cookListeners(shadow);
               this.needsRefresh = false;
             }
           }
         }
-        this.markLoaded = async () => {
+        this.markLoaded = async (render) => {
+          if ( ! render.isCurrent() ) return;
           this.alreadyPrinted = true;
           if ( ! this.loaded ) {
             this.counts.finish();
             const loaded = await this.untilLoaded();
+            if ( ! render.isCurrent() ) return;
             if ( loaded ) {
               this.loaded = loaded;
               this.setVisible();
@@ -400,6 +406,7 @@
       }
 
       disconnectedCallback() {
+        this.#render = null;
         this._bangWasConnected = true;
         this.alreadyPrinted = false;
         this.loaded = false;
@@ -444,7 +451,26 @@
         return stateHolder.state;
       }
 
+      startRender() {
+        const render = {handlers: new Map(),
+          isCurrent: () => this.#render === render && this.isConnected};
+        this.#render = render;
+        return render;
+      }
+
+      applyRenderHandlers(render) {
+        for (const [binding, {name}] of this.#names) {
+          if (!render.handlers.has(binding)) delete this[name];
+        }
+        this.#names.clear();
+        for (const [binding, handler] of render.handlers) {
+          this.#names.set(binding, handler);
+          this[handler.name] = handler.func;
+        }
+      }
+
       printShadow(state) {
+        const render = this.startRender();
         if ( ! state ) {
           BBDEBUG && console.warn(`No state on component ${this.name}. Will pass empty state`);
           BBDEBUG && console.dir(this);
@@ -455,9 +481,9 @@
           this.setAttribute('state', stateKey);
           BBDEBUG && console.log(`Assigned empty state to key ${stateKey}`);
         }
-        return fetchMarkup(this.#name).then(markup => this.cookMarkup(markup, state))
-        .catch(err => BBDEBUG && say('warn!',err))
-        .finally(this.markLoaded);
+        return fetchMarkup(this.#name).then(markup => this.cookMarkup(markup, state, render))
+        .then(() => this.markLoaded(render))
+        .catch(err => console.warn(`Render failed for ${this.#name}`, err));
       }
     };
 
@@ -1511,7 +1537,7 @@
       }
     }
 
-    async function cook(markup, state) {
+    async function cook(markup, state, render) {
       let cooked = EMPTY;
       const _top = firstState;
       const _self = state;
@@ -1522,8 +1548,8 @@
       }
       
       try {
-        with({...Env, ...state, ..._host.others}) {
-          cooked = await eval("(async function () { return await _FUNC`${{state,_host}}"+markup+"`; }())");  
+        with({...Env, ...state, ..._host.others, _render: render}) {
+          cooked = await eval("(async function () { return await _FUNC`${{state,_host,render:_render}}"+markup+"`; }())");
         }
         return cooked;
       } catch(error) {

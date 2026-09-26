@@ -145,7 +145,23 @@ Chosen deliberately; know them before you adopt:
 | Lit | Custom Elements | JS template literals | Optional | Yes | Template render + update |
 | Solid | Components | JSX | Yes | No | Fine-grained reactive DOM |
 
-No benchmark theater — the claim is architectural: GOOD does the least work per update the DOM allows, with the least machinery between you and the page.
+GOOD updates changed DOM bindings while retaining keyed nodes. State comparison
+and template evaluation can still do broader work; targeted DOM writes alone
+do not establish minimum computation or a benchmark advantage.
+
+### Renderer contracts and release checks
+
+Handler identity belongs to the template, key and binding position; captured
+values refresh on each render. Async rendering checks which request currently
+owns the component before updating cached DOM, installing handlers or marking
+it loaded. Disconnecting invalidates pending work. Keyed reorders retain nodes;
+where the browser supports `moveBefore`, moves also preserve connection state.
+Whole-class bindings preserve classes added by the component lifecycle.
+
+Run `npm run test:regression` for the browser regressions. `npm publish` requires
+that suite to pass against both source and the freshly built package entry via
+`prepublishOnly`. Use `npm publish --dry-run` for the full local gate without a
+release. See [the test guide](tests/toggle-hydration/README.md).
 
 ## FAQ
 

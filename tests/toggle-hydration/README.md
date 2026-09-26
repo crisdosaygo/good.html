@@ -1,9 +1,9 @@
 # Component lifecycle and keyed-handler regression tests
 
-Run with an installed Puppeteer and its Chrome:
+Install development dependencies (including the pinned Puppeteer) and run:
 
 ```sh
-node --test tests/toggle-hydration/toggle-hydration.test.js
+npm run test:regression
 ```
 
 For a sibling BrowserBox development installation, set `PUPPETEER_MODULE` to its
@@ -17,3 +17,19 @@ values while retaining the existing DOM and handler method names. Separate tests
 exercise overlapping updates, survivor identity, and disconnect/reconnect events.
 The lifecycle assertion observes real elements; debug `[TD]` logs were removed
 from the framework before these tests were updated.
+
+The render contract cases also cover separate bindings with identical function
+source, handler arrays, keyed reorder with surviving node identity, stable
+handler-name counts, deliberately out-of-order async completion, pending work
+across disconnect/reconnect, app classes coexisting with readiness classes,
+and optional missing stylesheets. Delayed values are explicitly released by
+the test; real mouse clicks verify the resulting closures.
+
+`npm publish` runs the local `prepublishOnly` gate: source regressions, the
+production build, a nonempty package-entry check, then the same regressions
+against `dist/pack.bang.js`. A failing step stops publication. The build script
+also stops on a failed bundling command. No GitHub CI is required.
+
+Use `npm publish --dry-run` to exercise that complete gate without publishing.
+`npm run test:bundle` checks an already-built bundle. The older `npm test`
+command remains the interactive demo server.
