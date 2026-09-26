@@ -103,13 +103,13 @@ export function registerRenderContracts({it, assert, getPage, loadTestPage}) {
     assert.deepEqual(await getPage().evaluate(() => renderContract.calls), ['new-left']);
   });
 
-  it('render contract: a superseded initial render still waits for its visible children', async () => {
+  for (const rootChild of [false, true]) it(`render contract: a superseded initial render still waits for its visible children (rootChild=${rootChild})`, async () => {
     await loadTestPage();
-    await getPage().evaluate(async () => {
+    await getPage().evaluate(async rootChild => {
       const gate = {};
       gate.promise = new Promise(resolve => { gate.resolve = resolve; });
       globalThis.renderContract = {calls: [], started: [], gates: new Map([['child', gate]])};
-      const state = {fixtureId: 'parent', chain: false, left: 'left', right: 'right', label: 'initial', items: [], childState: 'ContractChild'};
+      const state = {fixtureId: 'parent', chain: false, left: 'left', right: 'right', label: 'initial', items: [], childState: 'ContractChild', rootChild};
       setState('RenderContract', state);
       setState('ContractChild', {...state, fixtureId: 'child', label: 'child', childState: null});
       await use('render-contract');
@@ -123,7 +123,7 @@ export function registerRenderContracts({it, assert, getPage, loadTestPage}) {
         return shadow;
       };
       document.body.appendChild(host);
-    });
+    }, rootChild);
     await waitLabel('newer');
     await getPage().waitForFunction(() => renderContract.started.includes('child'));
     await getPage().evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));

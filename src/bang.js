@@ -173,16 +173,20 @@
             this.needsRefresh = true;
           }
           if ( this.needsRefresh ) {
-            // A newer initial render inherits unfinished mounting work. Keep
-            // this obligation until that render has wired and found children.
+            // Insertion is synchronous. Commit it before yielding: reinserting
+            // a cached template would lose its expanded top-level fragments.
             while ( shadow.firstChild ) shadow.removeChild(shadow.firstChild);
-            await cooked.to(shadow, INSERT);
-            if (!render.isCurrent()) return;
+            cooked.to(shadow, INSERT);
+            this.needsRefresh = false;
+          }
+          if (!render.isCurrent()) return;
+          if ( !this.loaded ) {
+            // A newer initial render inherits child discovery and readiness,
+            // using the DOM already inserted by the preceding render.
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
             if (!render.isCurrent()) return;
             this.#dependents = deps.map(node => node.untilVisible());
             this.cookListeners(shadow);
-            this.needsRefresh = false;
           }
         }
         this.markLoaded = async (render) => {
