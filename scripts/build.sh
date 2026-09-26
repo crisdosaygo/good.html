@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 rm -rf .build-temp/
 rm -rf dist/ 
@@ -21,5 +22,4 @@ if [[ -d "${HOME}/BrowserBox" ]]; then
   mkdir -p ~/BrowserBox/src/public/voodoo/.bang.html.snapshot/src;
   cp docs/bang.js ~/BrowserBox/src/public/voodoo/.bang.html.snapshot/src/bang.js
 fi
-
 

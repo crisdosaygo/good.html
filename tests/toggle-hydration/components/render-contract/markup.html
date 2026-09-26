@@ -1,0 +1,9 @@
+${{key:fixtureId}}
+<section>
+  <button class="left" click=${chain ? [_host.capture(left), _host.note(left)] : _host.capture(left)}>${left}</button>
+  <button class="right" click=${chain ? [_host.capture(right), _host.note(right)] : _host.capture(right)}>${right}</button>
+  <output>${_host.deferred(label)}</output>
+  <nav>${items.map((item, index) => F`${{key:item.id}}
+    <button class="row" data-id=${item.id} click=${_host.row(item.id, index)}>${item.id}</button>
+  `)}</nav>
+</section>

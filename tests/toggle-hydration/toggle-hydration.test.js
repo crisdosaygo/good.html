@@ -10,6 +10,7 @@
  */
 import { describe, it, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import {registerRenderContracts} from './render-contracts.js';
 const {default: puppeteer} = await import(process.env.PUPPETEER_MODULE || 'puppeteer');
 import { createServer } from 'http';
 import { readFileSync, existsSync } from 'fs';
@@ -18,6 +19,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const GOOD_HTML_ROOT = join(__dirname, '..', '..');
+const TEST_ARTIFACT = process.env.BANG_TEST_ARTIFACT || 'source';
+assert.ok(['source', 'bundle'].includes(TEST_ARTIFACT), 'BANG_TEST_ARTIFACT must be source or bundle');
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -31,6 +34,9 @@ function createStaticServer(root, port = 0) {
     const server = createServer((req, res) => {
       const url = new URL(req.url, `http://localhost`);
       let filePath = join(root, decodeURIComponent(url.pathname));
+      if (TEST_ARTIFACT === 'bundle' && url.pathname === '/src/bang.js') {
+        filePath = join(root, 'dist/pack.bang.js');
+      }
       if (filePath.endsWith('/')) filePath = join(filePath, 'index.html');
 
       if (!existsSync(filePath)) {
@@ -64,7 +70,7 @@ describe('Toggle Hydration', () => {
 
   before(async () => {
     serverInfo = await createStaticServer(GOOD_HTML_ROOT);
-    console.log(`Static server on ${serverInfo.url}`);
+    console.log(`Testing ${TEST_ARTIFACT}; static server on ${serverInfo.url}`);
 
     browser = await puppeteer.launch({
       headless: true,
@@ -104,6 +110,8 @@ describe('Toggle Hydration', () => {
       return parent?.shadowRoot?.querySelector('toggle-child');
     }, { timeout: 10000 });
   }
+
+  registerRenderContracts({it, assert, getPage: () => page, loadTestPage});
 
   async function getHealthCheck() {
     return page.evaluate(() => {

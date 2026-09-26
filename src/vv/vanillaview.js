@@ -68,7 +68,7 @@
     export async function s(p,...v) {
       const that = this;
       let SystemCall = false;
-      let state, _host;
+      let state, _host, render;
 
       if ( p[0].length === 0 && v[0].state ) {
         // by convention (see how we construct the template that we tag with FUNC)
@@ -79,17 +79,21 @@
       const {key} = v.find(isKey) || {};
 
       if ( SystemCall ) {
-        ({state,_host} = v.shift());
+        ({state,_host,render} = v.shift());
         p.shift();
-        v = await Promise.all(v.map(val => process(that, val, state, _host)));
+        const binding = JSON.stringify([p, key ?? null]);
+        v = await Promise.all(v.map((val, index) => process(that, val, state, _host, render, `${binding}:${index}`)));
+        if (render && !render.isCurrent()) return;
         const xyz = vanillaview(p,v, {_host});
         //xyz[Symbol.for('BANG-VV')] = true;
         DEBUG && console.log({state}, self.__state = state);
         return xyz;
       } else {
-        const laterFunc = async (state, _host) => {
+        const laterFunc = async (state, _host, render) => {
           DEBUG && console.log({state}, self.__state = state);
-          v = await Promise.all(v.map(val => process(that, val, state, _host)));
+          const binding = JSON.stringify([p, key ?? null]);
+          v = await Promise.all(v.map((val, index) => process(that, val, state, _host, render, `${binding}:${index}`)));
+          if (render && !render.isCurrent()) return;
           const xyz = vanillaview(p,v, {_host});
           //xyz[Symbol.for('BANG-VV')] = true;
           return xyz;
@@ -183,7 +187,8 @@
     }
 
   // bang integration functions (modified from bang versions)
-    async function process(that, x, state, _host) {
+    async function process(that, x, state, _host, render, binding) {
+      if (render && !render.isCurrent()) return EMPTY;
       if ( typeof x === 'string' ) return x;
       else 
 
@@ -204,7 +209,7 @@
       }
       else
 
-      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state, _host);
+      if ( x instanceof Promise ) return await process(that, await x.catch(err => err+EMPTY), state, _host, render, binding);
       else
 
       if ( x instanceof Element ) return x.outerHTML;
@@ -237,7 +242,7 @@
             }
           );
 
-          return registerHandler(_host, funcCharacter(...x), func);
+          return registerHandler(_host, binding, func, render);
         } else if ( x[0] instanceof Element || x[0] instanceof Node ) {
           return {code:CODE, externals: [], nodes: x};
         } else {
@@ -246,8 +251,8 @@
           return process(that, await Promise.all(
             (
               await Promise.all(Array.from(x)).catch(e => e+EMPTY)
-            ).map(v => process(that, v, state, _host))
-          ), state, _host);
+            ).map((v, index) => process(that, v, state, _host, render, `${binding}/${index}`))
+          ), state, _host, render, binding);
         }
       }
 
@@ -260,15 +265,15 @@
       else 
 
       if ( x[IMMEDIATE] && Object.getPrototypeOf(x).constructor.name === 'AsyncFunction' ) {
-        return await process(that, await x(state, _host), state, _host);
+        return await process(that, await x(state, _host, render), state, _host, render, binding);
       }
       else
 
-      if ( x[IMMEDIATE] && (x instanceof Function) ) return x(state, _host);
+      if ( x[IMMEDIATE] && (x instanceof Function) ) return x(state, _host, render);
       else // it's an object, of some type 
 
       if ( x instanceof Function ) {
-        return registerHandler(_host, funcCharacter(x), x);
+        return registerHandler(_host, binding, x, render);
       }
 
       else
@@ -338,20 +343,20 @@
       }
     }
 
-    function registerHandler(host, character, func) {
-      // Keep the DOM's method name stable, but refresh the closure on every
-      // render. Identical source text can capture a new index or state object.
-      const name = host.names.get(character)?.name || NextFunc();
-      host.names.set(character, {name, func});
+    function registerHandler(host, binding, func, render) {
+      // Template, key and interpolation position own identity. Source text
+      // cannot distinguish two closures capturing different values.
+      const name = render?.handlers.get(binding)?.name || host.names.get(binding)?.name || NextFunc();
+      if (render) {
+        render.handlers.set(binding, {name, func});
+        return `${name}(event)`;
+      }
+      host.names.set(binding, {name, func});
       host.funcs.add(component => {
         component[name] = func;
         return name;
       });
       return `${name}(event)`;
-    }
-
-    function funcCharacter(...x) {
-      return `${x.map(f => f.toString()).join(';')}`; 
     }
 
     function isIterable(y) {
@@ -460,38 +465,8 @@
           if ( sameOrder(oldNodes,newVal.nodes) ) {
             // do nothing
           } else {
-            // perf
-              // list updates could be possible more efficient
-              // this is if we are inserting new nodes
-              // but I can't imagine a way to do it that's not:
-              // 1) quadratic (edit distance)
-              // 2) lots of heuristics (did we insert a new node or nodes at the front? OK...etc...)
-            const LEGACY = false;
-            if ( LEGACY ) {
-              Array.from(newVal.nodes).reverse().forEach(n => {
-                lastAnchor.parentNode.insertBefore(n,lastAnchor.nextSibling);
-                state.lastAnchor = lastAnchor.nextSibling;
-              });
-              state.lastAnchor = newVal.nodes[0];
-            } else {
-              const insertable = [];
-              Array.from(newVal.nodes).forEach(node => {
-                const inserted = node.isConnected;
-                if ( ! inserted ) {
-                  insertable.push(node);
-                } else {
-                  while( insertable.length ) {
-                    const insertee = insertable.shift();
-                    node.parentNode.insertBefore(insertee, node);
-                  }
-                }
-              });
-              while ( insertable.length ) {
-                const insertee = insertable.shift();
-                lastAnchor.parentNode.insertBefore(insertee,lastAnchor);
-              }
-              state.lastAnchor = newVal.nodes[newVal.nodes.length-1];
-            }
+            placeMarkupNodes(newVal.nodes, oldNodes, lastAnchor);
+            state.lastAnchor = newVal.nodes[newVal.nodes.length-1];
           }
         } else {
           const placeholderNode = summonPlaceholder(lastAnchor);
@@ -551,6 +526,22 @@
         if ( nodesA.length != nodesB.length ) return false;
 
         return Array.from(nodesA).every((an,i) => an == nodesB[i]);
+      }
+
+      function placeMarkupNodes(nodes, oldNodes, anchor) {
+        const parent = anchor.parentNode;
+        let cursor = oldNodes[0] || anchor;
+        // A transformed bang comment and its custom element move together.
+        const physical = nodes.flatMap(node => node.linkedCustomElement ? [node, node.linkedCustomElement] : [node]);
+        for (const node of physical) {
+          if (node === cursor) {
+            cursor = cursor.nextSibling;
+          } else if (node.isConnected && parent.isConnected && typeof parent.moveBefore === 'function') {
+            parent.moveBefore(node, cursor);
+          } else {
+            parent.insertBefore(node, cursor);
+          }
+        }
       }
 
       function handleTextInNode(newVal, state) {
@@ -873,8 +864,16 @@
         }
       }
 
-      if ( attr !== newAttrValue ) {
-        reliablySetAttribute(node, name, newAttrValue);
+      let appliedValue = newAttrValue;
+      if (name === 'class' && oldAttrVal === oldVal) {
+        // Whole-attribute bindings own their previous tokens, not classes
+        // added by the component lifecycle or another DOM owner.
+        const previous = new Set(String(oldVal).split(/\s+/));
+        const retained = [...node.classList].filter(token => !previous.has(token));
+        appliedValue = [...new Set([...retained, ...String(newAttrValue).split(/\s+/)])].filter(Boolean).join(' ');
+      }
+      if ( attr !== appliedValue ) {
+        reliablySetAttribute(node, name, appliedValue);
       }
 
       scope.oldVal = newVal;
