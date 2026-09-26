@@ -138,6 +138,7 @@
       #paths = new Map();
       #destructors = new Set();
       #render;
+      #discoveryPending = false;
       #others;
       key;
 
@@ -178,15 +179,19 @@
             while ( shadow.firstChild ) shadow.removeChild(shadow.firstChild);
             cooked.to(shadow, INSERT);
             this.needsRefresh = false;
+            this.#discoveryPending = true;
           }
           if (!render.isCurrent()) return;
-          if ( !this.loaded ) {
-            // A newer initial render inherits child discovery and readiness,
-            // using the DOM already inserted by the preceding render.
+          if ( this.#discoveryPending ) {
+            // A newer render inherits child discovery a superseded render left
+            // unfinished, using the DOM that render inserted. Discovery runs
+            // once per insertion: repeating it on every render before load
+            // re-triggers renders that supersede each other without end.
             const deps = await findBangs(transformBang, shadow, ALL_DEPS);
             if (!render.isCurrent()) return;
             this.#dependents = deps.map(node => node.untilVisible());
             this.cookListeners(shadow);
+            this.#discoveryPending = false;
           }
         }
         this.markLoaded = async (render) => {
