@@ -1,0 +1,15 @@
+${{key:item.id}}
+<button data-id=${item.id} click=${item.chain ? [
+  () => getState('ListState').calls.push(item.id),
+  () => {
+    const state = getState('ListState');
+    const items = [...state.items];
+    items.splice(index, 1);
+    setState('ListState', {...state, items});
+  }
+] : () => {
+  const state = getState('ListState');
+  const items = [...state.items];
+  items.splice(index, 1);
+  setState('ListState', {...state, items});
+}}>${item.title}</button>

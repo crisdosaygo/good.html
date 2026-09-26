@@ -8,9 +8,9 @@
  * Usage:
  *   node --test tests/toggle-hydration/toggle-hydration.test.js
  */
-import { describe, it, before, after, beforeEach } from 'node:test';
+import { describe, it, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import puppeteer from '/Users/crisd/Creative/BrowserBox-source/node_modules/puppeteer/lib/esm/puppeteer/puppeteer.js';
+const {default: puppeteer} = await import(process.env.PUPPETEER_MODULE || 'puppeteer');
 import { createServer } from 'http';
 import { readFileSync, existsSync } from 'fs';
 import { join, extname } from 'path';
@@ -82,12 +82,8 @@ describe('Toggle Hydration', () => {
 
     // Collect console warnings about dereference failures
     page._dereferenceErrors = [];
-    page._tdLogs = [];
     page.on('console', msg => {
       const text = msg.text();
-      if (text.includes('[TD]')) {
-        page._tdLogs.push(text);
-      }
       if (text.includes('dereference') || text.includes('getAncestor FAILED')) {
         page._dereferenceErrors.push(text);
       }
@@ -96,6 +92,8 @@ describe('Toggle Hydration', () => {
       page._dereferenceErrors.push(`PAGE ERROR: ${err.message}`);
     });
   });
+
+  afterEach(async () => { await page?.close(); });
 
   async function loadTestPage() {
     const url = `${serverInfo.url}/tests/toggle-hydration/index.html`;
@@ -304,23 +302,89 @@ describe('Toggle Hydration', () => {
     assert.ok(clickCount >= 1, `Expected childClicks >= 1, got ${clickCount}`);
   });
 
-  it('TD logs show full lifecycle on toggle', async () => {
+  it('keyed list closure preserves visible surviving components during concurrent updates', async () => {
     await loadTestPage();
-    page._tdLogs = [];
+    await page.evaluate(async () => {
+      setState('ListState', {items: ['a', 'b', 'c'].map(id => ({id, title:id})), active:'c'});
+      await use('toggle-list');
+      await use('toggle-item');
+      const list = document.createElement('toggle-list');
+      list.setAttribute('state', 'ListState');
+      document.body.appendChild(list);
+    });
+    await page.waitForFunction(() => {
+      const nodes = document.querySelector('toggle-list')?.shadowRoot?.querySelectorAll('toggle-item');
+      return nodes?.length === 3 && [...nodes].every(node => node.shadowRoot?.querySelector('button'));
+    });
+    const result = await page.evaluate(async () => {
+      const list = document.querySelector('toggle-list');
+      const nav = list.shadowRoot.querySelector('nav');
+      const survivors = new Map([...nav.querySelectorAll('toggle-item')].map(node =>
+        [node.shadowRoot.querySelector('button').dataset.id, node]));
+      const issues = [];
+      const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+      for (let iteration = 0; iteration < 30; iteration++) {
+        const rows = ['a', 'b', 'c'].map(id => ({id, title:`${id}-${iteration}`}));
+        setState('ListState', {items:rows, active:'b'});
+        setState('ListState', {items:rows.filter(row => row.id !== 'b'), active:'c'});
+        await frame(); await frame();
+        const nodes = [...list.shadowRoot.querySelectorAll('toggle-item')];
+        const ids = nodes.map(node => node.shadowRoot?.querySelector('button')?.dataset.id);
+        if (ids.join(',') !== 'a,c') issues.push({iteration, ids});
+        for (const id of ['a','c']) {
+          if (!survivors.get(id).isConnected) issues.push({iteration, replaced:id});
+        }
+        if (list.shadowRoot.querySelector('nav') !== nav || nav.getBoundingClientRect().height < 1 ||
+            getComputedStyle(list).visibility === 'hidden') issues.push({iteration, hidden:true});
+        if (issues.length) break;
+      }
+      return issues;
+    });
+    assert.deepEqual(result, []);
+  });
 
+  for (const chain of [false, true]) {
+    it(`keyed surviving item handlers receive the updated index (chain=${chain})`, async () => {
+      await loadTestPage();
+      await page.evaluate(async chain => {
+        setState('ListState', {items:['a','b','c'].map(id => ({id,title:id,chain})), active:'c', calls:[]});
+        await use('toggle-list'); await use('toggle-item');
+        const list = document.createElement('toggle-list');
+        list.setAttribute('state','ListState'); document.body.appendChild(list);
+      }, chain);
+      await page.waitForFunction(() => {
+        const nodes = document.querySelector('toggle-list')?.shadowRoot?.querySelectorAll('toggle-item');
+        return nodes?.length === 3 && [...nodes].every(node => node.shadowRoot?.querySelector('button'));
+      });
+      for (const id of ['a', 'b']) {
+        const point = await page.evaluate(id => {
+          const nodes = document.querySelector('toggle-list').shadowRoot.querySelectorAll('toggle-item');
+          const button = [...nodes].map(node => node.shadowRoot.querySelector('button')).find(node => node.dataset.id === id);
+          button.scrollIntoView({block: 'center'});
+          const rect = button.getBoundingClientRect();
+          return {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2};
+        }, id);
+        await page.mouse.click(point.x, point.y);
+        await page.waitForFunction(id => !getState('ListState').items.some(item => item.id === id), {timeout:1500}, id).catch(async error => {
+          throw new Error(`Close ${id}: remaining ${await page.evaluate(() => getState('ListState').items.map(item => item.id))}`, {cause:error});
+        });
+      }
+      assert.deepEqual(await page.evaluate(() => getState('ListState').items.map(item => item.id)), ['c']);
+      if (chain) assert.deepEqual(await page.evaluate(() => getState('ListState').calls), ['a', 'b']);
+    });
+  }
+
+  it('removed child disconnects and its replacement renders after showing again', async () => {
+    await loadTestPage();
+    const original = await page.evaluateHandle(() => document.querySelector('toggle-parent').shadowRoot.querySelector('toggle-child'));
     await toggleChild(false);
+    assert.equal(await page.evaluate(node => node.isConnected, original), false);
     await toggleChild(true);
     await waitForChildRendered();
-
-    const disconnects = page._tdLogs.filter(l => l.includes('disconnectedCallback'));
-    const connects = page._tdLogs.filter(l => l.includes('connectedCallback'));
-    const refreshes = page._tdLogs.filter(l => l.includes('REFRESH-SHADOW') || l.includes('FIRST-SHADOW'));
-
-    console.log(`TD lifecycle: ${disconnects.length} disconnects, ${connects.length} connects, ${refreshes.length} shadow refreshes`);
-    console.log('All TD logs:');
-    page._tdLogs.forEach(l => console.log('  ', l));
-
-    assert.ok(disconnects.length > 0, 'Expected disconnectedCallback logs for removed child');
-    assert.ok(connects.length > 0, 'Expected connectedCallback logs for re-added child');
+    assert.equal(await page.evaluate(node => {
+      const current = document.querySelector('toggle-parent').shadowRoot.querySelector('toggle-child');
+      return current !== node && current.isConnected && !!current.shadowRoot.querySelector('button');
+    }, original), true);
+    await original.dispose();
   });
 });

@@ -225,19 +225,6 @@
           return join(x);
         // is a func array ?
         } else if ( (x[0] instanceof Function) && ! x[0][IMMEDIATE] ) {
-          const character = funcCharacter(...x);
-          if ( _host.names.has(character) ) {
-            const {func: existingFunc, name: existingName} = _host.names.get(character);
-            if ( existingName ) {
-              DEBUG && console.log(`Name exists!`, x, existingName);
-              DEBUG && console.log(`Adding ${existingName} adder`, existingFunc);
-              _host.funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
-              return existingName;
-            }
-          }
-          const randomName = NextFunc();
-          DEBUG && console.log({definedFunction: randomName, source: 1});
-
           const func = (
             function(ev) {
               for( const fun of x ) {
@@ -250,11 +237,7 @@
             }
           );
 
-          _host.names.set(character, {name:randomName, func});
-          DEBUG && console.log(`Adding ${randomName} adder`, func, _host);
-          _host.funcs.add(component => (component[randomName] = func, randomName));
-          DEBUG && console.log('name', randomName, func);
-          return `${randomName}(event)`;
+          return registerHandler(_host, funcCharacter(...x), func);
         } else if ( x[0] instanceof Element || x[0] instanceof Node ) {
           return {code:CODE, externals: [], nodes: x};
         } else {
@@ -285,23 +268,7 @@
       else // it's an object, of some type 
 
       if ( x instanceof Function ) {
-        const character = funcCharacter(x);
-        if ( _host.names.has(character) ) {
-          const {func: existingFunc, name: existingName} = _host.names.get(character);
-          if ( existingName ) {
-            DEBUG && console.log(`Name exists!`, x, existingName);
-            DEBUG && console.log(`Adding ${existingName} adder`, existingFunc);
-            _host.funcs.add(component => (component[existingName] = component[existingName] || existingFunc, existingName));
-            return existingName;
-          }
-        }
-        const name = NextFunc();
-        _host.names.set(character, {name, func:x});
-        DEBUG && console.log(`Adding ${name} adder`, x, _host);
-        _host.funcs.add(component => (component[name] = x, name)); 
-        DEBUG && console.log({definedFunction:name, source: 2});
-        DEBUG && console.log('name', name, x);
-        return `${name}(event)`;
+        return registerHandler(_host, funcCharacter(x), x);
       }
 
       else
@@ -369,6 +336,18 @@
         stateKey += EMPTY;
         return stateKey;
       }
+    }
+
+    function registerHandler(host, character, func) {
+      // Keep the DOM's method name stable, but refresh the closure on every
+      // render. Identical source text can capture a new index or state object.
+      const name = host.names.get(character)?.name || NextFunc();
+      host.names.set(character, {name, func});
+      host.funcs.add(component => {
+        component[name] = func;
+        return name;
+      });
+      return `${name}(event)`;
     }
 
     function funcCharacter(...x) {

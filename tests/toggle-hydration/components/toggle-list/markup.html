@@ -1,0 +1,6 @@
+<nav>
+${items.map((item, index) => F`${{key:item.id}}
+  <toggle-item class="${item.id === active ? 'active' : ''}" state=${{item, index}}></toggle-item>
+`)}
+<button class="new">New</button>
+</nav>
