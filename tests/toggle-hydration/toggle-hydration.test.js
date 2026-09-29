@@ -57,9 +57,12 @@ function createStaticServer(root, port = 0) {
       }
     });
 
-    server.listen(port, '127.0.0.1', () => {
+    // Chrome for Testing 154 rejects IPv4 loopback navigation with
+    // ERR_ADDRESS_INVALID on current macOS hosts. IPv6 loopback remains a
+    // local-only transport and works consistently across the release lane.
+    server.listen(port, '::1', () => {
       const addr = server.address();
-      resolve({ server, port: addr.port, url: `http://127.0.0.1:${addr.port}` });
+      resolve({ server, port: addr.port, url: `http://[::1]:${addr.port}` });
     });
     server.on('error', reject);
   });
