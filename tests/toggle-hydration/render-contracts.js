@@ -152,6 +152,35 @@ export function registerRenderContracts({it, assert, getPage, loadTestPage}) {
     assert.deepEqual(await getPage().evaluate(() => renderContract.calls), ['new-left']);
   });
 
+  it('render contract: a conditional form keeps its handler across hide and show', async () => {
+    await mount();
+    const page = getPage();
+    const warnings = [];
+    const onConsole = message => {
+      if (message.text().includes('Could not dereference')) warnings.push(message.text());
+    };
+    page.on('console', onConsole);
+    const start = page.url();
+    const setPanel = async panel => {
+      await page.evaluate(panel => {
+        setState('RenderContract', {...getState('RenderContract'), panel, label: String(panel)});
+      }, panel);
+      await waitLabel(String(panel));
+    };
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await setPanel(true);
+      await page.waitForFunction(() => document.querySelector('render-contract').shadowRoot
+        .querySelector('.send'), {timeout: 5000});
+      await page.evaluate(() => { renderContract.calls.length = 0; });
+      await click('.send');
+      await page.waitForFunction(() => renderContract.calls.includes('panel'), {timeout: 3000});
+      assert.equal(page.url(), start, 'the form must not submit past its handler');
+      await setPanel(false);
+    }
+    page.off('console', onConsole);
+    assert.deepEqual(warnings, []);
+  });
+
   it('render contract: app class updates retain component readiness classes', async () => {
     await loadTestPage();
     await getPage().evaluate(async () => {
