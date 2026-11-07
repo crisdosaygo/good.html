@@ -181,6 +181,73 @@ export function registerRenderContracts({it, assert, getPage, loadTestPage}) {
     assert.deepEqual(warnings, []);
   });
 
+  it('render contract: a recreated component keeps its nested conditional markup', async () => {
+    await loadTestPage();
+    const page = getPage();
+    await page.evaluate(async () => {
+      setState('NestState', {show: true, cloud: false, diag: false, tor: false, sound: true, count: 1});
+      await use('nest-bar');
+      await use('nest-host');
+      const host = document.createElement('nest-host');
+      host.setAttribute('state', 'NestState');
+      document.body.appendChild(host);
+    });
+    const bar = () => page.evaluate(() => {
+      const node = document.querySelector('nest-host').shadowRoot?.querySelector('nest-bar');
+      const root = node?.shadowRoot;
+      return root ? {net: root.querySelector('.net')?.textContent ?? null,
+        audio: root.querySelector('.audio')?.textContent ?? null,
+        order: [...root.querySelectorAll('span, button')].map(n => n.className)} : null;
+    });
+    const expected = {net: 'net', audio: 'sound', order: ['first', 'net', 'second', 'audio', 'third']};
+    const shown = async () => {
+      await page.waitForFunction(() => document.querySelector('nest-host').shadowRoot
+        ?.querySelector('nest-bar')?.shadowRoot?.querySelector('.third'), {timeout: 5000});
+      await new Promise(resolve => setTimeout(resolve, 200));
+      assert.deepEqual(await bar(), expected);
+    };
+    await shown();
+    // The application updates this state constantly, so renders overlap.
+    await page.evaluate(() => {
+      globalThis.nestPulse = setInterval(() => {
+        const state = getState('NestState');
+        state.count += 1;
+        setState('NestState', state);
+      }, 15);
+    });
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await page.evaluate(() => setState('NestState', {...getState('NestState'), show: false}));
+      await page.waitForFunction(() => ! document.querySelector('nest-host').shadowRoot
+        .querySelector('nest-bar'), {timeout: 5000});
+      await page.evaluate(() => setState('NestState', {...getState('NestState'), show: true}));
+      await shown();
+    }
+    await page.evaluate(() => clearInterval(globalThis.nestPulse));
+  });
+
+  it('render contract: live instances of a component keep their own nested markup', async () => {
+    await loadTestPage();
+    const page = getPage();
+    await page.evaluate(async () => {
+      setState('NestState', {show: true, cloud: false, diag: false, tor: false, sound: true, count: 1});
+      await use('nest-bar');
+      for (const id of ['one', 'two']) {
+        const bar = document.createElement('nest-bar');
+        bar.id = id;
+        bar.setAttribute('state', 'NestState');
+        document.body.appendChild(bar);
+      }
+    });
+    await page.waitForFunction(() => document.querySelector('#two')?.shadowRoot?.querySelector('.third'),
+      {timeout: 5000});
+    await new Promise(resolve => setTimeout(resolve, 300));
+    for (const id of ['one', 'two']) {
+      assert.deepEqual(await page.evaluate(id => [...document.querySelector('#' + id).shadowRoot
+        .querySelectorAll('span, button')].map(n => n.className), id),
+        ['first', 'net', 'second', 'audio', 'third'], id);
+    }
+  });
+
   it('render contract: app class updates retain component readiness classes', async () => {
     await loadTestPage();
     await getPage().evaluate(async () => {
