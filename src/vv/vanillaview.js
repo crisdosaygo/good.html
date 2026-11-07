@@ -121,7 +121,9 @@
         cacheKey = p.join(JOINER);
         const {cached,firstCall} = isCached(cacheKey,v,instance);
        
-        if ( ! firstCall ) {
+        // Cached nodes belong to the host that rendered them. Another host has
+        // the same template text, but taking those nodes would empty the owner.
+        if ( ! firstCall && (cached.host === undefined || cached.host === _host) ) {
           cached.update(v);
           return cached;
         } else {
@@ -154,6 +156,7 @@
         externals,
         v:Object.values(vmap),
         cacheKey,
+        host: _host,
         instance,
         to,
         update,

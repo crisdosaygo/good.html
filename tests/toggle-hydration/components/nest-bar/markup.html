@@ -1,0 +1,7 @@
+${_self.cloud ? F`<i class="cloud"></i>` : F`
+  <span class="first">${_self.count}</span>
+  ${_self.diag ? F`<button class="net">diag</button>` : F`<span class="net">net</span>`}
+  <span class="second">two</span>
+  ${_self.tor ? F`<span class="tor">tor</span>` : F`<span class="audio">${_self.sound ? 'sound' : ''}</span>`}
+  <span class="third">three</span>
+`}
