@@ -1,5 +1,11 @@
 class Component extends Base {
   capture(value) { return () => globalThis.renderContract.calls.push(value); }
+  sent(value) {
+    return event => {
+      event.preventDefault();
+      globalThis.renderContract.calls.push(value);
+    };
+  }
   note(value) { return () => globalThis.renderContract.calls.push(`after:${value}`); }
   row(id, index) { return () => globalThis.renderContract.calls.push({id, index}); }
   deferred(label) {

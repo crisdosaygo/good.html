@@ -6,6 +6,7 @@
     const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
     const NAMESPACE = 'b';
     const PIPELINE_REQUESTS = true;
+    const RETIRED_HANDLER_LIMIT = 1024;
     const RANDOM_SLEEP_ON_FIRST_PRINT = true;
     const RESPONSIVE_MEDIATION = true;
     const USE_XPATH = true;
@@ -135,6 +136,7 @@
       #dependents = [];
       #funcs = new Set();
       #names = new Map();
+      #retired = new Map();
       #paths = new Map();
       #destructors = new Set();
       #render;
@@ -150,7 +152,7 @@
           BBDEBUG && console.log(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state, render);
           if ( ! render.isCurrent() ) return;
-          this.applyRenderHandlers(render);
+          const handlersAdded = this.applyRenderHandlers(render);
           BBDEBUG && console.log(`Component : ${this.#name}`);
           BBDEBUG && console.log(`State host: ${_host.name}`);
           BBDEBUG && console.log(`Will add ${this.#funcs.size} event handler functions`);
@@ -180,6 +182,10 @@
             cooked.to(shadow, INSERT);
             this.needsRefresh = false;
             this.#discoveryPending = true;
+          } else if ( handlersAdded ) {
+            // A render updates live DOM before its handlers are committed, so
+            // listeners on new nodes could not resolve until this point.
+            this.cookListeners(shadow);
           }
           if (!render.isCurrent()) return;
           if ( this.#discoveryPending ) {
@@ -238,6 +244,10 @@
 
       get names() {
         return this.#names;
+      }
+
+      get retired() {
+        return this.#retired;
       }
 
       get funcs() {
@@ -463,14 +473,34 @@
       }
 
       applyRenderHandlers(render) {
+        let added = false;
         for (const [binding, {name}] of this.#names) {
-          if (!render.handlers.has(binding)) delete this[name];
+          if (render.handlers.has(binding)) continue;
+          // Hidden markup keeps its nodes and their handler attribute, so the
+          // binding keeps its name for when that markup returns.
+          delete this[name];
+          this.#retired.set(binding, name);
+          if ( this.#retired.size > RETIRED_HANDLER_LIMIT ) {
+            this.#retired.delete(this.#retired.keys().next().value);
+          }
         }
         this.#names.clear();
         for (const [binding, handler] of render.handlers) {
+          added = added || ! (this[handler.name] instanceof Function);
+          this.#retired.delete(binding);
           this.#names.set(binding, handler);
           this[handler.name] = handler.func;
         }
+        return added;
+      }
+
+      // The render in progress names this handler but has not committed it.
+      awaitsHandler(name) {
+        if ( this[name] instanceof Function || ! this.#render ) return false;
+        for ( const handler of this.#render.handlers.values() ) {
+          if ( handler.name === name ) return true;
+        }
+        return false;
       }
 
       printShadow(state) {
@@ -864,6 +894,7 @@
 
         value = value.replace(/\(event\)$/, '');
         if ( ! value ) return;
+        if ( node.getRootNode().host?.awaitsHandler?.(value) ) return;
 
         //if ( value.startsWith('this.') ) return;
 

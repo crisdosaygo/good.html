@@ -346,7 +346,8 @@
     function registerHandler(host, binding, func, render) {
       // Template, key and interpolation position own identity. Source text
       // cannot distinguish two closures capturing different values.
-      const name = render?.handlers.get(binding)?.name || host.names.get(binding)?.name || NextFunc();
+      const name = render?.handlers.get(binding)?.name || host.names.get(binding)?.name ||
+        host.retired?.get(binding) || NextFunc();
       if (render) {
         render.handlers.set(binding, {name, func});
         return `${name}(event)`;
